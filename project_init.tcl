@@ -6,31 +6,22 @@ proc get_repo_dir {} {
     return [ file join {*}$basedirlist ]
 }
 
+# source scripts
+set tclbits_dir [file join [get_repo_dir] "verilog-library-barawn" "tclbits"]
+source [file join $tclbits_dir "utility.tcl"]
+source [file join $tclbits_dir "repo_files.tcl"]
+
 # update include paths
-puts "Updating Verilog include path..."
-set include_dir [file join [get_repo_dir] "verilog-library-barawn" "include"]
-set_property include_dirs [list $include_dir] [current_fileset]
+add_include_dir [file join [get_repo_dir] "verilog-library-barawn" "include"]
 
-# Make sure the project behavior stays the same.
-#set f [open [ file join [get_repo_dir] "barawn_repository" ] ]
-#set repo [read $f]
-#if {$repo in [get_property ip_repo_paths [current_project]]} {
-#    puts "Skipping IP repo update, already done"
-#} else {
-#    puts "Updating IP repo with ${repo}"
-#    set_property ip_repo_paths $repo [current_project]
-#}
+# set pre-init script
+set_pre_synthesis_tcl [file join [get_repo_dir] "pre_synthesis.tcl"]
 
-# check for pre-init script
-set pre [ file join [get_repo_dir] "pre_synthesis.tcl"]
-if [ file exists $pre ] {
-    if {$pre in [get_files -of_objects [get_filesets utils_1]]} {
-	puts "Skipping pre init script update"
-    } else {
-	puts "Updating pre init script"
-	add_files -fileset utils_1 -norecurse $pre
-	set_property STEPS.SYNTH_DESIGN.TCL.PRE [ get_files $pre -of [get_fileset utils_1] ] [get_runs synth_1]
-    }
-}
+
+
+
+
+# last thing to do before opening
+check_all
 
 
