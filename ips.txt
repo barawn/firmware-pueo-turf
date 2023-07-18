@@ -1,1 +1,1 @@
-ip/debug/clk_vio/clk_vio.xci
+ip/turfio/turfio_aurora/turfio_aurora.xci
