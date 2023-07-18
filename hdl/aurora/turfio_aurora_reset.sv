@@ -11,10 +11,10 @@ module turfio_aurora_reset(
     
     (* ASYNC_REG = "TRUE" *)
     (* SHREG_EXTRACT = "NO" *)
-    reg [0:3]   debounce_gt_rst_r = {4{1'b0}};
-    reg [0:3]   reset_debounce_r = {4{1'b0}};
+    reg [0:3]   debounce_gt_rst_r = {4{1'b1}};
+    reg [0:3]   reset_debounce_r = {4{1'b1}};
     reg         reset_debounce_r2 = 1'b1;
-    reg         gt_rst_r;
+    reg         gt_rst_r = 1'b1;
     
     wire gt_rst_sync;
     wire system_reset;
