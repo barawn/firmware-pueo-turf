@@ -4,7 +4,8 @@ module system_clock_v2( input SYS_CLK_P,
                         input reset,
                         output sysclk_ibuf_o,
                         output sysclk_o,
-                        output sysclk_phase_o );
+                        output sysclk_phase_o,
+                        output sysclk_sync_o );
 
     parameter INVERT_MMCM = "TRUE";
     
@@ -68,9 +69,15 @@ module system_clock_v2( input SYS_CLK_P,
     
     // This is the global SYSCLK phase. Its exact value's basically irrelevant.
     reg [3:0] sysclk_phase = {4{1'b0}};
+    // ditto for sysclk sync, it doesn't matter that it's random.
+    // We 
+    reg sysclk_sync = 0;
     always @(posedge sysclk_o) begin
         sysclk_phase <= sysclk_phase[2:0] + 1;
+        // swap at max so we're in phase 
+        if (sysclk_phase[2:0] == 3'b111) sysclk_sync <= ~sysclk_sync;
     end
     
     assign sysclk_phase_o = sysclk_phase[3];
+    assign sysclk_sync_o = sysclk_sync;
 endmodule
