@@ -19,7 +19,9 @@ module turf_id_ctrl #(
         `TARGET_NAMED_PORTS_WB_IF(wb_ , NUM_ADDRESS_BITS, 32),
         
         input [NUM_CLK_MON-1:0] clk_mon_i,
-        output [NUM_CLK_MON-1:0] clk_ok_o
+        output [NUM_CLK_MON-1:0] clk_ok_o,
+        
+        output bitcmd_sync_o
     );
     // Number of section bits (4 for a total of 16 sections
     localparam NUM_SECTION_BITS = 4;
@@ -39,6 +41,9 @@ module turf_id_ctrl #(
     wire [31:0] id_statctrl[ID_STATCTRL_REGS-1:0];
     wire dna_data;
     reg [31:0] statctrl_reg = {32{1'b0}};
+    (* CUSTOM_CC_SRC = "PSCLK" *)
+    reg bitcmd_sync = 0;
+    
     assign id_statctrl[0] = IDENT;
     assign id_statctrl[1] = DATEVERSION;
     assign id_statctrl[2] = { {31{1'b0}}, dna_data };
@@ -123,6 +128,12 @@ module turf_id_ctrl #(
         id_statctrl_ack_ff <= wb_cyc_i && wb_stb_i;
         
         id_statctrl_dat_ff <= id_statctrl[ id_statctrl_adr[2 +: ID_STATCTRL_ADR_BITS] ];        
+
+        if (wb_cyc_i && wb_stb_i && wb_ack_o && id_statctrl_sel && id_statctrl_adr== 15'h00C && wb_we_i) begin
+           if (wb_sel_i[0]) statctrl_reg[0] <= wb_dat_i[0];
+        end
+        
+        bitcmd_sync <= statctrl_reg[0];
     end
     DNA_PORTE2 u_dna(.DIN(1'b0),.READ(dna_read),.SHIFT(dna_shift),.CLK(wb_clk_i),.DOUT(dna_data));
         
@@ -141,5 +152,7 @@ module turf_id_ctrl #(
     assign wb_dat_o = section_dat[section];
     assign wb_err_o = 1'b0;
     assign wb_rty_o = 1'b0;
+
+    assign bitcmd_sync_o = bitcmd_sync;
     
 endmodule
