@@ -8,7 +8,7 @@ module pueo_turf #(
             parameter [31:0] IDENT = "TURF",
             parameter [3:0] VER_MAJOR = 4'd0,
             parameter [3:0] VER_MINOR = 4'd0,
-            parameter [7:0] VER_REV = 8'd3,
+            parameter [7:0] VER_REV = 8'd4,
             parameter [15:0] FIRMWARE_DATE = {16{1'b0}},
             parameter PROTOTYPE = "TRUE"
         )(
@@ -199,7 +199,12 @@ module pueo_turf #(
         // B2B-1 44 PL_G6_LVDS93_L1P G6
         // B2B-1 56 PL_D7_LVDS93_L7N D7
         // B2B-1 58 PL_E7_LVDS93_L7P E7
-        output [4:0] GPIO
+        output [4:0] GPIO,
+        // These are the other GPIOs not on the HSK header and not
+        // currently externally assigned
+        // B2B-1 70 PL_B6_LVDS94_L11P B6 
+        // B2B-1 72 PL_B5_LVDS94_L11N B5
+        output [1:0] LGPIO
 
     );
     
@@ -231,6 +236,9 @@ module pueo_turf #(
     wire sys_clk;
     // Global phase of sys_clk.
     wire sys_clk_phase;
+    // Sync state. This is a direct analog to the SURF clock inputs
+    // and if we time everything up correctly should be exactly synchronous.
+    wire sys_clk_sync;
     // TURFIO MGT reference clock (125 MHz)
     wire mgt_refclk;
     // TURFIO MGT stream clock (312.5 MHz)
@@ -272,8 +280,47 @@ module pueo_turf #(
     wire if_clk68_x2_phase;
     // PLLs locked
     wire [1:0] pll_locked;
-
-    localparam INV_MMCM = (PROTOTYPE=="TRUE") ? "FALSE" : "TRUE";
+    
+    // Sync command
+    wire bitcommand_sync;
+    // This is the req to generate a sync
+    wire bitcmd_sync_req;
+    // PPS command
+    wire bitcommand_pps;
+    // Command processor reset
+    wire bitcommand_cmdproc_reset;
+    // Bit command vector
+    wire [11:0] bitcommand = { {9{1'b0}},
+                                bitcommand_cmdproc_reset,   // 2
+                                bitcommand_pps,             // 1
+                                bitcommand_sync };          // 0
+    // kill the unimplementeds
+    assign bitcommand_pps = 1'b0;
+    assign bitcommand_cmdproc_reset = 1'b0;
+    
+    // Command to feed to turfio ctl
+    wire [31:0] turfio_if_command;
+    // Command processor stream
+    `DEFINE_AXI4S_MIN_IF( cmdproc_ , 8);
+    wire [2:0] cmdproc_tuser;
+    wire cmdproc_tlast;
+    // kill it
+    assign cmdproc_tuser = 3'b000;
+    assign cmdproc_tdata = {8{1'b0}};
+    assign cmdproc_tvalid = 1'b0;
+    assign cmdproc_tlast = 1'b0;
+    
+    // The TURF prototype has the P/Ns hooked up BACKWARDS relative to their
+    // correct orientation. The correct orientation has N on the P input,
+    // and P on the N input. HOWEVER: the schematic labelling has SYSCLK
+    // *backwards* from all of the TURFIOs. So we *want* to invert SYSCLK.
+    // To summarize:
+    // PROTOTYPE: invert (because it is hooked up *non-inverted* and we want to invert)
+    // non-prototype: do not invert (because it is hooked up *inverted* and that's what we want)
+    //
+    // You can tell this because the # of slips seen at TURFIO should be zero
+    // since everything's synchronous.
+    localparam INV_MMCM = (PROTOTYPE=="TRUE") ? "TRUE" : "FALSE";
     // wrap the PS system
     turf_ps_bd_wrapper u_ps(.ACLK(ps_clk),
                             `CONNECT_AXI4L_IF( m_axi_ps_ , axips_ ),
@@ -323,7 +370,15 @@ module pueo_turf #(
         u_idctrl( .wb_clk_i(ps_clk),
                   .wb_rst_i(1'b0),
                   `CONNECT_WBS_IFM(wb_ , turf_idctl_ ),
+                  .bitcmd_sync_o(bitcmd_sync_req),
                   .clk_mon_i( { ddr_clk[1], ddr_clk[0], gbe_sysclk, sys_clk } ));
+
+    // and sync generator. This times up the bitcmd sync to be req'd correctly.
+    sysclk_sync_req u_syncreq(.sysclk_i(sys_clk),
+                              .sysclk_phase_i(sys_clk_phase),
+                              .sysclk_sync_i(sys_clk_sync),
+                              .sync_req_i(bitcmd_sync_req),
+                              .sync_bitcommand_o(bitcommand_sync));
 
     // this needs to get pushed into the 10GbE core                  
     IBUFDS_GTE4 #(.REFCLK_HROW_CK_SEL(2'b00))
@@ -348,7 +403,8 @@ module pueo_turf #(
                  .reset(1'b0),
                  .sysclk_o(sys_clk),
                  .sysclk_ibuf_o(sys_clk_ibuf),
-                 .sysclk_phase_o(sys_clk_phase));
+                 .sysclk_phase_o(sys_clk_phase),
+                 .sysclk_sync_o(sys_clk_sync));
     turfio_if #( .INV_SYSCLK(INV_MMCM),
                  .TRAIN_VALUE(TRAIN_VALUE),
                  .INV_CINTIO(INV_CINTIO),
@@ -367,7 +423,7 @@ module pueo_turf #(
                   .sysclk_ibuf_i(sys_clk_ibuf),
                   .sysclk_phase_i(sys_clk_phase),
                   
-                  .cout_command_i( {32{1'b0}} ),
+                  .cout_command_i( turfio_if_command ),
                   .cina_command_o(),
                   .cinb_command_o(),
                   .cinc_command_o(),
@@ -391,6 +447,18 @@ module pueo_turf #(
                   .CIND_P(CIND_P),
                   .CIND_N(CIND_N));
 
+    // command generator
+    pueo_command_encoder u_cmd_encode( .sysclk_i(sys_clk),
+                                       .sysclk_phase_i(sys_clk_phase),
+                                       .command_o(turfio_if_command),
+                                       .bitcommand_i(bitcommand),
+                                       .bitcommand_ack(),
+                                       `CONNECT_AXI4S_MIN_IF( cmdproc_ , cmdproc_ ),
+                                       .cmdproc_tuser(cmdproc_tuser),
+                                       .cmdproc_tlast(cmdproc_tlast),
+                                       .trig_tdata( {16{1'b0}} ),
+                                       .trig_tvalid( 1'b0 ),
+                                       .trig_tready() );
 //    system_clock #(.INVERT_MMCM(INV_MMCM)) 
 //        u_sysclk(.SYS_CLK_P(SYSCLK_P),
 //                 .SYS_CLK_N(SYSCLK_N),
@@ -422,6 +490,10 @@ module pueo_turf #(
 //                             .if_clk68_x2(if_clk68_x2),
 //                             .if_clk68_x2_phase(if_clk68_x2_phase),
 //                             .if_clk_x2_locked(&pll_locked));
+
+    sync_debug u_syncdebug(.sysclk_i(sys_clk),
+                           .sysclk_sync_i(sys_clk_sync),
+                           .LGPIO(LGPIO));    
 
 //    ///// UNUSED CRAP
 //    OBUFDS u_obuf(.I(1'b0),.O(COUT_N[1]),.OB(COUT_P[1]));            
