@@ -1,9 +1,9 @@
-set_property -dict { IOSTANDARD LVCMOS33 PACKAGE_PIN D9 } [get_ports { HSK_UART_txd }]
-set_property -dict { IOSTANDARD LVCMOS33 PACKAGE_PIN C9 } [get_ports { HSK_UART_rxd }]
-set_property -dict { IOSTANDARD LVCMOS33 PACKAGE_PIN C8 } [get_ports { CLK_IIC_scl_io }]
-set_property -dict { IOSTANDARD LVCMOS33 PACKAGE_PIN D8 } [get_ports { CLK_IIC_sda_io }]
-set_property -dict { IOSTANDARD LVCMOS33 PACKAGE_PIN A7 } [get_ports { HSK2_UART_txd }]
-set_property -dict { IOSTANDARD LVCMOS33 PACKAGE_PIN B7 } [get_ports { HSK2_UART_rxd }]
+set_property -dict { IOSTANDARD LVCMOS25 PACKAGE_PIN D9 } [get_ports { HSK_UART_txd }]
+set_property -dict { IOSTANDARD LVCMOS25 PACKAGE_PIN C9 } [get_ports { HSK_UART_rxd }]
+set_property -dict { IOSTANDARD LVCMOS25 PACKAGE_PIN C8 } [get_ports { CLK_IIC_scl_io }]
+set_property -dict { IOSTANDARD LVCMOS25 PACKAGE_PIN D8 } [get_ports { CLK_IIC_sda_io }]
+set_property -dict { IOSTANDARD LVCMOS25 PACKAGE_PIN A7 } [get_ports { HSK2_UART_txd }]
+set_property -dict { IOSTANDARD LVCMOS25 PACKAGE_PIN B7 } [get_ports { HSK2_UART_rxd }]
 set_property -dict { IOSTANDARD LVDS PACKAGE_PIN AR12 DIFF_TERM TRUE} [get_ports { SYSCLK_P }]
 set_property -dict { IOSTANDARD LVDS PACKAGE_PIN AR13 DIFF_TERM TRUE} [get_ports { SYSCLK_N }]
 
@@ -104,11 +104,11 @@ set_property -dict { IOSTANDARD LVDS PACKAGE_PIN AV9  DIFF_TERM TRUE} [get_ports
 set_property -dict { IOSTANDARD LVDS PACKAGE_PIN AN12 DIFF_TERM TRUE} [get_ports { CIND_N[6] }]
 
 
-set_property -dict { IOSTANDARD LVCMOS33 PACKAGE_PIN D6 } [get_ports { GPIO[0] }]
-set_property -dict { IOSTANDARD LVCMOS33 PACKAGE_PIN F6 } [get_ports { GPIO[1] }]
-set_property -dict { IOSTANDARD LVCMOS33 PACKAGE_PIN G6 } [get_ports { GPIO[2] }]
-set_property -dict { IOSTANDARD LVCMOS33 PACKAGE_PIN D7 } [get_ports { GPIO[3] }]
-set_property -dict { IOSTANDARD LVCMOS33 PACKAGE_PIN E7 } [get_ports { GPIO[4] }]
+set_property -dict { IOSTANDARD LVCMOS25 PACKAGE_PIN D6 } [get_ports { GPIO[0] }]
+set_property -dict { IOSTANDARD LVCMOS25 PACKAGE_PIN F6 } [get_ports { GPIO[1] }]
+set_property -dict { IOSTANDARD LVCMOS25 PACKAGE_PIN G6 } [get_ports { GPIO[2] }]
+set_property -dict { IOSTANDARD LVCMOS25 PACKAGE_PIN D7 } [get_ports { GPIO[3] }]
+set_property -dict { IOSTANDARD LVCMOS25 PACKAGE_PIN E7 } [get_ports { GPIO[4] }]
 
 set_property -dict { PACKAGE_PIN AD12 } [get_ports { MGTCLK_N } ]
 set_property -dict { PACKAGE_PIN AD11 } [get_ports { MGTCLK_P } ]
@@ -157,6 +157,9 @@ set_property -dict { PACKAGE_PIN AT21 IOSTANDARD LVDS DIFF_TERM TRUE } [ get_por
 set_property -dict { PACKAGE_PIN AT22 IOSTANDARD LVDS DIFF_TERM TRUE } [ get_ports { DDR_CLK_P[0] }]
 set_property -dict { PACKAGE_PIN D32  IOSTANDARD LVDS DIFF_TERM TRUE } [ get_ports { DDR_CLK_N[1] }]
 set_property -dict { PACKAGE_PIN E32  IOSTANDARD LVDS DIFF_TERM TRUE } [ get_ports { DDR_CLK_P[1] }]
+
+set_property -dict { PACKAGE_PIN B6 IOSTANDARD LVCMOS25 } [ get_ports { LGPIO[0] }]
+set_property -dict { PACKAGE_PIN B5 IOSTANDARD LVCMOS25 } [get_ports { LGPIO[1] }]
 
 # these do not matter
 
