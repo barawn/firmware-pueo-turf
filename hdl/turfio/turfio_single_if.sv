@@ -231,13 +231,13 @@ module turfio_single_if #(
             (* CUSTOM_CC_SRC = "PSCLK" *)
             reg lock_rst = 0;
             // and in ifclk
-            (* ASYNC_REG = "TRUE", CUSTOM_CC_SRC = CIN_CLKTYPE *)
+            (* ASYNC_REG = "TRUE", CUSTOM_CC_DST = CIN_CLKTYPE *)
             reg [1:0] lock_rst_ifclk = {2{1'b0}};
             // request lock in WB clk
             (* CUSTOM_CC_SRC = "PSCLK" *)
             reg lock_req = 0;
             // and in ifclk
-            (* ASYNC_REG = "TRUE", CUSTOM_CC_SRC = CIN_CLKTYPE *)
+            (* ASYNC_REG = "TRUE", CUSTOM_CC_DST = CIN_CLKTYPE *)
             reg [1:0] lock_req_ifclk = {2{1'b0}};
             // lock achieved in ifclk
             wire lock_ok_ifclk;
