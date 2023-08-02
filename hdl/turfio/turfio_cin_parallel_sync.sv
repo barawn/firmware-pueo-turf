@@ -3,6 +3,8 @@
 module turfio_cin_parallel_sync(
         // interface clock
         input ifclk_i,
+        // interface clock phase (indicates cycle 0 of 8-clock IFCLK cycle)
+        input ifclk_phase_i,
         // reset the lock (NOT the bitslip)
         input rst_lock_i,
         // reset the bitslip (NOT the lock)
@@ -21,6 +23,8 @@ module turfio_cin_parallel_sync(
         output [31:0] cin_parallel_o,
         // output is valid
         output cin_parallel_valid_o,
+        // round-trip delay
+        output [2:0] cin_roundtrip_o,
         // bit error happened (when not locked only!!)
         output cin_biterr_o        
     );
@@ -45,7 +49,21 @@ module turfio_cin_parallel_sync(
     wire do_cin_capture = enable_capture || capture_i;
     reg enable_lock = 0;
     reg locked = 0;
+    // this is the sequence track for the *input*. It is unaligned to phase (other than our sync procedure)
     reg [3:0] ifclk_sequence = {4{1'b0}};
+
+    // this is the sequence track based on the phase input
+    reg [2:0] ifclk_phase_counter = {3{1'b0}};
+    // this buffers the input signal
+    reg ifclk_phase_buf = 0;
+
+    // this is the captured round-trip delay. if the valid is high in clock 0, this measures 0 (so it's mod 8).
+    // We don't actually care about the *actual* "round-trip" delay (as in, something like a ping->pong response)
+    // we actually just care about when the "sync" command is issued, how long does it take the now-phase locked
+    // training output to return back.
+    // In other words this is more like a one-way propagation delay.
+    (* CUSTOM_CC_SRC = CLKTYPE *)
+    reg [2:0] roundtrip = {3{1'b0}};
 
     // SYNCHRONIZATION
     // We have an 8-clock sequence, so the way this works is:
@@ -73,6 +91,15 @@ module turfio_cin_parallel_sync(
                                   .din(cin_history[3:0]),
                                   .dout(cin_delayed));
     always @(posedge ifclk_i) begin
+        ifclk_phase_buf <= ifclk_phase_i;
+        // ifclk_phase_i going high means phase 0
+        // ifclk_phase_buf going high means phase 1
+        // therefore we reset to phase 2
+        if (ifclk_phase_buf) ifclk_phase_counter <= 3'd2;
+        else ifclk_phase_counter <= ifclk_phase_counter + 1;
+
+        if (ifclk_sequence[3]) roundtrip <= ifclk_phase_counter;
+    
         if (rst_lock_i) enable_lock <= 1'b0;
         else if (lock_i) enable_lock <= 1'b1;
         
@@ -103,5 +130,6 @@ module turfio_cin_parallel_sync(
     assign locked_o = locked;
     assign cin_parallel_valid_o = ifclk_sequence[3];
     assign cin_parallel_o = cin_capture;
-       
+    assign cin_roundtrip_o = roundtrip;
+    
 endmodule
