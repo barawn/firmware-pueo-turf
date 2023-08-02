@@ -36,6 +36,7 @@
 // 0x88: Monitor IDELAY CNTVALUEINOUT
 // 0x8C: Monitor ODELAY CNTVALUEINOUT
 // 0xC0: capture/bitslip
+// 0xC1: round-trip delay (clock phase capture when valid)
 // 0xE0: bit error interval load
 module turfio_single_if #(
         parameter [6:0] INV_CIN = {7{1'b0}},
@@ -51,6 +52,7 @@ module turfio_single_if #(
         `TARGET_NAMED_PORTS_WB_IF(wb_ , 12, 32),
 
         input cin_clk_i,
+        input cin_clk_phase_i,
         input cin_clk_ok_i,
         input cin_rst_i,
         
@@ -250,10 +252,17 @@ module turfio_single_if #(
             wire [31:0] cntvalueout_data = { {23{1'b0}}, this_cntvalueout };
             // capture
             wire [31:0] capture_data = cin_response_o[32*i +: 32];
+            // Roundtrip delay value
+            wire [2:0] cin_roundtrip;
+            // Expanded
+            wire [31:0] cin_roundtrip_data = { {28{1'b0}}, cin_roundtrip };
+            // mux the capture and roundtrip registers
+            wire [31:0] capture_data_muxed = (adr_static[2]) ? cin_roundtrip_data : capture_data;
             // CIN clock space data
-            wire [31:0] cin_data = (adr_static[6]) ? capture_data : cntvalueout_data;
+            wire [31:0] cin_data = (adr_static[6]) ? capture_data_muxed : cntvalueout_data;
             // non-CIN clock space data
             wire [31:0] control_data[1:0];
+
 
             ////// BIT ERROR STUFF
             (* CUSTOM_CC_DST = "PSCLK" *)
@@ -262,8 +271,6 @@ module turfio_single_if #(
             wire [24:0] bit_error_count;
             // Valid in WBCLK
             wire bit_error_count_valid_wbclk;
-
-            //
 
             // create control reg 0, structured in byte
             assign control_data[0] = { {8{1'b0}},
@@ -337,6 +344,7 @@ module turfio_single_if #(
             // But we also need bitslip functionality, so we get that here.
             turfio_cin_parallel_sync #(.TRAIN_SEQUENCE(TRAIN_VALUE),.CLKTYPE(CIN_CLKTYPE))
                 u_cin_sync(.ifclk_i(cin_clk_i),
+                           .ifclk_phase_i(cin_clk_phase_i),
                            .rst_lock_i(lock_rst_ifclk[1]),
                            .rst_bitslip_i(bitslip_rst_ifclk[1]),
                            .cin_i(serdes_out),
@@ -346,6 +354,7 @@ module turfio_single_if #(
                            .locked_o(lock_ok_ifclk),
                            .cin_parallel_o(cin_response_o[32*i +: 32]),
                            .cin_parallel_valid_o(cin_valid_o[i]),
+                           .cin_roundtrip_o(cin_roundtrip),
                            .cin_biterr_o(biterr));
             // And we need the bit error counter.
             reg bit_error_count_valid_rereg = 0;
@@ -359,8 +368,10 @@ module turfio_single_if #(
                                            .out_clkB(bit_error_count_ack));                                                   
 
             always @(posedge cin_clk_i) bit_error_count_valid_rereg <= bit_error_count_valid;
-                        
-            dsp_timed_counter #(.MODE("ACKNOWLEDGE"))
+            // this is a CC path for both source/destination
+            // dat_reg -> C register (interval)
+            // P register -> bit_error_count_wbclk
+            dsp_timed_counter #(.MODE("ACKNOWLEDGE"),.CLKTYPE_SRC(CIN_CLKTYPE),.CLKTYPE_DST(CIN_CLKTYPE))
                 u_cin_biterr(.clk(cin_clk_i),
                              .rst(bit_error_count_ack),
                              .count_in(biterr),
