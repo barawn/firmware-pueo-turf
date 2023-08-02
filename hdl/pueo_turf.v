@@ -8,7 +8,7 @@ module pueo_turf #(
             parameter [31:0] IDENT = "TURF",
             parameter [3:0] VER_MAJOR = 4'd0,
             parameter [3:0] VER_MINOR = 4'd0,
-            parameter [7:0] VER_REV = 8'd4,
+            parameter [7:0] VER_REV = 8'd5,
             parameter [15:0] FIRMWARE_DATE = {16{1'b0}},
             parameter PROTOTYPE = "TRUE"
         )(
@@ -298,17 +298,31 @@ module pueo_turf #(
     assign bitcommand_pps = 1'b0;
     assign bitcommand_cmdproc_reset = 1'b0;
     
-    // Command to feed to turfio ctl
-    wire [31:0] turfio_if_command;
-    // Command processor stream
-    `DEFINE_AXI4S_MIN_IF( cmdproc_ , 8);
-    wire [2:0] cmdproc_tuser;
-    wire cmdproc_tlast;
+    // Command to feed to turfio ctl in bank 67
+    wire [31:0] turfio_if_command67;
+    // Command to feed to turfio ctl in bank 68
+    wire [31:0] turfio_if_command68;
+    
+    // Command processor stream for bank 67
+    `DEFINE_AXI4S_MIN_IF( cmdproc67_ , 8);
+    wire [2:0] cmdproc67_tuser;
+    wire cmdproc67_tlast;
     // kill it
-    assign cmdproc_tuser = 3'b000;
-    assign cmdproc_tdata = {8{1'b0}};
-    assign cmdproc_tvalid = 1'b0;
-    assign cmdproc_tlast = 1'b0;
+    assign cmdproc67_tuser = 3'b000;
+    assign cmdproc67_tdata = {8{1'b0}};
+    assign cmdproc67_tvalid = 1'b0;
+    assign cmdproc67_tlast = 1'b0;
+
+    // Command processor stream for bank 68
+    `DEFINE_AXI4S_MIN_IF( cmdproc68_ , 8);
+    wire [2:0] cmdproc68_tuser;
+    wire cmdproc68_tlast;
+    // kill it
+    assign cmdproc68_tuser = 3'b000;
+    assign cmdproc68_tdata = {8{1'b0}};
+    assign cmdproc68_tvalid = 1'b0;
+    assign cmdproc68_tlast = 1'b0;
+        
     
     // The TURF prototype has the P/Ns hooked up BACKWARDS relative to their
     // correct orientation. The correct orientation has N on the P input,
@@ -420,10 +434,13 @@ module pueo_turf #(
                   .rst_i(1'b0),
                   `CONNECT_WBS_IFM(wb_ , ctl_ ),
                   .clk300_i( ddr_clk[0] ),
+                  .ifclk67_o( if_clk67 ),
+                  .ifclk68_o( if_clk68 ),
+
                   .sysclk_ibuf_i(sys_clk_ibuf),
                   .sysclk_phase_i(sys_clk_phase),
-                  
-                  .cout_command_i( turfio_if_command ),
+                  .cout_command67_i( turfio_if_command67 ),
+                  .cout_command68_i( turfio_if_command68 ),
                   .cina_command_o(),
                   .cinb_command_o(),
                   .cinc_command_o(),
@@ -447,18 +464,31 @@ module pueo_turf #(
                   .CIND_P(CIND_P),
                   .CIND_N(CIND_N));
 
-    // command generator
-    pueo_command_encoder u_cmd_encode( .sysclk_i(sys_clk),
-                                       .sysclk_phase_i(sys_clk_phase),
-                                       .command_o(turfio_if_command),
-                                       .bitcommand_i(bitcommand),
-                                       .bitcommand_ack(),
-                                       `CONNECT_AXI4S_MIN_IF( cmdproc_ , cmdproc_ ),
-                                       .cmdproc_tuser(cmdproc_tuser),
-                                       .cmdproc_tlast(cmdproc_tlast),
-                                       .trig_tdata( {16{1'b0}} ),
-                                       .trig_tvalid( 1'b0 ),
-                                       .trig_tready() );
+    // Command encoder for bank67.
+    pueo_command_encoder u_cmd_encode67( .sysclk_i(if_clk67),
+                                         .sysclk_phase_i(sys_clk_phase),
+                                         .command_o(turfio_if_command67),
+                                         .bitcommand_i(bitcommand),
+                                         .bitcommand_ack(),
+                                         `CONNECT_AXI4S_MIN_IF( cmdproc_ , cmdproc67_ ),
+                                         .cmdproc_tuser(cmdproc67_tuser),
+                                         .cmdproc_tlast(cmdproc67_tlast),
+                                         .trig_tdata( {16{1'b0}} ),
+                                         .trig_tvalid( 1'b0 ),
+                                         .trig_tready() );
+    // Command encoder for bank68.
+    pueo_command_encoder u_cmd_encode68( .sysclk_i(if_clk68),
+                                         .sysclk_phase_i(sys_clk_phase),
+                                         .command_o(turfio_if_command68),
+                                         .bitcommand_i(bitcommand),
+                                         .bitcommand_ack(),
+                                         `CONNECT_AXI4S_MIN_IF( cmdproc_ , cmdproc68_ ),
+                                         .cmdproc_tuser(cmdproc68_tuser),
+                                         .cmdproc_tlast(cmdproc68_tlast),
+                                         .trig_tdata( {16{1'b0}} ),
+                                         .trig_tvalid( 1'b0 ),
+                                         .trig_tready() );
+
 //    system_clock #(.INVERT_MMCM(INV_MMCM)) 
 //        u_sysclk(.SYS_CLK_P(SYSCLK_P),
 //                 .SYS_CLK_N(SYSCLK_N),
