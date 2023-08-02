@@ -48,10 +48,10 @@ set ddr_clk1 [create_clock -period 3.334 -name ddr_clk1 [get_ports -filter { NAM
 set clktypes($ddr_clk1) DDRCLK1
 
 #### INTERNAL CLOCKS
-set ifclk67 [get_clocks -of_objects [get_nets -hier -filter { NAME =~ "u_tioctl/ifclk67" }]]
+set ifclk67 [get_clocks -of_objects [get_nets -hier -filter { NAME =~ "if_clk67" }]]
 set clktypes($ifclk67) IFCLK67
 
-set ifclk68 [get_clocks -of_objects [get_nets -hier -filter { NAME =~ "u_tioctl/ifclk68" }]]
+set ifclk68 [get_clocks -of_objects [get_nets -hier -filter { NAME =~ "if_clk68" }]]
 set clktypes($ifclk68) IFCLK68
 
 set psclk [get_clocks -of_objects [get_nets -hier -filter { NAME =~ "ps_clk" }]]
@@ -100,3 +100,5 @@ set_cc_paths $psclk $ifclk68 $clktypelist
 set_cc_paths $ifclk68 $psclk $clktypelist
 
 set_cc_paths $psclk $ddr_clk0 $clktypelist
+
+set_cc_paths $psclk $sys_clock $clktypelist
