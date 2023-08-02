@@ -24,8 +24,8 @@ module turfio_if_clocks #(parameter INVERT_MMCM = "TRUE")(
         output [1:0] locked_o
     );
     
-    // Dumb macro to automate the inversion process, which has to be done for
-    // EVERY OUTPUT
+    // Dumb macro to automate the inversion process for both
+    // ifclks.
     
     `define DEFINE_CLK( clkname )       \
         wire clkname``_p;               \
@@ -34,8 +34,35 @@ module turfio_if_clocks #(parameter INVERT_MMCM = "TRUE")(
         
     `DEFINE_CLK( if_clk67_out );
     `DEFINE_CLK( if_clk68_out );
-    `DEFINE_CLK( if_clk67_x2_out );
-    `DEFINE_CLK( if_clk68_x2_out );
+    // 2x clock timing diagram. Here we define normal clocks as rising at 0.
+    // orig clk : ----____----____ (rise 0 fall 4 rise 8 fall 12)
+    // inv  clk : ____----____---- (fall 0 rise 4 fall 8 rise 12)
+    // orig 2x  : --__--__--__--__ (rise 0 fall 2 rise 4 fall 6 rise 8 fall 10 rise 12)
+    // inv  2x  : __--__--__--__-- (fall 0 rise 2 fall 4 rise 6 fall 8 rise 10 fall 12)
+
+    // Note that we DO NOT WANT the 2x clock to be inverted.
+    // The 2x clock has the same diagram (__--) in both the positive half and negative half of the clocks.
+    // If you just start the above diagram 4 ticks in, it's the same on the 2x clock.
+    // 2x has both a 4 ns gap from the original AND the inverted (rise 0 -> rise 4 in inverted 
+    // or rise 4 -> rise 8 in original)
+    // But 2x *inverted* has a 2 ns gap (rise 2->rise 4 for inverted and rise 6->rise 8 for original).
+    //
+    // The key here is that what you're really trying to do is generate a 4 ns shift in the
+    // waveform: which translates into (4 ns/clk_period)*360 mod 360.
+    // So for a 1x clock (8 ns) it's (4/8)*360=180, which we can just use the B output.
+    // For a 2x clock (4 ns) it's (4/4)*360=360, or zero, so no phase shift.
+    // For a 3x clock (2.667 ns) it's (4/(8/3))=1.5*360 mod 360 = 180, so just use B output.
+    // For a 4x clock (2 ns) it's (4/2)*360=720, or zero, so no phase shift.
+    // For a 5x clock (1.6 ns) it's (4/(8/5))=2.5*360 mod 360 = 180, so just use B output.
+    // etc. This works even for fractional clocks.
+    //
+    // I don't feel like messing around with the phase shift settings, so we'll just
+    // hardcode this behavior in.
+            
+    // x2 clock in bank 67
+    wire if_clk67_x2_out;
+    // x2 clock in bank 68
+    wire if_clk68_x2_out;
     
     // feedback
     wire [1:0] clkfb_out;
@@ -65,8 +92,8 @@ module turfio_if_clocks #(parameter INVERT_MMCM = "TRUE")(
                       .CLKFBIN( clkfb_out_buf[0] ),
                       .CLKOUT0( if_clk67_out_p ),
                       .CLKOUT0B(if_clk67_out_n ),
-                      .CLKOUT1( if_clk67_x2_out_p ),
-                      .CLKOUT1B(if_clk67_x2_out_n ),
+                      .CLKOUT1( if_clk67_x2_out ),
+                      .CLKOUT1B( ),
                       .CLKIN1(  sysclk_ibuf_i ),
                       .CLKIN2(  1'b0 ),
                       .CLKINSEL(1'b1 ),
@@ -119,8 +146,8 @@ module turfio_if_clocks #(parameter INVERT_MMCM = "TRUE")(
                       .CLKFBIN( clkfb_out_buf[1] ),
                       .CLKOUT0( if_clk68_out_p ),
                       .CLKOUT0B(if_clk68_out_n ),
-                      .CLKOUT1( if_clk68_x2_out_p ),
-                      .CLKOUT1B(if_clk68_x2_out_n ),
+                      .CLKOUT1( if_clk68_x2_out ),
+                      .CLKOUT1B( ),
                       .CLKIN1(  sysclk_ibuf_i ),
                       .CLKIN2(  1'b0 ),
                       .CLKINSEL(1'b1 ),
