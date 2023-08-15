@@ -123,7 +123,7 @@ module turfio_aurora_wrap
     // assert reset, 128 user-clks later assert gt_reset, wait 26-bit counter or 1 sec,
     // deassert gt_reset, deassert reset.
     // We handle that sequence in software so here it just looks like we can go nutso.
-    turfio_aurora_reset u_reset( .reset_i(reset_in_resync1),
+    turfio_aurora_reset_v2 u_reset( .reset_i(reset_in),
                                  .gt_reset_i(gt_reset_in),
                                  .user_clk_i(user_clk),
                                  .init_clk_i(wb_clk_i),
@@ -195,7 +195,8 @@ module turfio_aurora_wrap
             assign link_status[i][8] = hard_err;
             assign link_status[i][9] = soft_err;
             assign link_status[i][10] = frame_err;
-            assign link_status[i][31:11] = {21{1'b0}};
+            assign link_status[i][11] = bufg_gt_clr[i];
+            assign link_status[i][31:12] = {20{1'b0}};
             // also laazy
             assign link_control[i][0] = reset_in;
             assign link_control[i][1] = gt_reset_in;
