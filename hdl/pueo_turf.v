@@ -8,7 +8,7 @@ module pueo_turf #(
             parameter [31:0] IDENT = "TURF",
             parameter [3:0] VER_MAJOR = 4'd0,
             parameter [3:0] VER_MINOR = 4'd0,
-            parameter [7:0] VER_REV = 8'd5,
+            parameter [7:0] VER_REV = 8'd6,
             parameter [15:0] FIRMWARE_DATE = {16{1'b0}},
             parameter PROTOTYPE = "TRUE"
         )(
