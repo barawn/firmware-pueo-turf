@@ -1,6 +1,7 @@
 bd/turf_ps_bd/turf_ps_bd.bd
 verilog-library-barawn/hdl/async_register.v
 verilog-library-barawn/hdl/clk_div_ce.v
+verilog-library-barawn/hdl/dsp_counter_terminal_count.v
 verilog-library-barawn/hdl/dsp_timed_counter.v
 verilog-library-barawn/hdl/flag_sync.v
 verilog-library-barawn/hdl/round_robin_arbiter.v
@@ -19,7 +20,7 @@ hdl/clock/system_clock_v2.sv
 hdl/turf_id_ctrl.sv
 hdl/turf_intercon.sv
 hdl/aurora/turfio_aurora_clock.sv
-hdl/aurora/turfio_aurora_reset.sv
+hdl/aurora/turfio_aurora_reset_v2.sv
 hdl/aurora/turfio_aurora_wrap.sv
 hdl/turfio/turfio_bit.sv
 hdl/turfio/turfio_cin_parallel_sync.sv
@@ -27,3 +28,4 @@ hdl/turfio/turfio_cout.sv
 hdl/turfio/turfio_if_clocks.sv
 hdl/turfio/turfio_single_if.sv
 hdl/pueo_turf.v
+hdl/aurora/turfio_aurora_reset.sv

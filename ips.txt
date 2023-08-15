@@ -1,1 +1,2 @@
+ip/debug/aurora_reset_ila/aurora_reset_ila.xci
 ip/turfio/turfio_aurora/turfio_aurora.xci
