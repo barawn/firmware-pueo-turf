@@ -17,6 +17,9 @@ add_include_dir [file join [get_repo_dir] "verilog-library-barawn" "include"]
 # set pre-synthesis script
 set_pre_synthesis_tcl [file join [get_repo_dir] "pre_synthesis.tcl"]
 
+# set post-place script
+set_post_place_tcl [file join [get_repo_dir] "post_place.tcl"]
+
 # add local repository
 add_ip_repository [file join [get_repo_dir] "repository"]
 
