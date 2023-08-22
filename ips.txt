@@ -1,2 +1,5 @@
+ip/aurora_cmd_ccfifo/aurora_cmd_ccfifo.xci
+ip/aurora_cmd_switch/aurora_cmd_switch.xci
 ip/debug/aurora_reset_ila/aurora_reset_ila.xci
+ip/debug/cmd_test_vio/cmd_test_vio.xci
 ip/turfio/turfio_aurora/turfio_aurora.xci
