@@ -8,7 +8,7 @@ module pueo_turf #(
             parameter [31:0] IDENT = "TURF",
             parameter [3:0] VER_MAJOR = 4'd0,
             parameter [3:0] VER_MINOR = 4'd0,
-            parameter [7:0] VER_REV = 8'd7,
+            parameter [7:0] VER_REV = 8'd8,
             parameter [15:0] FIRMWARE_DATE = {16{1'b0}},
             parameter PROTOTYPE = "TRUE"
         )(
@@ -322,7 +322,19 @@ module pueo_turf #(
     assign cmdproc68_tdata = {8{1'b0}};
     assign cmdproc68_tvalid = 1'b0;
     assign cmdproc68_tlast = 1'b0;
-        
+    
+    // Aurora command processor path
+    `DEFINE_AXI4S_MIN_IF( aurora_cmd_ , 32 );
+    wire [1:0] aurora_cmd_tdest;
+    wire aurora_cmd_tlast;
+    // Response path
+    `DEFINE_AXI4S_MIN_IF( aurora_resp_ , 32 );
+    wire [1:0] aurora_resp_tuser;
+    wire aurora_resp_tlast;
+    
+    // Aurora clock
+    wire aurora_clk;
+    
     
     // The TURF prototype has the P/Ns hooked up BACKWARDS relative to their
     // correct orientation. The correct orientation has N on the P input,
@@ -344,10 +356,34 @@ module pueo_turf #(
                             .HSK_UART_txd(HSK_UART_txd),
                             .PL_CLK(ps_clk),
                             .PS_RESET_N(1'b1));
+    // command test vio for Aurora links
+    wire aurora_cmd_do_tvalid;
+    reg aurora_cmd_do_tvalid_rereg = 0;
+    reg aurora_cmd_tvalid_reg = 0;
+    always @(posedge ps_clk) begin
+        if (aurora_cmd_do_tvalid && !aurora_cmd_do_tvalid_rereg) aurora_cmd_tvalid_reg <= 1'b1;
+        else if (aurora_cmd_tready) aurora_cmd_tvalid_reg <= 1'b0;
+        
+        aurora_cmd_do_tvalid_rereg <= aurora_cmd_do_tvalid;
+    end
+    assign aurora_cmd_tvalid = aurora_cmd_tvalid_reg;
+    
+    cmd_test_vio u_cmdtestvio( .clk(ps_clk),
+                               .probe_out0( aurora_cmd_tdata ),
+                               .probe_out1( aurora_cmd_tdest ),
+                               .probe_out2( aurora_cmd_do_tvalid ),
+                               .probe_out3( aurora_cmd_tlast ),
+                               .probe_in0(  aurora_cmd_tready ));                            
+    // kill the resp
+    assign aurora_resp_tready = 1'b1;
+
     // wrapper for Aurora paths
     turfio_aurora_wrap u_aurora(.wb_clk_i(ps_clk),
                                 .wb_rst_i(1'b0),
                                 `CONNECT_WBS_IFM(wb_ , aurora_ ),
+                                `CONNECT_AXI4S_MIN_IF( s_cmd_ , aurora_cmd_ ),
+                                `CONNECT_AXI4S_MIN_IF( m_resp_ , aurora_resp_ ),
+                                .aurora_clk_o(aurora_clk),
                                 .MGTCLK_P(MGTCLK_P),
                                 .MGTCLK_N(MGTCLK_N),
                                 .MGTRX_P(MGTRX_P),
@@ -380,12 +416,12 @@ module pueo_turf #(
     // I guess add other stuff later or some'n
     turf_id_ctrl #(.IDENT(IDENT),
                    .DATEVERSION(DATEVERSION),
-                   .NUM_CLK_MON(4))
+                   .NUM_CLK_MON(5))
         u_idctrl( .wb_clk_i(ps_clk),
                   .wb_rst_i(1'b0),
                   `CONNECT_WBS_IFM(wb_ , turf_idctl_ ),
                   .bitcmd_sync_o(bitcmd_sync_req),
-                  .clk_mon_i( { ddr_clk[1], ddr_clk[0], gbe_sysclk, sys_clk } ));
+                  .clk_mon_i( { aurora_clk, ddr_clk[1], ddr_clk[0], gbe_sysclk, sys_clk } ));
 
     // and sync generator. This times up the bitcmd sync to be req'd correctly.
     sysclk_sync_req u_syncreq(.sysclk_i(sys_clk),
