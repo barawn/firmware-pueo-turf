@@ -40,11 +40,32 @@
 // are common and screwed with, it's best to just do a full reset everywhere.
 module turfio_aurora_wrap
     #(  parameter TX_CLOCK_SEL = 0,
-        parameter NUM_MGT = 4 )
+        parameter NUM_MGT = 4,
+        parameter USE_DEBUG = 4'b0001 )
     (
+        // this is the LOCAL aurora WISHBONE interface
+        // it is NOT the interface for talking to the
+        // TURFIOs via MGT. Those are handled externally
+        // and treated as AXI4-Stream interfaces here.
         input wb_clk_i,
         input wb_rst_i,
         `TARGET_NAMED_PORTS_WB_IF( wb_ , 15, 32 ),
+        
+        // This is the AXI4-Stream input for command path to TURFIO. In wb_clk domain
+        `TARGET_NAMED_PORTS_AXI4S_MIN_IF( s_cmd_ , 32 ),
+        // This is the destination Aurora link
+        input [1:0] s_cmd_tdest,
+        // This indicates it's the last of a transaction
+        input       s_cmd_tlast,
+        // This is the AXI4-Stream response from TURFIO. In wb_clk domain
+        `HOST_NAMED_PORTS_AXI4S_MIN_IF( m_resp_ , 32 ),
+        // This indicates which Aurora link it comes from
+        output [1:0] m_resp_tuser,
+        // Last of a transaction
+        output       m_resp_tlast,
+        
+        // Aurora clock output for monitoring
+        output      aurora_clk_o,
 
         // blah, no interface for now
         // COMING SOON (heh)
@@ -68,14 +89,16 @@ module turfio_aurora_wrap
     wire [31:0] link_eyescan[NUM_MGT-1:0];
         
     // create the interfaces. 
-    `DEFINE_AXI4S_IFV( aurora_tx_ , 16, [NUM_MGT-1:0] );
-    `DEFINE_AXI4S_IFV( aurora_rx_ , 16, [NUM_MGT-1:0] );
+    `DEFINE_AXI4S_IFV( aurora_tx_ , 32, [NUM_MGT-1:0] );
+    `DEFINE_AXI4S_IFV( aurora_rx_ , 32, [NUM_MGT-1:0] );
 
     // The UFC interfaces are actually multiplexed onto the direct ones.
     // The additional 3-bit interface specifies the size of the UFC message.
-    `DEFINE_AXI4S_IFV( ufc_tx_ , 16, [NUM_MGT-1:0] );
+    // It's derived from the tuser.
+    `DEFINE_AXI4S_IFV( ufc_tx_ , 32, [NUM_MGT-1:0] );
     wire [2:0] ufc_tx_tsize[NUM_MGT-1:0];
-    `DEFINE_AXI4S_IFV( ufc_rx_ , 16, [NUM_MGT-1:0] );
+    wire       ufc_tx_tuser[NUM_MGT-1:0];
+    `DEFINE_AXI4S_IFV( ufc_rx_ , 32, [NUM_MGT-1:0] );
     
     // MGT clock input buffer. Note that this is *inverted*, although
     // it doesn't matter: the MGT interface is treated as asynchronous to system clock.
@@ -84,6 +107,8 @@ module turfio_aurora_wrap
     wire mgt_clk;
     IBUFDS_GTE4 #(.REFCLK_HROW_CK_SEL(2'b00))
         u_mgt_ibuf(.I(MGTCLK_N),.IB(MGTCLK_P),.CEB(1'b0),.O(mgt_clk), .ODIV2(mgt_clk_ibuf));
+
+    BUFG_GT u_aurclk(.I(mgt_clk_ibuf),.O(aurora_clk_o));
         
     wire [NUM_MGT-1:0] bufg_gt_clr;
     wire pll_not_locked;
@@ -114,7 +139,56 @@ module turfio_aurora_wrap
     reg [3:0] txdiffctrl[NUM_MGT-1:0];
     reg [4:0] txprecursor[NUM_MGT-1:0];
     reg [4:0] txpostcursor[NUM_MGT-1:0];
+
+    // Userclk cmd, before switch
+    `DEFINE_AXI4S_MIN_IF( cmd_userclk_ , 32 );
+    wire [1:0] cmd_userclk_tdest;
+    wire       cmd_userclk_tlast;
+    // generates tsize
+    wire       cmd_userclk_tuser;
+
+    // register for handling the logic of tsize
+    reg        second_xfer = 0;        
+    assign     cmd_userclk_tuser = cmd_userclk_tvalid && (cmd_userclk_tlast ^ !second_xfer);
+    // FIGURE THIS OUT LATER
+    wire       user_aresetn = 1'b1;
     
+    // second xfer logic
+    always @(posedge user_clk) begin
+        if (!user_aresetn) second_xfer <= 1'b0;
+        else begin
+            // tvalid && tready && !tlast
+            if (cmd_userclk_tvalid && cmd_userclk_tready)
+                second_xfer <= !cmd_userclk_tlast;
+        end
+    end
+    
+    // Transition the command requests over to user_clk domain
+    // We do this before the switch to limit the number of FIFOs
+    // needed.
+    aurora_cmd_ccfifo u_cmdccfifo( .s_aclk(wb_clk_i),
+                                   .m_aclk(user_clk),
+                                   .s_aresetn(!wb_rst_i),
+                                   `CONNECT_AXI4S_MIN_IF( s_axis_ , s_cmd_ ),
+                                   .s_axis_tdest( s_cmd_tdest ),
+                                   .s_axis_tlast( s_cmd_tlast ),
+                                   `CONNECT_AXI4S_MIN_IF( m_axis_ , cmd_userclk_ ),
+                                   .m_axis_tdest( cmd_userclk_tdest ),
+                                   .m_axis_tlast( cmd_userclk_tlast ));    
+    // pop them through the switch.
+    // FIXME: use a real reset
+    aurora_cmd_switch u_cmdswitch( .aclk(user_clk),
+                                   .aresetn(user_aresetn),
+                                   `CONNECT_AXI4S_MIN_IF( s_axis_ , cmd_userclk_ ),
+                                   .s_axis_tdest( cmd_userclk_tdest ),
+                                   .s_axis_tlast( cmd_userclk_tlast ),
+                                   .s_axis_tuser( cmd_userclk_tuser ),
+                                   // have to do it manually
+                                   .m_axis_tdata( { ufc_tx_tdata[3], ufc_tx_tdata[2], ufc_tx_tdata[1], ufc_tx_tdata[0] }),
+                                   .m_axis_tvalid({ ufc_tx_tvalid[3],ufc_tx_tvalid[2],ufc_tx_tvalid[1],ufc_tx_tvalid[0]}),
+                                   .m_axis_tready({ ufc_tx_tready[3],ufc_tx_tready[2],ufc_tx_tready[1],ufc_tx_tready[0]}),
+                                   .m_axis_tuser( { ufc_tx_tuser[3], ufc_tx_tuser[2], ufc_tx_tuser[1], ufc_tx_tuser[0]}),
+                                   .m_axis_tlast( { ufc_tx_tlast[3], ufc_tx_tlast[2], ufc_tx_tlast[1], ufc_tx_tlast[0]}));
 
     // Resets are supposed to be:
     // At power on:
@@ -243,14 +317,27 @@ module turfio_aurora_wrap
             // just kill the interfaces for now
             assign aurora_tx_tvalid[i] = 1'b0;            
             assign aurora_tx_tlast[i] = 1'b0;
-            assign aurora_tx_tdata[i] = {16{1'b0}};            
-            assign ufc_tx_tvalid[i] = 1'b0;
-            assign ufc_tx_tdata[i] = {16{1'b0}};
-            assign ufc_tx_tsize[i] = {3{1'b0}};
-            assign ufc_tx_tlast[i] = 1'b0;
+            assign aurora_tx_tdata[i] = {32{1'b0}};            
+            // the inbound UFC interfaces are always either 4 or 8 bytes
+            // we can fakey-generate them from the tlast. The SIZE
+            // encoding means it's 010 for a read request and 011 for a write
+            // request. This means the top *two* bits are always 01,
+            // and the *bottom* bit is:
+            // tvalid && !(tlast ^ second_xfer)
+            // second_xfer starts off 0 and is literally just tvalid && tready && !tlast
+            // the xor there is because the sequence either goes
+            // clk  tvalid  tready  tlast   second_xfer description         tsize[0]
+            // 0    1       1       0       0           write, first xfer   1
+            // 1    1       1       1       1           write, second xfer  1
+            // or
+            // clk  tvalid  tready  tlast   second_xfer description          tsize[0]
+            // 0    1       1       1       0           read, first xfer    0
+            //
+            // the 0/1 case should never happen            
+            assign ufc_tx_tsize[i] = { 2'b01, ufc_tx_tuser[i] };
             
             // Create a multiplexed TX path..
-            `DEFINE_AXI4S_IF( muxed_tx_ , 16 );
+            `DEFINE_AXI4S_IF( muxed_tx_ , 32 );
             // And a fakey path for UFC
             `DEFINE_AXI4S_MIN_IF( muxed_ufc_ , 3);
             
