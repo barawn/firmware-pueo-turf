@@ -8,8 +8,8 @@ module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="B",
                     parameter [3:0] VER_MAJOR=4'd0,
                     parameter [3:0] VER_MINOR=4'd1,
-                    parameter [7:0] VER_REV=4'd0,
-                    parameter [15:0] FIRMWARE_DATE = {16{!'b0}})                    
+                    parameter [7:0] VER_REV=4'd1,
+                    parameter [15:0] FIRMWARE_DATE = {16{1'b0}})                    
                     (
         output TTXA,
         input TRXA,
@@ -30,7 +30,12 @@ module pueo_turf6 #(parameter IDENT="TURF",
         inout CLK_SDA,
         
         output CAL_SCL,
-        inout CAL_SDA        
+        inout CAL_SDA,
+        
+        output UART_SCLK,
+        output UART_MOSI,
+        input UART_MISO,
+        output UART_CS_B
     );
     
     localparam UART_DEBUG = "TRUE";
@@ -40,12 +45,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
     wire emio_scl;
     wire emio_sda_i;
     wire emio_sda_t;
-    
-    wire spi0_sclk;
-    wire spi0_mosi;
-    wire spi0_miso = 1'b0;
-    wire spi0_cs_b;
-    
+        
     // NOTE: we might add in the optional TURFIO I2C controls
     // at some point. If we do that, we need to disconnect the
     // UART. We can only do one of those at a time because their
@@ -68,10 +68,10 @@ module pueo_turf6 #(parameter IDENT="TURF",
                             .IIC_sda_i(emio_sda_i),
                             .IIC_sda_t(emio_sda_t),
                             
-                            .spi0_sclk(spi0_sclk),
-                            .spi0_mosi(spi0_mosi),
-                            .spi0_miso(spi0_miso),
-                            .spi0_cs_b(spi0_cs_b),
+                            .spi0_sclk(UART_SCLK),
+                            .spi0_mosi(UART_MOSI),
+                            .spi0_miso(UART_MISO),
+                            .spi0_cs_b(UART_CS_B),
     
                             .GPS_rxd(GPS_RX),
                             .GPS_txd(GPS_TX),

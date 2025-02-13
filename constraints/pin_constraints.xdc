@@ -1,26 +1,27 @@
+# These ALL get pullups because they can be turned into I2C magically.
 # B2B1 126 is C1 and labelled TTXA - this is OUT to TURFIO (so still TX)
 # B2B1 130 is C6 and labelled TRXA - this is IN from TURFIO (so still RX)
-set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN C1} [get_ports TTXA] 
-set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN C6} [get_ports TRXA] 
+set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN C1 PULLTYPE PULLUP} [get_ports TTXA] 
+set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN C6 PULLTYPE PULLUP} [get_ports TRXA] 
 
 # B2B1 89 is F4 and labelled TTXB
 # B2B1 87 is F5 and labelled TRXB
-set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN F4} [get_ports TTXB] 
-set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN F5} [get_ports TRXB]
+set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN F4 PULLTYPE PULLUP} [get_ports TTXB] 
+set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN F5 PULLTYPE PULLUP} [get_ports TRXB]
 
 # B2B1 91 is E5 and labelled TTXC
 # B2B1 93 is F5 and labelled TRXC
-set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN E5} [get_ports TTXC]
-set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN E4} [get_ports TRXC]
+set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN E5 PULLTYPE PULLUP} [get_ports TTXC]
+set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN E4 PULLTYPE PULLUP} [get_ports TRXC]
 
 # B2B1 142 is C3 and labelled TTXD
 # B2B1 144 is C4 and labelled TRXD
-set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN C3} [get_ports TTXD] 
-set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN C4} [get_ports TRXD] 
+set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN C3 PULLTYPE PULLUP} [get_ports TTXD] 
+set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN C4 PULLTYPE PULLUP} [get_ports TRXD] 
 
 # B2B1 30 is F9 and labelled GPS_TX but it is FROM GPS (so RX here!)
 # B2B1 28 is E9 and labelled GPS_RX but it is TO GPS   (so TX here!)
-set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN F9} [get_ports GPS_RX] 
+set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN F9 PULLTYPE PULLUP} [get_ports GPS_RX] 
 set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN E9} [get_ports GPS_TX] 
 
 # B2B1 22 is C8 and labelled SCL_2V5
@@ -28,12 +29,27 @@ set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN E9} [get_ports GPS_TX]
 set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN C8} [get_ports CLK_SCL] 
 set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN D8} [get_ports CLK_SDA] 
 
-# B2B1 82 is F8 and labelled CAL_SCL
-# B2B1 84 is G8 and labelled CAL_SDA
-set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN F8} [get_ports CAL_SCL]
-set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN G8} [get_ports CAL_SDA]
+# HSK REMAPPING:
+# GPIO3 -> CAL_SDA  B2B-1 56  D7
+# GPIO4 -> CAL_SCL  B2B-1 58  E7
+# GPIO2 -> TGP0     B2B-1 44  G6
+# GPIO1 -> TIN1     B2B-1 42  F6
+# GPIO0 -> TIN0     B2B-1 40  D6
+# HSK_TX1 -> TGP2   B2B-1 33  A7
+# HSK_RX1 -> TGP1   B2B-1 31  B7
+# TRIG_OUT -> TOUT0 B2B-1 29  H8
+# HSK_TX0 -> CS_B   B2B-1 34  C9
+# HSK_RX0 -> MOSI   B2B-1 32  D9
+# CAL_SDA -> MISO   B2B-1 82  F8
+# CAL_SCL -> SCLK   B2B-1 84  G8
 
+set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN E7 PULLTYPE PULLUP} [get_ports CAL_SCL]
+set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN D7 PULLTYPE PULLUP} [get_ports CAL_SDA]
 
+set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN G8} [get_ports UART_SCLK]
+set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN D9} [get_ports UART_MOSI]
+set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN F8} [get_ports UART_MISO]
+set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN C9} [get_ports UART_CS_B]
 
 #set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN D9} [get_ports HSK_UART_txd]
 #set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN C9} [get_ports HSK_UART_rxd]
