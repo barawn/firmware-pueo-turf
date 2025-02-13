@@ -253,6 +253,9 @@
         "parameters": {
           "C_BAUDRATE": {
             "value": "500000"
+          },
+          "C_S_AXI_ACLK_FREQ_HZ_d": {
+            "value": "100"
           }
         }
       },
@@ -1384,6 +1387,9 @@
         "parameters": {
           "C_BAUDRATE": {
             "value": "500000"
+          },
+          "C_S_AXI_ACLK_FREQ_HZ_d": {
+            "value": "100"
           }
         }
       },
@@ -1406,6 +1412,9 @@
         "parameters": {
           "C_BAUDRATE": {
             "value": "500000"
+          },
+          "C_S_AXI_ACLK_FREQ_HZ_d": {
+            "value": "100"
           }
         }
       },
@@ -1417,6 +1426,9 @@
         "parameters": {
           "C_BAUDRATE": {
             "value": "500000"
+          },
+          "C_S_AXI_ACLK_FREQ_HZ_d": {
+            "value": "100"
           }
         }
       }
