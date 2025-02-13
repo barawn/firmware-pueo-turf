@@ -1,1 +1,4 @@
 bd/zynq_bd/zynq_bd.bd
+hdl/zynq_bd_wrapper.v
+hdl/i2c_merger.sv
+hdl/pueo_turf6.sv

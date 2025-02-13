@@ -1400,8 +1400,8 @@
       },
       "axi_uartlite2_2": {
         "vlnv": "xilinx.com:ip:axi_uartlite2:2.0",
-        "xci_name": "zynq_bd_axi_uartlite2_1_1",
-        "xci_path": "ip\\zynq_bd_axi_uartlite2_1_1\\zynq_bd_axi_uartlite2_1_1.xci",
+        "xci_name": "zynq_bd_axi_uartlite2_2_0",
+        "xci_path": "ip\\zynq_bd_axi_uartlite2_2_0\\zynq_bd_axi_uartlite2_2_0.xci",
         "inst_hier_path": "axi_uartlite2_2",
         "parameters": {
           "C_BAUDRATE": {
@@ -1411,8 +1411,8 @@
       },
       "axi_uartlite2_3": {
         "vlnv": "xilinx.com:ip:axi_uartlite2:2.0",
-        "xci_name": "zynq_bd_axi_uartlite2_1_2",
-        "xci_path": "ip\\zynq_bd_axi_uartlite2_1_2\\zynq_bd_axi_uartlite2_1_2.xci",
+        "xci_name": "zynq_bd_axi_uartlite2_3_0",
+        "xci_path": "ip\\zynq_bd_axi_uartlite2_3_0\\zynq_bd_axi_uartlite2_3_0.xci",
         "inst_hier_path": "axi_uartlite2_3",
         "parameters": {
           "C_BAUDRATE": {

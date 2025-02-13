@@ -4,7 +4,13 @@
 // and a bunch of stock cores for serial   //
 // crap.                                   //
 /////////////////////////////////////////////
-module pueo_turf6(
+module pueo_turf6 #(parameter IDENT="TURF",
+                    parameter REVISION="B",
+                    parameter [3:0] VER_MAJOR=4'd0,
+                    parameter [3:0] VER_MINOR=4'd1,
+                    parameter [7:0] VER_REV=4'd0,
+                    parameter [15:0] FIRMWARE_DATE = {16{!'b0}})                    
+                    (
         output TTXA,
         input TRXA,
         
@@ -26,6 +32,8 @@ module pueo_turf6(
         output CAL_SCL,
         inout CAL_SDA        
     );
+    
+    localparam UART_DEBUG = "TRUE";
     
     wire ps_clk;
     
@@ -54,6 +62,8 @@ module pueo_turf6(
                             .scl1_out(CAL_SCL),
                             .sda1_out(CAL_SDA));
     
+    
+    
     zynq_bd_wrapper u_zynq( .IIC_scl_o(emio_scl),
                             .IIC_sda_i(emio_sda_i),
                             .IIC_sda_t(emio_sda_t),
@@ -79,5 +89,36 @@ module pueo_turf6(
                             .TFIO_D_txd(TTXD),
                             
                             .pl_clk0(ps_clk));
+
+    generate
+        if (UART_DEBUG == "TRUE") begin : SERDBG
+            // 16x is 8 MHz = 1/12.5th of 100M
+            // adding 82 ticks in 1024 is within 0.1%
+            localparam [9:0] HSK_ADD = 82;
+            reg [10:0] hsk_16x_counter = {11{1'b0}};
+            wire hsk_16x = hsk_16x_counter[10];
+            // gps is 38400, expand to 12 bits and add 25
+            localparam [11:0] GPS_ADD = 25;
+            reg [12:0] gps_16x_counter = {13{1'b0}};
+            wire gps_16x = gps_16x_counter[12];
+            always @(posedge ps_clk) begin : CTRS
+                hsk_16x_counter <= hsk_16x_counter[9:0] + HSK_ADD;
+                gps_16x_counter <= gps_16x_counter[11:0] + GPS_ADD;
+            end
+            uart_ila u_ila(.clk(ps_clk),
+                           .probe0(hsk_16x),                           
+                           .probe1(gps_16x),
+                           .probe2(TTXA),
+                           .probe3(TRXA),
+                           .probe4(TTXB),
+                           .probe5(TRXB),
+                           .probe6(TTXC),
+                           .probe7(TRXC),
+                           .probe8(TTXD),
+                           .probe9(TRXD),
+                           .probe10(GPS_TX),
+                           .probe11(GPS_RX));
+        end
+    endgenerate
     
 endmodule
