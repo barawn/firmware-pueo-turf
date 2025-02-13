@@ -12,6 +12,8 @@ proc get_repo_dir {} {
 source [file join [get_repo_dir] verilog-library-barawn tclbits utility.tcl]
 source [file join [get_repo_dir] verilog-library-barawn tclbits repo_files.tcl]
 
+add_ip_repository [file join [get_repo_dir] iprepo]
+
 add_include_dir [file join [get_repo_dir] verilog-library-barawn include]
 add_include_dir [file join [get_repo_dir] include]
 
