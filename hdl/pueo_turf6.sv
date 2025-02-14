@@ -8,7 +8,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="B",
                     parameter [3:0] VER_MAJOR=4'd0,
                     parameter [3:0] VER_MINOR=4'd1,
-                    parameter [7:0] VER_REV=4'd1,
+                    parameter [7:0] VER_REV=4'd3,
                     parameter [15:0] FIRMWARE_DATE = {16{1'b0}})                    
                     (
         output TTXA,
@@ -35,7 +35,8 @@ module pueo_turf6 #(parameter IDENT="TURF",
         output UART_SCLK,
         output UART_MOSI,
         input UART_MISO,
-        output UART_CS_B
+        output UART_CS_B,
+        input UART_IRQ_B
     );
     
     localparam UART_DEBUG = "TRUE";
@@ -71,8 +72,8 @@ module pueo_turf6 #(parameter IDENT="TURF",
     // WHATEVER THIS IS TEMPORARY
     wire dna_data;
     (* CUSTOM_DNA_VER = DATEVERSION *)
-    DNA_PORTE2 u_dina(.DIN(1'b0),.READ(!emio_gpio_t[0] && emio_gpio_o[0]),.CLK(ps_clk),.DOUT(dna_data));
-    assign emio_gpio_i = { {14{1'b0}}, dna_data };
+    DNA_PORTE2 u_dina(.DIN(1'b0),.READ(!emio_gpio_t[1] && emio_gpio_o[1]),.CLK(ps_clk),.DOUT(dna_data));
+    assign emio_gpio_i = { {13{1'b0}}, dna_data, UART_IRQ_B };
     
     zynq_bd_wrapper u_zynq( .EMIO_tri_t(emio_gpio_t),
                             .EMIO_tri_i(emio_gpio_i),
