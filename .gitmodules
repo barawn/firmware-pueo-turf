@@ -4,3 +4,6 @@
 [submodule "hw/device-tree-xlnx"]
 	path = hw/device-tree-xlnx
 	url = https://github.com/Xilinx/device-tree-xlnx.git
+[submodule "hw/dtc"]
+	path = hw/dtc
+	url = https://github.com/dgibson/dtc.git
