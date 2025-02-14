@@ -38,7 +38,8 @@ proc build_dtsi { xsa dtx } {
     package require fileutil
     
     set projname [file rootname [file tail $xsa]]
-    set dtsiname "${projname}.dtsi" 
+    set dirname [file dirname $xsa]
+    set dtsiname [file join $dirname "${projname}.dtsi"]
     set bitname "${projname}.bit"
     set tmpdir "tmp_${projname}"
     set origdtsi "pl.dtsi"
@@ -96,9 +97,9 @@ proc build_dtbo { dtsi dtcpath } {
     }
     # build the arguments
     set projname [file rootname [file tail $dtsi]]
-    set dtbo "${projname}.dtbo"
-    set dtcargs "-@ -O dtb -o ${dtbo} ${dtsi}"
-    set dtccmd [list $dtcpath $dtcargs]
+    set dirname [file dirname $dtsi]
+    set dtbo [file join $dirname "${projname}.dtbo"]
+    set dtccmd "${dtcpath} -@ -O dtb -o ${dtbo} ${dtsi}"
     exec {*}$dtccmd
     return $dtbo
 }
