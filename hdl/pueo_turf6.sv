@@ -39,6 +39,8 @@ module pueo_turf6 #(parameter IDENT="TURF",
     );
     
     localparam UART_DEBUG = "TRUE";
+    localparam [15:0] FIRMWARE_VERSION = { VER_MAJOR, VER_MINOR, VER_REV };
+    localparam [31:0] DATEVERSION = { (REVISION=="B" ? 1'b1 : 1'b0), FIRMWARE_DATE[14:0], FIRMWARE_VERSION };
     
     wire ps_clk;
     
@@ -62,9 +64,21 @@ module pueo_turf6 #(parameter IDENT="TURF",
                             .scl1_out(CAL_SCL),
                             .sda1_out(CAL_SDA));
     
+    wire [15:0] emio_gpio_t;
+    wire [15:0] emio_gpio_i;
+    wire [15:0] emio_gpio_o;
     
+    // WHATEVER THIS IS TEMPORARY
+    wire dna_data;
+    (* CUSTOM_DNA_VER = DATEVERSION *)
+    DNA_PORTE2 u_dina(.DIN(1'b0),.READ(!emio_gpio_t[0] && emio_gpio_o[0]),.CLK(ps_clk),.DOUT(dna_data));
+    assign emio_gpio_i = { {14{1'b0}}, dna_data };
     
-    zynq_bd_wrapper u_zynq( .IIC_scl_o(emio_scl),
+    zynq_bd_wrapper u_zynq( .EMIO_tri_t(emio_gpio_t),
+                            .EMIO_tri_i(emio_gpio_i),
+                            .EMIO_tri_o(emio_gpio_o),
+                            
+                            .IIC_scl_o(emio_scl),
                             .IIC_sda_i(emio_sda_i),
                             .IIC_sda_t(emio_sda_t),
                             
