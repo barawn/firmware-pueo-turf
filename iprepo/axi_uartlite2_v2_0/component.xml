@@ -3,14 +3,16 @@
   <spirit:vendor>xilinx.com</spirit:vendor>
   <spirit:library>ip</spirit:library>
   <spirit:name>axi_uartlite2</spirit:name>
-  <spirit:version>2.0</spirit:version>
+  <spirit:version>2.1</spirit:version>
   <spirit:busInterfaces>
     <spirit:busInterface>
       <spirit:name>S_AXI</spirit:name>
       <spirit:displayName>S_AXI</spirit:displayName>
       <spirit:busType spirit:vendor="xilinx.com" spirit:library="interface" spirit:name="aximm" spirit:version="1.0"/>
       <spirit:abstractionType spirit:vendor="xilinx.com" spirit:library="interface" spirit:name="aximm_rtl" spirit:version="1.0"/>
-      <spirit:slave/>
+      <spirit:slave>
+        <spirit:memoryMapRef spirit:memoryMapRef="S_AXI"/>
+      </spirit:slave>
       <spirit:portMaps>
         <spirit:portMap>
           <spirit:logicalPort>
@@ -173,7 +175,7 @@
         </spirit:parameter>
         <spirit:parameter>
           <spirit:name>ASSOCIATED_RESET</spirit:name>
-          <spirit:value spirit:id="BUSIFPARAM_VALUE.ACLK.ASSOCIATED_RESET">s_axi_aresetn</spirit:value>
+          <spirit:value spirit:id="BUSIFPARAM_VALUE.ACLK.ASSOCIATED_RESET">s_axi_aresetn:ARESETN</spirit:value>
         </spirit:parameter>
         <spirit:parameter>
           <spirit:name>FREQ_HZ</spirit:name>
@@ -202,7 +204,7 @@
       <spirit:parameters>
         <spirit:parameter>
           <spirit:name>POLARITY</spirit:name>
-          <spirit:value spirit:id="BUSIFPARAM_VALUE.ARESETN.POLARITY">ACTIVE_LOW</spirit:value>
+          <spirit:value spirit:id="BUSIFPARAM_VALUE.ARESETN.POLARITY" spirit:choiceRef="choice_list_74b5137e">ACTIVE_LOW</spirit:value>
         </spirit:parameter>
       </spirit:parameters>
     </spirit:busInterface>
@@ -225,7 +227,7 @@
       <spirit:parameters>
         <spirit:parameter>
           <spirit:name>SENSITIVITY</spirit:name>
-          <spirit:value spirit:id="BUSIFPARAM_VALUE.INTERRUPT.SENSITIVITY">EDGE_RISING</spirit:value>
+          <spirit:value spirit:id="BUSIFPARAM_VALUE.INTERRUPT.SENSITIVITY" spirit:choiceRef="choice_list_9ca20931">LEVEL_HIGH</spirit:value>
         </spirit:parameter>
       </spirit:parameters>
     </spirit:busInterface>
@@ -623,7 +625,7 @@ Writing a 1 to this bit position clears the receive FIFO
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>a42bb79b</spirit:value>
+            <spirit:value>7cd5238f</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -695,7 +697,7 @@ Writing a 1 to this bit position clears the receive FIFO
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>6003fe67</spirit:value>
+            <spirit:value>f033ff49</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -723,7 +725,7 @@ Writing a 1 to this bit position clears the receive FIFO
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>e8e2fb28</spirit:value>
+            <spirit:value>a06641ce</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -765,6 +767,19 @@ Writing a 1 to this bit position clears the receive FIFO
         <spirit:name>interrupt</spirit:name>
         <spirit:wire>
           <spirit:direction>out</spirit:direction>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic</spirit:typeName>
+              <spirit:viewNameRef>xilinx_vhdlsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_vhdlbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>en_16x_Baud</spirit:name>
+        <spirit:wire>
+          <spirit:direction>in</spirit:direction>
           <spirit:wireTypeDefs>
             <spirit:wireTypeDef>
               <spirit:typeName>std_logic</spirit:typeName>
@@ -1093,12 +1108,12 @@ Writing a 1 to this bit position clears the receive FIFO
       <spirit:modelParameter spirit:dataType="integer">
         <spirit:name>C_S_AXI_ADDR_WIDTH</spirit:name>
         <spirit:displayName>C S Axi Addr Width</spirit:displayName>
-        <spirit:value spirit:format="long" spirit:id="MODELPARAM_VALUE.C_S_AXI_ADDR_WIDTH">4</spirit:value>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.C_S_AXI_ADDR_WIDTH">4</spirit:value>
       </spirit:modelParameter>
       <spirit:modelParameter spirit:dataType="integer">
         <spirit:name>C_S_AXI_DATA_WIDTH</spirit:name>
         <spirit:displayName>Axi Data Width</spirit:displayName>
-        <spirit:value spirit:format="long" spirit:id="MODELPARAM_VALUE.C_S_AXI_DATA_WIDTH">32</spirit:value>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.C_S_AXI_DATA_WIDTH" spirit:minimum="32" spirit:maximum="128" spirit:rangeType="long">32</spirit:value>
       </spirit:modelParameter>
       <spirit:modelParameter spirit:dataType="integer">
         <spirit:name>C_BAUDRATE</spirit:name>
@@ -1130,12 +1145,16 @@ Writing a 1 to this bit position clears the receive FIFO
       <spirit:enumeration>Even</spirit:enumeration>
     </spirit:choice>
     <spirit:choice>
-      <spirit:name>choice_list_54c7906b</spirit:name>
-      <spirit:enumeration>9600</spirit:enumeration>
-      <spirit:enumeration>38400</spirit:enumeration>
-      <spirit:enumeration>115200</spirit:enumeration>
-      <spirit:enumeration>460800</spirit:enumeration>
-      <spirit:enumeration>500000</spirit:enumeration>
+      <spirit:name>choice_list_74b5137e</spirit:name>
+      <spirit:enumeration>ACTIVE_HIGH</spirit:enumeration>
+      <spirit:enumeration>ACTIVE_LOW</spirit:enumeration>
+    </spirit:choice>
+    <spirit:choice>
+      <spirit:name>choice_list_9ca20931</spirit:name>
+      <spirit:enumeration>LEVEL_HIGH</spirit:enumeration>
+      <spirit:enumeration>LEVEL_LOW</spirit:enumeration>
+      <spirit:enumeration>EDGE_RISING</spirit:enumeration>
+      <spirit:enumeration>EDGE_FALLING</spirit:enumeration>
     </spirit:choice>
     <spirit:choice>
       <spirit:name>choice_list_ac75ef1e</spirit:name>
@@ -1252,9 +1271,9 @@ Writing a 1 to this bit position clears the receive FIFO
     <spirit:fileSet>
       <spirit:name>xilinx_xpgui_view_fileset</spirit:name>
       <spirit:file>
-        <spirit:name>xgui/axi_uartlite2_v2_0.tcl</spirit:name>
+        <spirit:name>xgui/axi_uartlite2_v2_1.tcl</spirit:name>
         <spirit:fileType>tclSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_a42bb79b</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_7cd5238f</spirit:userFileType>
         <spirit:userFileType>XGUI_VERSION_2</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
@@ -1354,7 +1373,8 @@ Writing a 1 to this bit position clears the receive FIFO
       <spirit:file>
         <spirit:name>hdl/axi_uartlite_v2_0_vh_rfs.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_6003fe67</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_f033ff49</spirit:userFileType>
+        <spirit:userFileType>USED_IN_ipstatic</spirit:userFileType>
         <spirit:logicalName>axi_uartlite_v2_0_31</spirit:logicalName>
       </spirit:file>
     </spirit:fileSet>
@@ -1411,13 +1431,13 @@ Writing a 1 to this bit position clears the receive FIFO
       <spirit:name>C_BAUDRATE</spirit:name>
       <spirit:displayName>Baudrate</spirit:displayName>
       <spirit:description>Baud rate of the AXI UART Lite in bits per second.</spirit:description>
-      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.C_BAUDRATE" spirit:choiceRef="choice_list_54c7906b" spirit:order="1300">9600</spirit:value>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.C_BAUDRATE" spirit:order="1300" spirit:minimum="0" spirit:maximum="50000000" spirit:rangeType="long">9600</spirit:value>
     </spirit:parameter>
     <spirit:parameter>
       <spirit:name>C_S_AXI_ACLK_FREQ_HZ</spirit:name>
       <spirit:displayName>AXI CLK Frequency</spirit:displayName>
       <spirit:description>AXI4-Lite clock frequency range should be in between 10 to 300MHz.</spirit:description>
-      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.C_S_AXI_ACLK_FREQ_HZ" spirit:order="1201">100</spirit:value>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.C_S_AXI_ACLK_FREQ_HZ" spirit:order="1201">100000000</spirit:value>
     </spirit:parameter>
     <spirit:parameter>
       <spirit:name>C_S_AXI_ACLK_FREQ_HZ_d</spirit:name>
@@ -1462,17 +1482,20 @@ Writing a 1 to this bit position clears the receive FIFO
       <xilinx:displayName>AXI Uartlite2</xilinx:displayName>
       <xilinx:autoFamilySupportLevel>level_2</xilinx:autoFamilySupportLevel>
       <xilinx:vendorURL>http://www.xilinx.com</xilinx:vendorURL>
-      <xilinx:coreRevision>32</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2025-02-11T20:44:29Z</xilinx:coreCreationDateTime>
+      <xilinx:coreRevision>1</xilinx:coreRevision>
+      <xilinx:upgrades>
+        <xilinx:canUpgradeFrom>xilinx.com:ip:axi_uartlite2:2.0</xilinx:canUpgradeFrom>
+      </xilinx:upgrades>
+      <xilinx:coreCreationDateTime>2025-02-13T22:40:50Z</xilinx:coreCreationDateTime>
     </xilinx:coreExtensions>
     <xilinx:packagingInfo>
       <xilinx:xilinxVersion>2022.2</xilinx:xilinxVersion>
-      <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="f14b4c6f"/>
+      <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="5c72ed0c"/>
       <xilinx:checksum xilinx:scope="memoryMaps" xilinx:value="4df03bef"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="ae5daccc"/>
-      <xilinx:checksum xilinx:scope="ports" xilinx:value="fd44a920"/>
-      <xilinx:checksum xilinx:scope="hdlParameters" xilinx:value="066283f2"/>
-      <xilinx:checksum xilinx:scope="parameters" xilinx:value="c00b0432"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="34ab8bee"/>
+      <xilinx:checksum xilinx:scope="ports" xilinx:value="0064303d"/>
+      <xilinx:checksum xilinx:scope="hdlParameters" xilinx:value="6e76523a"/>
+      <xilinx:checksum xilinx:scope="parameters" xilinx:value="79b32a0d"/>
     </xilinx:packagingInfo>
   </spirit:vendorExtensions>
 </spirit:component>

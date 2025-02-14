@@ -1433,57 +1433,57 @@ use IEEE.std_logic_1164.all;
 --                  Entity Section
 -------------------------------------------------------------------------------
 
-entity baudrate is
-    generic
-      (
-      C_RATIO      : integer := 48  -- The ratio between clk and the asked
-                                   -- baudrate multiplied with 16
-      );                              
-    port
-      (
-      Clk          : in  std_logic;
-      Reset        : in  std_logic;
-      EN_16x_Baud  : out std_logic
-      );
-end entity baudrate;
+--entity baudrate is
+--    generic
+--      (
+--      C_RATIO      : integer := 48  -- The ratio between clk and the asked
+--                                   -- baudrate multiplied with 16
+--      );                              
+--    port
+--      (
+--      Clk          : in  std_logic;
+--      Reset        : in  std_logic;
+--      EN_16x_Baud  : out std_logic
+--      );
+--end entity baudrate;
 
--------------------------------------------------------------------------------
--- Architecture Section
--------------------------------------------------------------------------------
-architecture RTL of baudrate is
--- Pragma Added to supress synth warnings
-attribute DowngradeIPIdentifiedWarnings: string;
-attribute DowngradeIPIdentifiedWarnings of RTL : architecture is "yes";
+---------------------------------------------------------------------------------
+---- Architecture Section
+---------------------------------------------------------------------------------
+--architecture RTL of baudrate is
+---- Pragma Added to supress synth warnings
+--attribute DowngradeIPIdentifiedWarnings: string;
+--attribute DowngradeIPIdentifiedWarnings of RTL : architecture is "yes";
 
-    ---------------------------------------------------------------------------
-    -- Signal Declarations
-    ---------------------------------------------------------------------------
-    signal count : natural range 0 to C_RATIO-1;
+--    ---------------------------------------------------------------------------
+--    -- Signal Declarations
+--    ---------------------------------------------------------------------------
+--    signal count : natural range 0 to C_RATIO-1;
 
-begin  -- architecture VHDL_RTL
+--begin  -- architecture VHDL_RTL
 
-    ---------------------------------------------------------------------------
-    -- COUNTER_PROCESS : Down counter for generating EN_16x_Baud signal
-    ---------------------------------------------------------------------------
-    COUNTER_PROCESS : process (Clk) is
-        begin
-            if Clk'event and Clk = '1' then  -- rising clock edge
-                if (Reset = '1') then
-                    count       <= 0;
-                    EN_16x_Baud <= '0';
-                else
-                    if (count = 0) then
-                        count       <= C_RATIO-1;
-                        EN_16x_Baud <= '1';
-                    else
-                        count       <= count - 1;
-                        EN_16x_Baud <= '0';
-                    end if;
-                end if;
-            end if;
-    end process COUNTER_PROCESS;
+--    ---------------------------------------------------------------------------
+--    -- COUNTER_PROCESS : Down counter for generating EN_16x_Baud signal
+--    ---------------------------------------------------------------------------
+--    COUNTER_PROCESS : process (Clk) is
+--        begin
+--            if Clk'event and Clk = '1' then  -- rising clock edge
+--                if (Reset = '1') then
+--                    count       <= 0;
+--                    EN_16x_Baud <= '0';
+--                else
+--                    if (count = 0) then
+--                        count       <= C_RATIO-1;
+--                        EN_16x_Baud <= '1';
+--                    else
+--                        count       <= count - 1;
+--                        EN_16x_Baud <= '0';
+--                    end if;
+--                end if;
+--            end if;
+--    end process COUNTER_PROCESS;
 
-end architecture RTL;
+--end architecture RTL;
 
 
 -------------------------------------------------------------------------------
@@ -1569,7 +1569,7 @@ use IEEE.std_logic_1164.all;
 
 library axi_uartlite_v2_0_31;
 -- baudrate refered from axi_uartlite_v2_0_31
-use axi_uartlite_v2_0_31.baudrate;
+--use axi_uartlite_v2_0_31.baudrate;
 -- uartlite_rx refered from axi_uartlite_v2_0_31
 use axi_uartlite_v2_0_31.uartlite_rx;
 -- uartlite_tx refered from axi_uartlite_v2_0_31
@@ -1640,7 +1640,8 @@ entity uartlite_core is
     -- UART signals
     RX           : in  std_logic;
     TX           : out std_logic;
-    Interrupt    : out std_logic
+    Interrupt    : out std_logic;
+    en_16x_Baud  : in std_logic
    );
 end entity uartlite_core;
 
@@ -1704,7 +1705,7 @@ attribute DowngradeIPIdentifiedWarnings of RTL : architecture is "yes";
     -- bit 6   Reset_RX_FIFO
     -- bit 7   Reset_TX_FIFO
 
-    signal en_16x_Baud         : std_logic;
+--    signal en_16x_Baud         : std_logic;
     signal enable_interrupts   : std_logic;
     signal reset_RX_FIFO       : std_logic;
     signal rx_Data             : std_logic_vector(0 to C_DATA_BITS-1);
@@ -1737,17 +1738,17 @@ begin  -- architecture IMP
     -------------------------------------------------------------------------
     -- BAUD_RATE_I : Instansiating the baudrate module
     -------------------------------------------------------------------------
-    BAUD_RATE_I : entity axi_uartlite_v2_0_31.baudrate
-        generic map
-         (
-          C_RATIO      => RATIO
-         )
-        port map
-         (
-          Clk          => Clk,
-          Reset        => Reset,
-          EN_16x_Baud  => en_16x_Baud
-         );
+--    BAUD_RATE_I : entity axi_uartlite_v2_0_31.baudrate
+--        generic map
+--         (
+--          C_RATIO      => RATIO
+--         )
+--        port map
+--         (
+--          Clk          => Clk,
+--          Reset        => Reset,
+--          EN_16x_Baud  => en_16x_Baud
+--         );
 
     -------------------------------------------------------------------------
     -- Status register handling
@@ -2148,6 +2149,9 @@ entity axi_uartlite is
       s_axi_aresetn         : in  std_logic;
       interrupt             : out std_logic;
 
+-- 16x Baud Rate input
+      en_16x_Baud           : in std_logic;
+
 -- AXI signals
       s_axi_awaddr          : in  std_logic_vector
                               (3 downto 0);
@@ -2280,7 +2284,8 @@ begin  -- architecture IMP
         SIn_DBus     => ip2bus_data(7 downto 0),
         RX           => rx,
         TX           => tx,
-        Interrupt    => Interrupt
+        Interrupt    => Interrupt,
+        en_16x_Baud  => en_16x_Baud
        );
 
     --------------------------------------------------------------------------
