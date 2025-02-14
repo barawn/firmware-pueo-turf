@@ -14,6 +14,38 @@ proc search_repo_dir {} {
     return [ file join {*}$basedirlist ]
 }
 
+# convenience function add a UART fragment
+proc addUart { f nextFragment } {
+    puts $f "\tfragment@${nextFragment} \{"
+    puts $f "\t\ttarget = <&spi0>;"
+    puts $f "\t\tfrag1: __overlay__ \{"
+    puts $f "\t\t\t#address-cells = <1>;"
+    puts $f "\t\t\t#size-cells = <0>;"
+    puts $f "\t\t\tstatus = \"okay\";"
+    puts $f "\t\t\t"
+    puts $f "\t\t\tsc16is752: sc16is752@0 \{"
+    puts $f "\t\t\t\tcompatible = \"nxp,sc16is752\";"
+    puts $f "\t\t\t\treg = <0>;"
+    puts $f "\t\t\t\tclocks = <&sc16is752_clk>;"
+    puts $f "\t\t\t\tinterrupt-parent = <&gpio>;"
+    # this is on EMIO 0 so it's 78, 2 is IRQ_TYPE_EDGE_FALLING
+    puts $f "\t\t\t\tinterrupts = <78 2>;"
+    puts $f "\t\t\t\t#gpio-controller;"
+    puts $f "\t\t\t\t#gpio-cells = <2>;"
+    puts $f "\t\t\t\tspi-max-frequency = <4000000>;"
+    puts $f "\t\t\t\t"
+    puts $f "\t\t\t\tsc16is752_clk: sc16is752_clk \{"
+    puts $f "\t\t\t\t\tcompatible = \"fixed-clock\";"
+    puts $f "\t\t\t\t\t#clock-cells = <0>;"
+    puts $f "\t\t\t\t\tclock-frequency = <14745600>;"
+    puts $f "\t\t\t\t\t\};"
+    puts $f "\t\t\t\t\};"
+    puts $f "\t\t\t\};"
+    puts $f "\t\t\};"
+    puts $f "\t\};"
+}
+
+
 # post_write_bitstream is called out of flow so we need to
 # get our fancy-pants stuff back
 
@@ -75,6 +107,28 @@ set fromCompat "xlnx,axi-uartlite2-2.1"
 set toCompat "xlnx,xps-uartlite-1.00.a"
 set replCmd [list string map [list $fromCompat $toCompat]]
 fileutil::updateInPlace $dtsifn $replCmd
+
+# figure out how many fragments there are
+set numFragments [fileutil::grep fragment $dtsifn]
+# we start at 0 so the next one is just the length of the list
+set nextFragment [llength $numFragments]
+
+# set the newline
+set newline "\n\r"
+
+# read in the dtsi
+set f [open $dtsifn]
+set lines [split [read $f] $newline]
+close $f
+
+# remove last two elements in list b/c split above yields a final empty
+set lines [lreplace [lreplace $lines end end] end end]
+
+# now write the altered dtsi
+set f [open $dtsifn "w"]
+puts -nonewline $f [join $lines $newline]
+addUart $f $nextFragment
+close $f
 
 # and now build the dtbo
 set dtbofn [build_dtbo $dtsifn $dtcpath]
