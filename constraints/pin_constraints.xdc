@@ -57,7 +57,7 @@ set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN E7 PULLTYPE PULLUP} [get_por
 set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN A7} [get_ports UART_SCLK]
 set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN F6} [get_ports UART_MOSI]
 set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN D6} [get_ports UART_MISO]
-set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN C9} [get_ports UART_CS_B]
+set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN G6} [get_ports UART_CS_B]
 set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN B7 PULLTYPE PULLUP} [get_ports UART_IRQ_B]
 
 #set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN D9} [get_ports HSK_UART_txd]
