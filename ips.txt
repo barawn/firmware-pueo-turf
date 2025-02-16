@@ -1,0 +1,1 @@
+ip/debug/uart_ila/uart_ila.xci
