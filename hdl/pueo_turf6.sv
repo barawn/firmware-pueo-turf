@@ -8,7 +8,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="B",
                     parameter [3:0] VER_MAJOR=4'd0,
                     parameter [3:0] VER_MINOR=4'd1,
-                    parameter [7:0] VER_REV=4'd3,
+                    parameter [7:0] VER_REV=4'd5,
                     parameter [15:0] FIRMWARE_DATE = {16{1'b0}})                    
                     (
         output TTXA,
@@ -132,7 +132,12 @@ module pueo_turf6 #(parameter IDENT="TURF",
                            .probe8(TTXD),
                            .probe9(TRXD),
                            .probe10(GPS_TX),
-                           .probe11(GPS_RX));
+                           .probe11(GPS_RX),
+                           .probe12(UART_SCLK),
+                           .probe13(UART_MOSI),
+                           .probe14(UART_MISO),
+                           .probe15(UART_CS_B),
+                           .probe16(UART_IRQ_B));
         end
     endgenerate
     

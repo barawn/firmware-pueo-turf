@@ -27,9 +27,9 @@ proc addUart { f nextFragment } {
     puts $f "\t\t\t\tcompatible = \"nxp,sc16is752\";"
     puts $f "\t\t\t\treg = <0>;"
     puts $f "\t\t\t\tclocks = <&sc16is752_clk>;"
-    puts $f "\t\t\t\tinterrupt-parent = <&gpio>;"
+    #puts $f "\t\t\t\tinterrupt-parent = <&gpio>;"
     # this is on EMIO 0 so it's 78, 2 is IRQ_TYPE_EDGE_FALLING
-    puts $f "\t\t\t\tinterrupts = <78 2>;"
+    #puts $f "\t\t\t\tinterrupts = <78 2>;"
     puts $f "\t\t\t\t#gpio-controller;"
     puts $f "\t\t\t\t#gpio-cells = <2>;"
     puts $f "\t\t\t\tspi-max-frequency = <4000000>;"
