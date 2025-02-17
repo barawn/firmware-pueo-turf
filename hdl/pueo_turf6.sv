@@ -5,7 +5,7 @@
 // crap.                                   //
 /////////////////////////////////////////////
 module pueo_turf6 #(parameter IDENT="TURF",
-                    parameter REVISION="B",
+                    parameter REVISION="A",
                     parameter [3:0] VER_MAJOR=4'd0,
                     parameter [3:0] VER_MINOR=4'd1,
                     parameter [7:0] VER_REV=4'd5,
@@ -36,8 +36,15 @@ module pueo_turf6 #(parameter IDENT="TURF",
         output UART_MOSI,
         input UART_MISO,
         output UART_CS_B,
-        input UART_IRQ_B
+        input UART_IRQ_B,
+        
+        input [1:0] DDR_CLK_P,
+        input [1:0] DDR_CLK_N,
+        input GBE_CLK_P,
+        input GBE_CLK_N        
     );
+    
+    localparam PROTOTYPE = (REVISION == "A") ? "TRUE" : "FALSE";
     
     localparam UART_DEBUG = "TRUE";
     localparam [15:0] FIRMWARE_VERSION = { VER_MAJOR, VER_MINOR, VER_REV };
@@ -69,11 +76,117 @@ module pueo_turf6 #(parameter IDENT="TURF",
     wire [15:0] emio_gpio_i;
     wire [15:0] emio_gpio_o;
     
-    // WHATEVER THIS IS TEMPORARY
-    wire dna_data;
-    (* CUSTOM_DNA_VER = DATEVERSION *)
-    DNA_PORTE2 u_dina(.DIN(1'b0),.READ(!emio_gpio_t[1] && emio_gpio_o[1]),.CLK(ps_clk),.DOUT(dna_data));
-    assign emio_gpio_i = { {13{1'b0}}, dna_data, UART_IRQ_B };
+    assign emio_gpio_i = { {15{1'b0}}, UART_IRQ_B };
+    
+    //////////////////////////////////////////////
+    //              REGISTER SPACES             //
+    //////////////////////////////////////////////
+    
+    // PS AXI side interface. Gets bridged to WISHBONE via axil2wb.
+    `DEFINE_AXI4L_IF( axi_ps_ , 28, 32 );
+    // PS WISHBONE side.
+    `DEFINE_WB_IF( wb_ps_ , 28, 32 );
+    // TURF ID ctl
+    `DEFINE_WB_IF( turf_idctl_ , 15, 32);
+    // Aurora space
+    `DEFINE_WB_IF( aurora_ , 15, 32);
+    // Control (CIN/COUT stuff) space
+    `DEFINE_WB_IF( ctl_ , 15, 32);
+    // This USED to be called hski2c_, it's now evctl_.
+    `DEFINE_WB_IF( evctl_ , 15, 32);
+    // Crate space, accessed through the bridge.
+    `DEFINE_WB_IF( crate_ , 27, 32);    
+
+    //////////////////////////////////////////////
+    //              STREAMS                     //
+    //////////////////////////////////////////////
+
+    // Aurora command processor path
+    `DEFINE_AXI4S_MIN_IF( aurora_cmd_ , 32 );
+    wire [1:0] aurora_cmd_tdest;
+    wire aurora_cmd_tlast;
+    // Response path. Don't bother with tlast at the moment.
+    `DEFINE_AXI4S_MIN_IF( aurora_resp_ , 32 );
+    wire [1:0] aurora_resp_tuser;
+    
+    //////////////////////////////////////////////
+    //              CLOCKS                      //
+    //////////////////////////////////////////////
+    // Clocking Is Complicated due to the bank  //
+    // restrictions.                            //
+    //////////////////////////////////////////////
+    
+    // 100 MHz clock from processing system
+    wire ps_clk;
+    // This is the DIRECT output of the IBUFDS
+    wire sys_clk_ibuf;
+    // After the deskew MMCM.
+    wire sys_clk;
+    // Global phase of sys_clk.
+    wire sys_clk_phase;
+    // Sync state. This is a direct analog to the SURF clock inputs
+    // and if we time everything up correctly should be exactly synchronous.
+    wire sys_clk_sync;
+    // TURFIO MGT reference clock (125 MHz)
+    wire mgt_refclk;
+    // TURFIO MGT stream clock (312.5 MHz)
+    wire mgt_clk;
+    // *both* MGT reference clocks b/c IBERT is stupid
+    wire [1:0] gbe_clk;
+    // both after IBUFs
+    wire [1:0] gbe_clk_ibuf;
+    // GBE MGT reference clock (156.25 MHz = 10 GHz/64)
+    wire gbe_refclk;
+        
+    // interface clock in bank 67
+    wire if_clk67;
+    // interface clk x2 in bank 67
+    wire if_clk67_x2;
+    // indicates that if_clk67_x2 is in 1st clk of 2-clk phase
+    wire if_clk67_x2_phase;
+    // interface clock in bank 68
+    wire if_clk68;
+    // interface clock x2 in bank 68
+    wire if_clk68_x2;
+    // indicates that if_clk68_x2 is in 1st clk of 2-clk phase
+    wire if_clk68_x2_phase;
+    // PLLs locked
+    wire [1:0] pll_locked;
+    
+    // DDR clocks (300 MHz)
+    wire [1:0] ddr_clk;
+
+    // Aurora clock
+    wire aurora_clk;
+
+    // this needs to get pushed into the 10GbE core                  
+    IBUFDS_GTE4 #(.REFCLK_HROW_CK_SEL(2'b00))
+        u_gclk_ibuf(.I(GBE_CLK_P),.IB(GBE_CLK_N),.CEB(1'b0),.O(gbe_clk[0]), .ODIV2(gbe_clk_ibuf[0]));
+    // The example design is sooo not helpful here.
+    BUFG_GT u_gth_internal(.I(gbe_clk_ibuf[0]),
+                           .O(gbe_sysclk),
+                           .CE(1'b1),
+                           .CEMASK(1'b0),
+                           .CLR(1'b0),
+                           .CLRMASK(1'b0),
+                           .DIV(3'b000));
+
+    // this needs to get pushed into the DDR core. Might go through
+    // an MMCM. Not sure.
+    IBUFDS u_ddrclk0_ibuf(.I(DDR_CLK_P[0]),.IB(DDR_CLK_N[0]),.O(ddr_clk[0]));
+    IBUFDS u_ddrclk1_ibuf(.I(DDR_CLK_P[1]),.IB(DDR_CLK_N[1]),.O(ddr_clk[1]));
+
+    localparam INV_MMCM = (PROTOTYPE=="TRUE") ? "TRUE" : "FALSE";
+    system_clock_v2 #(.INVERT_MMCM(INV_MMCM))
+        u_sysclk(.SYS_CLK_P(SYSCLK_P),
+                 .SYS_CLK_N(SYSCLK_N),
+                 .reset(1'b0),
+                 .sysclk_o(sys_clk),
+                 .sysclk_ibuf_o(sys_clk_ibuf),
+                 .sysclk_phase_o(sys_clk_phase),
+                 .sysclk_sync_o(sys_clk_sync));
+
+    
     
     zynq_bd_wrapper u_zynq( .EMIO_tri_t(emio_gpio_t),
                             .EMIO_tri_i(emio_gpio_i),
@@ -103,7 +216,83 @@ module pueo_turf6 #(parameter IDENT="TURF",
                             .TFIO_D_rxd(TRXD),
                             .TFIO_D_txd(TTXD),
                             
+                            `CONNECT_AXI4L_IF( m_axi_ps_ , axi_ps ),
+                            
                             .pl_clk0(ps_clk));
+
+    /////////////////////////////////////////////////////
+    //         REGISTER INTERCONNECT                   //
+    /////////////////////////////////////////////////////
+    
+    // bridge AXI4L -> WB
+    axil2wb #(.ADDR_WIDTH(28)) u_axil2wb(.clk_i(ps_clk),
+                                         .rst_i(1'b0),
+                                         `CONNECT_AXI4_IF( s_axi_ , axi_ps_ ),
+                                         `CONNECT_WBM_IFM( wb_ , wb_ps_ ));
+    
+    // interconnect
+    turf_intercon u_intercon( .clk_i(ps_clk),
+                              .rst_i(1'b0),
+                              `CONNECT_WBS_IFM(wb_ , wbps_),
+                              `CONNECT_WBM_IFM(turf_id_ctrl_ , turf_idctl_ ),
+                              `CONNECT_WBM_IFM(aurora_ , aurora_ ),
+                              `CONNECT_WBM_IFM(ctl_ , ctl_ ),
+                              `CONNECT_WBM_IFM(evctl_ , evctl_ ),
+                              `CONNECT_WBM_IFM(crate_ , crate_ ));
+
+    /////////////////////////////////////////////////////
+    //         REGISTER MODULES                        //
+    /////////////////////////////////////////////////////
+
+    // ID and Control
+    // register bridge type selection
+    wire [7:0] bridge_type;
+    // a bridge timeout occurred
+    wire [3:0] bridge_timeout;
+    // an invalid bridge access occured
+    wire [3:0] bridge_invalid_access;
+    // bridge valid indicators
+    wire [15:0] bridge_valid;
+
+    turf_id_ctrl #(.IDENT(IDENT),
+                   .DATEVERSION(DATEVERSION),
+                   .NUM_CLK_MON(5))
+        u_idctrl( .wb_clk_i(ps_clk),
+                  .wb_rst_i(1'b0),
+                  `CONNECT_WBS_IFM(wb_ , turf_idctl_ ),
+                  .bitcmd_sync_o(bitcmd_sync_req),
+
+                  .bridge_type_o(bridge_type),
+                  .bridge_timeout_i(bridge_timeout),
+                  .bridge_invalid_i(bridge_invalid_access),
+
+                  .clk_mon_i( { aurora_clk, ddr_clk[1], ddr_clk[0], gbe_sysclk, sys_clk } ));
+
+    // Aurora
+    // indicates auroras are up
+    wire [3:0] aurora_up;
+
+    // wrapper for Aurora paths
+    turfio_aurora_wrap u_aurora(.wb_clk_i(ps_clk),
+                                .wb_rst_i(1'b0),
+                                `CONNECT_WBS_IFM(wb_ , aurora_ ),
+                                `CONNECT_AXI4S_MIN_IF( s_cmd_ , aurora_cmd_ ),
+                                .s_cmd_tdest(aurora_cmd_tdest),
+                                .s_cmd_tlast(aurora_cmd_tlast),
+                                `CONNECT_AXI4S_MIN_IF( m_resp_ , aurora_resp_ ),
+                                .m_resp_tuser(aurora_resp_tuser),                                
+                                .aurora_up_o(aurora_up),
+                                .aurora_clk_o(aurora_clk),
+                                .MGTCLK_P(MGTCLK_P),
+                                .MGTCLK_N(MGTCLK_N),
+                                .MGTRX_P(MGTRX_P),
+                                .MGTRX_N(MGTRX_N),
+                                .MGTTX_P(MGTTX_P),
+                                .MGTTX_N(MGTTX_N));
+            
+
+    // Dummy evctl
+    wbs_dummy #(.ADDRESS_WIDTH(15),.DATA_WIDTH(32)) u_evctl(`CONNECT_WBS_IFM(wb_ , evctl_ ));    
 
     generate
         if (UART_DEBUG == "TRUE") begin : SERDBG

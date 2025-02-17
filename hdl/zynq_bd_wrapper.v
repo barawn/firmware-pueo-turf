@@ -9,66 +9,58 @@
 //--------------------------------------------------------------------------------
 `timescale 1 ps / 1 ps
 
+`include "interfaces.vh"
+
 // modified b/c wtf are you pushing I/Os through
+// the AXI4L interface pulls through
+// araddr/arready/arvalid
+// awaddr/awready/awvalid
+//  bresp/bready/bvalid
+//  rdata/rready/rvalid/rresp
+//  wdata/wready/wvalid/wstrb
+// - in other words, our bog standard AXI4L interfaces
+//   m_axi_ps_ interface
+//
+// this means we also alter the idiot split-declaration style too
 module zynq_bd_wrapper
-   (EMIO_tri_i,
-    EMIO_tri_o,
-    EMIO_tri_t,
+   (input [15:0] EMIO_tri_i,
+    output [15:0] EMIO_tri_o,
+    output [15:0] EMIO_tri_t,
     
-    GPS_rxd,
-    GPS_txd,
+    input GPS_rxd,
+    output GPS_txd,
+    
+    // AXI4L interface
+    `HOST_NAMED_PORTS_AXI4L_IF( m_axi_ps_ , 28, 32 ),
     
     // we force I2C
-    IIC_scl_o,
-    IIC_sda_i,
-    IIC_sda_t,
+    output IIC_scl_o,
+    input IIC_sda_i,
+    output IIC_sda_t,
 
     // we force SPI directionality
-    spi0_sclk,
-    spi0_mosi,
-    spi0_miso,
-    spi0_cs_b,
+    output spi0_sclk,
+    output spi0_mosi,
+    input spi0_miso,
+    output spi0_cs_b,
         
-    TFIO_A_rxd,
-    TFIO_A_txd,
-    TFIO_B_rxd,
-    TFIO_B_txd,
-    TFIO_C_rxd,
-    TFIO_C_txd,
-    TFIO_D_rxd,
-    TFIO_D_txd,
-    pl_clk0);
-  
-  input [15:0] EMIO_tri_i;
-  output [15:0] EMIO_tri_o;
-  output [15:0] EMIO_tri_t;
-  
-  input GPS_rxd;
-  output GPS_txd;
+    input TFIO_A_rxd,
+    output TFIO_A_txd,
 
-  output IIC_scl_o;
+    input TFIO_B_rxd,
+    output TFIO_B_txd,
+    
+    input TFIO_C_rxd,
+    output TFIO_C_txd,
+    
+    input TFIO_D_rxd,
+    output TFIO_D_txd,
+    
+    output pl_clk0);
+  
   wire IIC_scl_t;
   wire IIC_scl_i = (IIC_scl_t) ? 1'b1 : IIC_scl_o;
       
-  input IIC_sda_i;
-  output IIC_sda_t;
-
-  output spi0_sclk;
-  output spi0_mosi;
-  input spi0_miso;
-  output spi0_cs_b;
-  
-  input TFIO_A_rxd;
-  output TFIO_A_txd;
-  input TFIO_B_rxd;
-  output TFIO_B_txd;
-  input TFIO_C_rxd;
-  output TFIO_C_txd;
-  input TFIO_D_rxd;
-  output TFIO_D_txd;
-
-  output pl_clk0;
-  
     // IO0 => MOSI
     // IO1 => MISO
   wire SPI0_io0_i;
@@ -125,5 +117,8 @@ module zynq_bd_wrapper
         .TFIO_C_txd(TFIO_C_txd),
         .TFIO_D_rxd(TFIO_D_rxd),
         .TFIO_D_txd(TFIO_D_txd),
+        
+        `CONNECT_AXI4L_IF( m_axi_ps_ , m_axi_ps_ ),
+        
         .pl_clk0(pl_clk0));
 endmodule
