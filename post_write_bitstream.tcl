@@ -16,6 +16,7 @@ proc search_repo_dir {} {
 
 # convenience function add a UART fragment
 proc addUart { f nextFragment } {
+    puts $f ""
     puts $f "\tfragment@${nextFragment} \{"
     puts $f "\t\ttarget = <&spi0>;"
     puts $f "\t\tfrag1: __overlay__ \{"
@@ -26,23 +27,23 @@ proc addUart { f nextFragment } {
     puts $f "\t\t\tsc16is752: sc16is752@0 \{"
     puts $f "\t\t\t\tcompatible = \"nxp,sc16is752\";"
     puts $f "\t\t\t\treg = <0>;"
-    puts $f "\t\t\t\tclocks = <&sc16is752_clk>;"
-    #puts $f "\t\t\t\tinterrupt-parent = <&gpio>;"
+    puts $f "\t\t\t\tclock-frequency = <14745600>;"
+    puts $f "\t\t\t\tinterrupt-parent = <&gpio>;"
     # this is on EMIO 0 so it's 78, 2 is IRQ_TYPE_EDGE_FALLING
-    #puts $f "\t\t\t\tinterrupts = <78 2>;"
-    puts $f "\t\t\t\t#gpio-controller;"
-    puts $f "\t\t\t\t#gpio-cells = <2>;"
-    puts $f "\t\t\t\tspi-max-frequency = <4000000>;"
-    puts $f "\t\t\t\t"
-    puts $f "\t\t\t\tsc16is752_clk: sc16is752_clk \{"
-    puts $f "\t\t\t\t\tcompatible = \"fixed-clock\";"
-    puts $f "\t\t\t\t\t#clock-cells = <0>;"
-    puts $f "\t\t\t\t\tclock-frequency = <14745600>;"
-    puts $f "\t\t\t\t\t\};"
-    puts $f "\t\t\t\t\};"
+    puts $f "\t\t\t\tinterrupts = <78 2>;"
+#    puts $f "\t\t\t\t#gpio-controller;"
+#    puts $f "\t\t\t\t#gpio-cells = <2>;"
+#    puts $f "\t\t\t\tspi-max-frequency = <4000000>;"
+#    puts $f "\t\t\t\t"
+#    puts $f "\t\t\t\tsc16is752_clk: sc16is752_clk \{"
+#    puts $f "\t\t\t\t\tcompatible = \"fixed-clock\";"
+#    puts $f "\t\t\t\t\t#clock-cells = <0>;"
+#    puts $f "\t\t\t\t\tclock-frequency = <14745600>;"
+#    puts $f "\t\t\t\t\t\};"
     puts $f "\t\t\t\};"
     puts $f "\t\t\};"
     puts $f "\t\};"
+    puts $f "\};"
 }
 
 
