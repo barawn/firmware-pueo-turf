@@ -17,7 +17,9 @@ add_ip_repository [file join [get_repo_dir] iprepo]
 add_include_dir [file join [get_repo_dir] verilog-library-barawn include]
 add_include_dir [file join [get_repo_dir] include]
 
-# set pre-synthesis scripts
+# tcl scripts
 set_pre_synthesis_tcl [file join [get_repo_dir] pre_synthesis.tcl]
+set_post_place_tcl [file join [get_repo_dir] post_place.tcl]
+set_post_write_bitstream_tcl [file join [get_repo_dir] post_write_bitstream.tcl]
 
 check_all
