@@ -189,6 +189,7 @@ module turf_id_ctrl #(
             end
         end
     end
+    (* CUSTOM_DNA_VER = DATEVERSION *)
     DNA_PORTE2 u_dna(.DIN(1'b0),.READ(dna_read),.SHIFT(dna_shift),.CLK(wb_clk_i),.DOUT(dna_data));
         
     simple_clock_mon #(.NUM_CLOCKS(NUM_CLK_MON))
