@@ -118,7 +118,7 @@ module zynq_bd_wrapper
         .TFIO_D_rxd(TFIO_D_rxd),
         .TFIO_D_txd(TFIO_D_txd),
         
-        `CONNECT_AXI4L_IF( m_axi_ps_ , m_axi_ps_ ),
+        `CONNECT_AXI4L_IF( M_AXI_ , m_axi_ps_ ),
         
         .pl_clk0(pl_clk0));
 endmodule
