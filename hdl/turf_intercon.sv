@@ -14,7 +14,7 @@ module turf_intercon(
         `HOST_NAMED_PORTS_WB_IF( turf_id_ctrl_ , 15, 32),
         `HOST_NAMED_PORTS_WB_IF( aurora_ , 15, 32),
         `HOST_NAMED_PORTS_WB_IF( ctl_ , 15, 32),
-        `HOST_NAMED_PORTS_WB_IF( hski2c_ , 15, 32),
+        `HOST_NAMED_PORTS_WB_IF( evctl_ , 15, 32),
         // Crate bridge space.
         `HOST_NAMED_PORTS_WB_IF( crate_ , 27, 32)     
     );    
@@ -36,8 +36,8 @@ module turf_intercon(
     localparam [27:0] AURORA_MASK       = 28'h7FE7FFF;
     localparam [27:0] CTL_BASE          = 28'h0010000;
     localparam [27:0] CTL_MASK          = 28'h7FE7FFF;
-    localparam [27:0] HSKI2C_BASE       = 28'h0018000;
-    localparam [27:0] HSKI2C_MASK       = 28'h7FE7FFF;    
+    localparam [27:0] EVCTL_BASE       = 28'h0018000;
+    localparam [27:0] EVCTL_MASK       = 28'h7FE7FFF;    
     // NOTE: Crate space will ALWAYS be the last listed
     // Add more as needed *above*
     localparam [27:0] CRATE_BASE        = 28'h8000000;
@@ -158,50 +158,59 @@ module turf_intercon(
     `SLAVE_MAP( turf_id_ctrl_ , 0 , TURF_ID_CTRL_MASK, TURF_ID_CTRL_BASE );
     `SLAVE_MAP( aurora_ , 1, AURORA_MASK, AURORA_BASE);
     `SLAVE_MAP( ctl_ , 2, CTL_MASK, CTL_BASE);
-    `SLAVE_MAP( hski2c_ , 3, HSKI2C_MASK, HSKI2C_BASE );
+    `SLAVE_MAP( evctl_ , 3, EVCTL_MASK, EVCTL_BASE );
 
     `SLAVE_MAP( crate_ , NUM_SLAVES-1 , CRATE_MASK, CRATE_BASE );
 
-// no debuggy for now                
-//    generate
-//        if (DEBUG == "TRUE") begin
-//            // Minimal internal WISHBONE bus. Combines bidir data into one.
-//            reg [DATA_WIDTH-1:0] dbg_data = {32{1'b0}};
-//            reg [ADDR_WIDTH-1:0] dbg_addr = {22{1'b0}};
-//            reg [(DATA_WIDTH/8)-1:0] dbg_sel = {(DATA_WIDTH/8){1'b0}};
-//            reg dbg_cyc = 0;
-//            reg dbg_stb = 0;
-//            reg dbg_ack = 0;
-//            reg dbg_we = 0;
-//            // I super-don't use err/rty so just combine them
-//            reg dbg_err_rty = 0;
-//            reg [NUM_MASTERS-1:0] dbg_gnt = {NUM_MASTERS{1'b0}};
-//            reg [NUM_SLAVES-1:0] dbg_ssel = {NUM_SLAVES{1'b0}};
-//            always @(posedge clk_i) begin
-//                if (we) dbg_data <= dat_o;
-//                else dbg_data <= muxed_dat_i;
+    generate
+        if (DEBUG == "TRUE") begin : ILA
+            // Minimal internal WISHBONE bus. Combines bidir data into one.
+            reg [DATA_WIDTH-1:0] dbg_data = {32{1'b0}};
+            reg [ADDR_WIDTH-1:0] dbg_addr = {22{1'b0}};
+            reg [(DATA_WIDTH/8)-1:0] dbg_sel = {(DATA_WIDTH/8){1'b0}};
+            reg dbg_cyc = 0;
+            reg dbg_stb = 0;
+            reg dbg_ack = 0;
+            reg dbg_we = 0;
+            // I super-don't use err/rty so just combine them
+            reg dbg_err_rty = 0;
+            reg [NUM_MASTERS-1:0] dbg_gnt = {NUM_MASTERS{1'b0}};
+            reg [NUM_SLAVES-1:0] dbg_ssel = {NUM_SLAVES{1'b0}};
+            always @(posedge clk_i) begin
+                if (we) dbg_data <= dat_o;
+                else dbg_data <= muxed_dat_i;
                 
-//                dbg_addr <= adr;
-//                dbg_cyc <= cyc;
-//                dbg_stb <= stb;
-//                dbg_we <= we;
-//                dbg_sel <= sel;
-//                dbg_ack <= muxed_ack;
-//                dbg_err_rty <= muxed_err | muxed_rty;
-//                dbg_gnt <= grants;
-//                dbg_ssel <= selected;
-//            end
-//            intercon_ila u_ila(.clk(clk_i),
-//                               .probe0(dbg_data),
-//                               .probe1(dbg_addr),
-//                               .probe2(dbg_cyc),
-//                               .probe3(dbg_stb),
-//                               .probe4(dbg_we),
-//                               .probe5(dbg_sel),
-//                               .probe6(dbg_ack),
-//                               .probe7(dbg_err_rty),
-//                               .probe8(dbg_gnt),
-//                               .probe9(dbg_ssel));
-//        end
-//    endgenerate
+                dbg_addr <= adr;
+                dbg_cyc <= cyc;
+                dbg_stb <= stb;
+                dbg_we <= we;
+                dbg_sel <= sel;
+                dbg_ack <= muxed_ack;
+                dbg_err_rty <= muxed_err | muxed_rty;
+                dbg_gnt <= grants;
+                dbg_ssel <= selected;
+            end
+            // 32
+            // 28
+            // 1
+            // 1
+            // 1
+            // 4
+            // 1
+            // 1
+            // 1
+            // 5
+            intercon_ila u_ila(.clk(clk_i),
+                               .probe0(dbg_data),
+                               .probe1(dbg_addr),
+                               .probe2(dbg_cyc),
+                               .probe3(dbg_stb),
+                               .probe4(dbg_we),
+                               .probe5(dbg_sel),
+                               .probe6(dbg_ack),
+                               .probe7(dbg_err_rty),
+                               .probe8(dbg_gnt),
+                               .probe9(dbg_ssel));
+        end
+    endgenerate
 endmodule
