@@ -8,9 +8,11 @@ module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="A",
                     parameter [3:0] VER_MAJOR=4'd0,
                     parameter [3:0] VER_MINOR=4'd1,
-                    parameter [7:0] VER_REV=4'd5,
+                    parameter [7:0] VER_REV=4'd6,
                     parameter [15:0] FIRMWARE_DATE = {16{1'b0}})                    
                     (
+
+        // SLOW PERIPHERALS
         output TTXA,
         input TRXA,
         
@@ -37,11 +39,42 @@ module pueo_turf6 #(parameter IDENT="TURF",
         input UART_MISO,
         output UART_CS_B,
         input UART_IRQ_B,
-        
+        // CLOCKS
         input [1:0] DDR_CLK_P,
         input [1:0] DDR_CLK_N,
         input GBE_CLK_P,
-        input GBE_CLK_N        
+        input GBE_CLK_N,
+        input SYSCLK_P,
+        input SYSCLK_N,
+        input MGTCLK_P,
+        input MGTCLK_N,
+        // MGTs
+        input [3:0] MGTRX_P,
+        input [3:0] MGTRX_N,
+        output [3:0] MGTTX_P,
+        output [3:0] MGTTX_N,
+        // GBE
+`ifdef USE_GBE
+        input [1:0] GBE_RX_P,
+        input [1:0] GBE_RX_N,
+        output [1:0] GBE_TX_P,
+        output [1:0] GBE_TX_N,
+`endif
+        // TURFIO INTERFACES
+        output [3:0] TXCLK_P,
+        output [3:0] TXCLK_N,
+        input [3:0] CINTIO_P,
+        input [3:0] CINTIO_N,
+        input [6:0] CINA_P,
+        input [6:0] CINA_N,
+        input [6:0] CINB_P,
+        input [6:0] CINB_N,
+        input [6:0] CINC_P,
+        input [6:0] CINC_N,
+        input [6:0] CIND_P,
+        input [6:0] CIND_N,
+        output [3:0] COUT_P,
+        output [3:0] COUT_N        
     );
     
     localparam PROTOTYPE = (REVISION == "A") ? "TRUE" : "FALSE";
@@ -49,9 +82,19 @@ module pueo_turf6 #(parameter IDENT="TURF",
     localparam UART_DEBUG = "TRUE";
     localparam [15:0] FIRMWARE_VERSION = { VER_MAJOR, VER_MINOR, VER_REV };
     localparam [31:0] DATEVERSION = { (REVISION=="B" ? 1'b1 : 1'b0), FIRMWARE_DATE[14:0], FIRMWARE_VERSION };
-    
-    wire ps_clk;
-    
+
+    // Configuration information for the TURFIOs.
+    localparam [31:0] TRAIN_VALUE = 32'hA55A6996;
+    localparam [3:0] INV_CINTIO = 4'b1100;
+    localparam [3:0] INV_COUT =   4'b1110;
+    localparam [3:0] INV_TXCLK =  4'b1010;
+    localparam [6:0] INV_CINA =   7'b0000010;
+    localparam [6:0] INV_CINB =   7'b0001011;
+    localparam [6:0] INV_CINC =   7'b1111111;
+    localparam [6:0] INV_CIND =   7'b1100111;
+    localparam [3:0] CIN_CLKTYPE = 4'b0011;
+    localparam [3:0] COUT_CLKTYPE =4'b0110;
+        
     wire emio_scl;
     wire emio_sda_i;
     wire emio_sda_t;
@@ -216,7 +259,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                             .TFIO_D_rxd(TRXD),
                             .TFIO_D_txd(TTXD),
                             
-                            `CONNECT_AXI4L_IF( m_axi_ps_ , axi_ps ),
+                            `CONNECT_AXI4L_IF( m_axi_ps_ , axi_ps_ ),
                             
                             .pl_clk0(ps_clk));
 
@@ -227,13 +270,13 @@ module pueo_turf6 #(parameter IDENT="TURF",
     // bridge AXI4L -> WB
     axil2wb #(.ADDR_WIDTH(28)) u_axil2wb(.clk_i(ps_clk),
                                          .rst_i(1'b0),
-                                         `CONNECT_AXI4_IF( s_axi_ , axi_ps_ ),
+                                         `CONNECT_AXI4L_IF( s_axi_ , axi_ps_ ),
                                          `CONNECT_WBM_IFM( wb_ , wb_ps_ ));
     
     // interconnect
     turf_intercon u_intercon( .clk_i(ps_clk),
                               .rst_i(1'b0),
-                              `CONNECT_WBS_IFM(wb_ , wbps_),
+                              `CONNECT_WBS_IFM(wb_ , wb_ps_),
                               `CONNECT_WBM_IFM(turf_id_ctrl_ , turf_idctl_ ),
                               `CONNECT_WBM_IFM(aurora_ , aurora_ ),
                               `CONNECT_WBM_IFM(ctl_ , ctl_ ),
@@ -289,8 +332,75 @@ module pueo_turf6 #(parameter IDENT="TURF",
                                 .MGTRX_N(MGTRX_N),
                                 .MGTTX_P(MGTTX_P),
                                 .MGTTX_N(MGTTX_N));
-            
+    // and the bridge from crate to Aurora
+    // Crate register bridge. 
 
+    // Hook up valids. Top 2 bits aren't implemented yet, last is always valid (BRIDGE_NONE)
+    assign bridge_valid = { 1'b0, 1'b0, aurora_up[3], 1'b1,
+                            1'b0, 1'b0, aurora_up[2], 1'b1,
+                            1'b0, 1'b0, aurora_up[1], 1'b1,
+                            1'b0, 1'b0, aurora_up[0], 1'b1 };
+    // The bridge.
+    turfio_register_bridge 
+        u_bridge( .wb_clk_i(ps_clk),
+                  .wb_rst_i(1'b0),
+                  .timeout_reached_o(bridge_timeout),
+                  .invalid_o(bridge_invalid_access),
+                  .bridge_type_i(bridge_type),
+                  .bridge_valid_i(bridge_valid),
+                  `CONNECT_WBS_IFM( bridge_ , crate_ ),
+                  `CONNECT_AXI4S_MIN_IF( m_cmd_ , aurora_cmd_ ),
+                  .m_cmd_tdest(aurora_cmd_tdest),
+                  .m_cmd_tlast(aurora_cmd_tlast),
+                  `CONNECT_AXI4S_MIN_IF( s_resp_ , aurora_resp_ ),
+                  .s_resp_tuser( aurora_resp_tuser ));                                    
+
+    // turfio path
+    turfio_if #( .INV_SYSCLK(INV_MMCM),
+                 .TRAIN_VALUE(TRAIN_VALUE),
+                 .INV_CINTIO(INV_CINTIO),
+                 .INV_COUT(INV_COUT),
+                 .INV_CINA(INV_CINA),
+                 .INV_CINB(INV_CINB),
+                 .INV_CINC(INV_CINC),
+                 .INV_CIND(INV_CIND),
+                 .INV_TXCLK(INV_TXCLK),
+                 .CIN_CLKTYPE(CIN_CLKTYPE),
+                 .COUT_CLKTYPE(COUT_CLKTYPE))
+        u_tioctl( .clk_i(ps_clk),
+                  .rst_i(1'b0),
+                  `CONNECT_WBS_IFM(wb_ , ctl_ ),
+                  .clk300_i( ddr_clk[0] ),
+                  .ifclk67_o( if_clk67 ),
+                  .ifclk68_o( if_clk68 ),
+
+                  .sysclk_ibuf_i(sys_clk_ibuf),
+                  .sysclk_phase_i(sys_clk_phase),
+                  .cout_command67_i( turfio_if_command67 ),
+                  .cout_command68_i( turfio_if_command68 ),
+                  .cina_command_o(),
+                  .cinb_command_o(),
+                  .cinc_command_o(),
+                  .cind_command_o(),
+                  .cina_valid_o(),
+                  .cinb_valid_o(),
+                  .cinc_valid_o(),
+                  .cind_valid_o(),
+                  .CINTIO_P(CINTIO_P),
+                  .CINTIO_N(CINTIO_N),
+                  .COUT_P(COUT_P),
+                  .COUT_N(COUT_N),
+                  .TXCLK_P(TXCLK_P),
+                  .TXCLK_N(TXCLK_N),
+                  .CINA_P(CINA_P),
+                  .CINA_N(CINA_N),
+                  .CINB_P(CINB_P),
+                  .CINB_N(CINB_N),
+                  .CINC_P(CINC_P),
+                  .CINC_N(CINC_N),
+                  .CIND_P(CIND_P),
+                  .CIND_N(CIND_N));
+               
     // Dummy evctl
     wbs_dummy #(.ADDRESS_WIDTH(15),.DATA_WIDTH(32)) u_evctl(`CONNECT_WBS_IFM(wb_ , evctl_ ));    
 
