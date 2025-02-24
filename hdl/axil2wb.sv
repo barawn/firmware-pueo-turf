@@ -23,7 +23,8 @@
 // dat_o is (state == IDLE) ? wdata : dat_hold
 // sel_o is (state == IDLE) ? wstrb : strb_hold
 module axil2wb #( parameter ADDR_WIDTH = 32,
-                  parameter DATA_WIDTH = 32 
+                  parameter DATA_WIDTH = 32,
+                  parameter DEBUG = "TRUE"
                  )( 
            input clk_i,
            input rst_i,
@@ -78,6 +79,42 @@ module axil2wb #( parameter ADDR_WIDTH = 32,
             endcase
         end
     end
+
+    // the intercon gives us the WB-side debug, we really need the AXI-side
+    // debug here, sigh.
+    generate
+        if (DEBUG == "TRUE") begin : DBG
+            // MINIMAL ila: 12 probes
+            wire [ADDR_WIDTH-1:0] axi_addr = (s_axi_awvalid) ? s_axi_awaddr : s_axi_araddr;
+            wire [DATA_WIDTH-1:0] axi_data = (s_axi_wvalid) ? s_axi_wdata : s_axi_rdata;
+            // probes:
+            // axi_addr
+            // axi_data
+            // awvalid
+            // awready
+            // arvalid
+            // arready
+            // rvalid
+            // rready
+            // wvalid
+            // wready
+            // bvalid
+            // bready
+            axil2wb_ila u_ila(.clk(clk_i),
+                              .probe0(axi_addr),
+                              .probe1(axi_data),
+                              .probe2(s_axi_awvalid),
+                              .probe3(s_axi_awready),
+                              .probe4(s_axi_arvalid),
+                              .probe5(s_axi_arready),
+                              .probe6(s_axi_wvalid),
+                              .probe7(s_axi_wready),
+                              .probe8(s_axi_rvalid),
+                              .probe9(s_axi_rready),
+                              .probe10(s_axi_bvalid),
+                              .probe11(s_axi_bready));
+        end
+    endgenerate    
 
     assign wb_dat_o = s_axi_wdata;
     assign wb_adr_o = (wb_we_o) ? s_axi_awaddr : s_axi_araddr;
