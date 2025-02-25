@@ -2,16 +2,16 @@
 `include "interfaces.vh"
 
 // TURF interconnect. Plan for 4 slave spaces at the moment, plenty of room for more.
-// Only one master planned for the moment since this is only a *local* intercon.
-// Probably will have a global intercon for everything.
-// Update: Maybe not! We'll try a global intercon here just for funsies. 
+// 2 masters, one local, one ethernet. Funsies!
 module turf_intercon(
         input clk_i,
         input rst_i,
-        // Master
-        `TARGET_NAMED_PORTS_WB_IF( wb_ , 28, 32 ),
+        // Masters
+        `TARGET_NAMED_PORTS_WB_IF( wbps_ , 28, 32 ),
+        `TARGET_NAMED_PORTS_WB_IF( wbeth_ , 28, 32 ),
         // Slaves
-        `HOST_NAMED_PORTS_WB_IF( turf_id_ctrl_ , 15, 32),
+        `HOST_NAMED_PORTS_WB_IF( turf_id_ctrl_ , 14, 32),
+        `HOST_NAMED_PORTS_WB_IF( gbe_ , 14, 32),
         `HOST_NAMED_PORTS_WB_IF( aurora_ , 15, 32),
         `HOST_NAMED_PORTS_WB_IF( ctl_ , 15, 32),
         `HOST_NAMED_PORTS_WB_IF( evctl_ , 15, 32),
@@ -30,20 +30,24 @@ module turf_intercon(
     // which is used for the crate space.
     // Crate space masks off everything except the top bit.
 
+
+
     localparam [27:0] TURF_ID_CTRL_BASE = 28'h0000000;
-    localparam [27:0] TURF_ID_CTRL_MASK = 28'h7FE7FFF;
+    localparam [27:0] TURF_ID_CTRL_MASK = 28'h7FE3FFF;  // bottom **14** bits
+    localparam [27:0] GBE_BASE          = 28'h0004000;
+    localparam [27:0] GBE_MASK          = 28'h7FE3FFF;  // bottom **14** bits
     localparam [27:0] AURORA_BASE       = 28'h0008000;
     localparam [27:0] AURORA_MASK       = 28'h7FE7FFF;
     localparam [27:0] CTL_BASE          = 28'h0010000;
     localparam [27:0] CTL_MASK          = 28'h7FE7FFF;
-    localparam [27:0] EVCTL_BASE       = 28'h0018000;
-    localparam [27:0] EVCTL_MASK       = 28'h7FE7FFF;    
+    localparam [27:0] EVCTL_BASE       =  28'h0018000;
+    localparam [27:0] EVCTL_MASK       =  28'h7FE7FFF;    
     // NOTE: Crate space will ALWAYS be the last listed
     // Add more as needed *above*
     localparam [27:0] CRATE_BASE        = 28'h8000000;
     localparam [27:0] CRATE_MASK        = 28'h7FFFFFF;
     // START BOILERPLATE INTERCONNECT
-    localparam NUM_MASTERS = 1;
+    localparam NUM_MASTERS = 2;
     localparam NUM_SLAVES = 5;    
     localparam ADDR_WIDTH = 28;
     localparam DATA_WIDTH = 32;
@@ -153,7 +157,8 @@ module turf_intercon(
     // END BOILERPLATE
     
     // Map masters
-    `MASTER( wb_ , 0);
+    `MASTER( wbps_ , 0);
+    `MASTER( wbeth_ , 1);
     // Map slaves
     `SLAVE_MAP( turf_id_ctrl_ , 0 , TURF_ID_CTRL_MASK, TURF_ID_CTRL_BASE );
     `SLAVE_MAP( aurora_ , 1, AURORA_MASK, AURORA_BASE);

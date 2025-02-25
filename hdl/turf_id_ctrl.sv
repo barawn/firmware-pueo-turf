@@ -5,6 +5,9 @@
 // dword sections gives us 16 sections, which should
 // be enough for future-proofing.
 //
+// NOPE NOW WE SLICE THIS IN TWO: this gives us
+// space for the Ethernet DRP stuff.
+//
 // 0x0000 - 0x07FF : ID/control/status space, maybe also reprogramming stuff who knows
 // 0x0800 - 0x0FFF : Simple clock monitor.
 // 0x1000 - 0x18FF : Crate register bridge control and status.
@@ -12,7 +15,7 @@ module turf_id_ctrl #(
         parameter [31:0] IDENT = "TURF",
         parameter [31:0] DATEVERSION = {32{1'b0}},
         parameter NUM_CLK_MON = 3,
-        localparam NUM_ADDRESS_BITS = 15
+        localparam NUM_ADDRESS_BITS = 14
     )(
         input wb_clk_i,
         input wb_rst_i,
@@ -27,8 +30,8 @@ module turf_id_ctrl #(
         
         output bitcmd_sync_o
     );
-    // Number of section bits (4 for a total of 16 sections
-    localparam NUM_SECTION_BITS = 4;
+    // Number of section bits (3 for a total of 8 sections
+    localparam NUM_SECTION_BITS = 3;
     // Number of sections
     localparam NUM_SECTIONS = (1<<NUM_SECTION_BITS);
     // Section selection
@@ -129,28 +132,12 @@ module turf_id_ctrl #(
     assign section_ack[5] = section_ack[0];
     assign section_ack[6] = section_ack[0];
     assign section_ack[7] = section_ack[0];
-    assign section_ack[8] = section_ack[0];
-    assign section_ack[9] = section_ack[0];
-    assign section_ack[10]= section_ack[0];
-    assign section_ack[11]= section_ack[0];
-    assign section_ack[12]= section_ack[0];
-    assign section_ack[13]= section_ack[0];
-    assign section_ack[14]= section_ack[0];
-    assign section_ack[15]= section_ack[0];
     // unused dats
     assign section_dat[3] = section_dat[1];
     assign section_dat[4] = section_dat[0];
     assign section_dat[5] = section_dat[1];
     assign section_dat[6] = section_dat[0];
     assign section_dat[7] = section_dat[1];
-    assign section_dat[8] = section_dat[0];
-    assign section_dat[9] = section_dat[1];
-    assign section_dat[10]= section_dat[0];
-    assign section_dat[11]= section_dat[1];
-    assign section_dat[12]= section_dat[0];
-    assign section_dat[13]= section_dat[1];
-    assign section_dat[14]= section_dat[0];
-    assign section_dat[15]= section_dat[1];
     
     // logic section  
     integer br;  

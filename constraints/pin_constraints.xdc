@@ -316,6 +316,16 @@ set_property -dict {PACKAGE_PIN AG5} [get_ports {MGTTX_N[3]}]
 set_property -dict {PACKAGE_PIN AH12} [get_ports GBE_CLK_P]
 set_property -dict {PACKAGE_PIN AH11} [get_ports GBE_CLK_N]
 
+set_property -dict {PACKAGE_PIN AR6} [get_ports {GBE_TX_P[0]}]
+set_property -dict {PACKAGE_PIN AR5} [get_ports {GBE_TX_N[0]}]
+set_property -dict {PACKAGE_PIN AT4} [get_ports {GBE_RX_P[0]}]
+set_property -dict {PACKAGE_PIN AT3} [get_ports {GBE_RX_N[0]}]
+
+set_property -dict {PACKAGE_PIN AP8} [get_ports {GBE_TX_P[1]}]
+set_property -dict {PACKAGE_PIN AP7} [get_ports {GBE_TX_N[1]}]
+set_property -dict {PACKAGE_PIN AR2} [get_ports {GBE_RX_P[1]}]
+set_property -dict {PACKAGE_PIN AR1} [get_ports {GBE_RX_N[1]}]
+
 ##set_property -dict { PACKAGE_PIN AG10 } [get_ports { NC_GCLK_P }]
 ##set_property -dict { PACKAGE_PIN AG9 }  [get_ports { NC_GCLK_N }]
 
