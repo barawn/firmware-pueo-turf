@@ -80,6 +80,17 @@ module eth_xcvr_phy_wrapper #
     input  wire                   xcvr_rxn,
 
     /*
+     * DRP interface (PSA)
+     */
+    input wire                    drpclk_in,
+    input wire                    drpen_in,
+    input wire                    drpwe_in,
+    input wire [9:0]              drpaddr_in,
+    input wire [15:0]             drpdi_in,
+    output wire [15:0]            drpdo_out,
+    output wire                   drprdy_out,
+
+    /*
      * PHY connections
      */
     output wire                   phy_tx_clk,
@@ -138,6 +149,15 @@ if (HAS_COMMON) begin : xcvr
         .gthtxn_out(xcvr_txn),
         .gthrxp_in(xcvr_rxp),
         .gthrxn_in(xcvr_rxn),
+        
+        // drpy drpy
+        .drpclk_in(drpclk_in),
+        .drpen_in(drpen_in),
+        .drpwe_in(drpwe_in),
+        .drpaddr_in(drpaddr_in),
+        .drpdi_in(drpdi_in),
+        .drpdo_out(drpdo_out),
+        .drprdy_out(drprdy_out),
 
         // Transmit
         .gtwiz_userclk_tx_reset_in(1'b0),
@@ -202,6 +222,15 @@ end else begin : xcvr
         .gtytxn_out(xcvr_txn),
         .gtyrxp_in(xcvr_rxp),
         .gtyrxn_in(xcvr_rxn),
+
+        // drpy drpy
+        .drpclk_in(drpclk_in),
+        .drpen_in(drpen_in),
+        .drpwe_in(drpwe_in),
+        .drpaddr_in(drpaddr_in),
+        .drpdi_in(drpdi_in),
+        .drpdo_out(drpdo_out),
+        .drprdy_out(drprdy_out),
 
         // Transmit
         .gtwiz_userclk_tx_reset_in(1'b0),
