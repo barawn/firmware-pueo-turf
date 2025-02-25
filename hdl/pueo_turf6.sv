@@ -4,6 +4,7 @@
 // and a bunch of stock cores for serial   //
 // crap.                                   //
 /////////////////////////////////////////////
+`define USE_GBE
 module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="A",
                     parameter [3:0] VER_MAJOR=4'd0,
@@ -129,8 +130,12 @@ module pueo_turf6 #(parameter IDENT="TURF",
     `DEFINE_AXI4L_IF( axi_ps_ , 28, 32 );
     // PS WISHBONE side.
     `DEFINE_WB_IF( wb_ps_ , 28, 32 );
+    // Ethernet WISHBONE side
+    `DEFINE_WB_IF( wb_eth_ , 28, 32 );
     // TURF ID ctl
-    `DEFINE_WB_IF( turf_idctl_ , 15, 32);
+    `DEFINE_WB_IF( turf_idctl_ , 14, 32);
+    // GBE space
+    `DEFINE_WB_IF( gbe_ , 14, 32);
     // Aurora space
     `DEFINE_WB_IF( aurora_ , 15, 32);
     // Control (CIN/COUT stuff) space
@@ -179,7 +184,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
     // both after IBUFs
     wire [1:0] gbe_clk_ibuf;
     // GBE MGT reference clock (156.25 MHz = 10 GHz/64)
-    wire gbe_refclk;
+    wire gbe_sysclk;
         
     // interface clock in bank 67
     wire if_clk67;
@@ -202,17 +207,17 @@ module pueo_turf6 #(parameter IDENT="TURF",
     // Aurora clock
     wire aurora_clk;
 
-    // this needs to get pushed into the 10GbE core                  
-    IBUFDS_GTE4 #(.REFCLK_HROW_CK_SEL(2'b00))
-        u_gclk_ibuf(.I(GBE_CLK_P),.IB(GBE_CLK_N),.CEB(1'b0),.O(gbe_clk[0]), .ODIV2(gbe_clk_ibuf[0]));
-    // The example design is sooo not helpful here.
-    BUFG_GT u_gth_internal(.I(gbe_clk_ibuf[0]),
-                           .O(gbe_sysclk),
-                           .CE(1'b1),
-                           .CEMASK(1'b0),
-                           .CLR(1'b0),
-                           .CLRMASK(1'b0),
-                           .DIV(3'b000));
+//    // this needs to get pushed into the 10GbE core                  
+//    IBUFDS_GTE4 #(.REFCLK_HROW_CK_SEL(2'b00))
+//        u_gclk_ibuf(.I(GBE_CLK_P),.IB(GBE_CLK_N),.CEB(1'b0),.O(gbe_clk[0]), .ODIV2(gbe_clk_ibuf[0]));
+//    // The example design is sooo not helpful here.
+//    BUFG_GT u_gth_internal(.I(gbe_clk_ibuf[0]),
+//                           .O(gbe_sysclk),
+//                           .CE(1'b1),
+//                           .CEMASK(1'b0),
+//                           .CLR(1'b0),
+//                           .CLRMASK(1'b0),
+//                           .DIV(3'b000));
 
     // this needs to get pushed into the DDR core. Might go through
     // an MMCM. Not sure.
@@ -400,9 +405,56 @@ module pueo_turf6 #(parameter IDENT="TURF",
                   .CINC_N(CINC_N),
                   .CIND_P(CIND_P),
                   .CIND_N(CIND_N));
-               
+
+    // ETHERNET STREAMS AND CONTROLS
+    `DEFINE_AXI4S_MIN_IF( ack_ , 16);
+    `DEFINE_AXI4S_MIN_IF( nack_ , 16);
+    wire event_open;
+    `DEFINE_AXI4S_MIN_IF( ev_ctrl_ , 32);
+    `DEFINE_AXI4S_MIN_IF( ev_data_ , 64);
+    wire [7:0] ev_data_tkeep;
+    wire       ev_data_tlast;
+    // kill the streams for now
+    assign ack_tready = 1'b1;
+    assign nack_ready = 1'b1;
+    assign ev_ctrl_tvalid = 1'b0;
+    assign ev_ctrl_tdata = {32{1'b0}};
+    assign ev_data_tvalid = 1'b0;
+    assign ev_data_tdata = {64{1'b0}};
+
+    // WHEEEEE
+    // The UDP wrap contains hookups for the full SFP, but
+    // obviously we don't have any of them. All we hook up are
+    // the TXP/TXNs and RXP/RXNs plus refclks.
+    // We also grab the LEDs for funsies and push them to EMIOs.
+    wire [3:0] sfp_led;
+    turf_udp_wrap #(.WBCLKTYPE("PSCLK"),
+                    .ETHCLKTYPE("ETHCLK"))
+          u_ethernet(
+            .sfp_led(sfp_led),
+            .sfp_tx_p( GBE_TX_P ),
+            .sfp_tx_n( GBE_TX_N ),
+            .sfp_rx_p( GBE_RX_P ),
+            .sfp_rx_n( GBE_RX_N ),
+            .sfp_refclk_p(GBE_CLK_P),
+            .sfp_refclk_n(GBE_CLK_N),
+            .aclk(gbe_sysclk),
+            `CONNECT_AXI4S_MIN_IF( m_ack_ , ack_ ),
+            `CONNECT_AXI4S_MIN_IF( m_nack_ , nack_ ),
+            `CONNECT_AXI4S_MIN_IF( s_ev_ctrl_ , ev_ctrl_ ),
+            `CONNECT_AXI4S_MIN_IF( s_ev_data_ , ev_data_ ),
+            .s_ev_data_tkeep(s_ev_data_tkeep),
+            .s_ev_data_tlast(s_ev_data_tlast),
+            .wb_clk_i(ps_clk),
+            `CONNECT_WBS_IFM( gtp_ , gbe_ ),
+            `CONNECT_WBM_IFM( wb_ , wb_eth_ )          
+          );
+                           
     // Dummy evctl
     wbs_dummy #(.ADDRESS_WIDTH(15),.DATA_WIDTH(32)) u_evctl(`CONNECT_WBS_IFM(wb_ , evctl_ ));    
+
+    
+    
 
     generate
         if (UART_DEBUG == "TRUE") begin : SERDBG
