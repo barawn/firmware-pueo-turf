@@ -84,77 +84,12 @@ module turf_udp_wrap #( parameter NSFP=2,
                            .CLRMASK(1'b1),
                            .DIV(3'b000));
 
-    // Clocking
-    // Generate a 125 MHz clock.
-    wire mmcm_rst = 1'b0;
-    wire mmcm_locked;
-    wire mmcm_clkfb;
-    // 125 MHz clock stuff
-    wire clk125;
-    wire rst_clk125;
-    wire clk_125mhz_mmcm_out;
-    // MMCM instance
-    // 161.13 MHz in, 125 MHz out
-    // PFD range: 10 MHz to 500 MHz
-    // VCO range: 800 MHz to 1600 MHz
-    // M = 64, D = 11 sets Fvco = 937.5 MHz (in range)
-    // Divide by 7.5 to get output frequency of 125 MHz
-    MMCME4_BASE #(
-        .BANDWIDTH("OPTIMIZED"),
-        .CLKOUT0_DIVIDE_F(7.5),
-        .CLKOUT0_DUTY_CYCLE(0.5),
-        .CLKOUT0_PHASE(0),
-        .CLKOUT1_DIVIDE(1),
-        .CLKOUT1_DUTY_CYCLE(0.5),
-        .CLKOUT1_PHASE(0),
-        .CLKOUT2_DIVIDE(1),
-        .CLKOUT2_DUTY_CYCLE(0.5),
-        .CLKOUT2_PHASE(0),
-        .CLKOUT3_DIVIDE(1),
-        .CLKOUT3_DUTY_CYCLE(0.5),
-        .CLKOUT3_PHASE(0),
-        .CLKOUT4_DIVIDE(1),
-        .CLKOUT4_DUTY_CYCLE(0.5),
-        .CLKOUT4_PHASE(0),
-        .CLKOUT5_DIVIDE(1),
-        .CLKOUT5_DUTY_CYCLE(0.5),
-        .CLKOUT5_PHASE(0),
-        .CLKOUT6_DIVIDE(1),
-        .CLKOUT6_DUTY_CYCLE(0.5),
-        .CLKOUT6_PHASE(0),
-        .CLKFBOUT_MULT_F(64),
-        .CLKFBOUT_PHASE(0),
-        .DIVCLK_DIVIDE(11),
-        .REF_JITTER1(0.010),
-        .CLKIN1_PERIOD(6.206),
-        .STARTUP_WAIT("FALSE"),
-        .CLKOUT4_CASCADE("FALSE")
-    )
-    clk_mmcm_inst (
-        .CLKIN1(sfp_refclk),
-        .CLKFBIN(mmcm_clkfb),
-        .RST(mmcm_rst),
-        .PWRDWN(1'b0),
-        .CLKOUT0(clk_125mhz_mmcm_out),
-        .CLKOUT0B(),
-        .CLKOUT1(),
-        .CLKOUT1B(),
-        .CLKOUT2(),
-        .CLKOUT2B(),
-        .CLKOUT3(),
-        .CLKOUT3B(),
-        .CLKOUT4(),
-        .CLKOUT5(),
-        .CLKOUT6(),
-        .CLKFBOUT(mmcm_clkfb),
-        .CLKFBOUTB(),
-        .LOCKED(mmcm_locked)
-    );
+    // The original turf_udp_wrap from exanic_turf_test
+    // needed a 125 MHz clock here for... reasons, I guess
+    // we don't: the DRP clock and freerunning clock
+    // is just the PS clock.
+    wire xcvr_ctrl_clk = wb_clk_i;
 
-    BUFG u_clk125(.I(clk_125mhz_mmcm_out),.O(clk125));
-    sync_reset #(.N(4)) sync_reset_125mhz_inst( .clk(clk125),
-                                                .rst(~mmcm_locked),
-                                                .out(rst_clk125));         
     wire [1:0] drpen;
     wire drpwe;
     wire [9:0] drpaddr;
@@ -197,8 +132,8 @@ module turf_udp_wrap #( parameter NSFP=2,
             // versions of Vivado bitch about it.
             eth_xcvr_phy_wrapper #(.HAS_COMMON(i==0?1:0),
                                    .COUNT_125US(19531))
-                u_phy( .xcvr_ctrl_clk( clk125 ),
-                       .xcvr_ctrl_rst( rst_clk125 ),
+                u_phy( .xcvr_ctrl_clk( xcvr_ctrl_clk ),
+                       .xcvr_ctrl_rst( 1'b0 ),
                        .xcvr_gtpowergood_out(powergood),
                        .xcvr_gtrefclk00_in(sfp_mgt_refclk),
                        .xcvr_qpll0lock_out(qpll0lock),

@@ -22,6 +22,8 @@ THE SOFTWARE.
 
 */
 
+// Modified by PSA for PUEO TURF GTHs
+
 // Language: Verilog 2001
 
 `resetall
@@ -132,10 +134,10 @@ if (HAS_COMMON) begin : xcvr
         .qpll0outrefclk_out(xcvr_qpll0outrefclk_out),
 
         // Serial data
-        .gtytxp_out(xcvr_txp),
-        .gtytxn_out(xcvr_txn),
-        .gtyrxp_in(xcvr_rxp),
-        .gtyrxn_in(xcvr_rxn),
+        .gthtxp_out(xcvr_txp),
+        .gthtxn_out(xcvr_txn),
+        .gthrxp_in(xcvr_rxp),
+        .gthrxn_in(xcvr_rxn),
 
         // Transmit
         .gtwiz_userclk_tx_reset_in(1'b0),
