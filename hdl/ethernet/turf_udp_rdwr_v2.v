@@ -193,7 +193,7 @@ module turf_udp_rdwr_v2(
     assign payload_out_tready = !payload_out_full;
     wire out_fifo_reset_aclk;   // suppress tvalid when in reset
     wire out_fifo_reset_wbclk;  // this is the outbound fifo's reset busy     
-    assign m_payload_tvalid = (!out_fifo_reset && payload_fifo_valid);
+    assign m_payload_tvalid = (!out_fifo_reset_aclk && payload_fifo_valid);
     // hold everything in reset until both FIFOs exit reset
     wire wb_rst_full = (wb_fifo_reset || out_fifo_reset_wbclk);
     ccfifo65 u_outfifo(.wr_clk(wb_clk_i),
@@ -226,12 +226,9 @@ module turf_udp_rdwr_v2(
     // First read from the last packet
     reg [31:0] last_first_read = {32{1'b0}};
 
-    // Holds the address and tag. This is an output so it's likely a CC source.
-    (* CUSTOM_CC_SRC = CLKTYPE *)
+    // Holds the address and tag.
     reg [31:0] adr_tag_reg = {32{1'b0}};    
     // This is a temp register for the 64-bit response (and holding for the address)
-    // Therefore it's a CC dest.
-    (* CUSTOM_CC_DST = CLKTYPE *)
     reg [31:0] read_data = {32{1'b0}};
     // This is the write response as well as the packet loss check.
     reg [31:0] write_response = {32{1'b0}};
@@ -245,7 +242,7 @@ module turf_udp_rdwr_v2(
     reg [15:0] response_length = 16'd8;
     (* CUSTOM_CC_SRC = WBCLKTYPE *)
     reg [47:0] response_ipport = {48{1'b0}};
-    (* CUSTOM_CC_SRC = CLKTYPE *)
+    (* CUSTOM_CC_SRC = WBCLKTYPE *)
     reg read_path = 0;
 
     // this just simplifies things
@@ -320,7 +317,7 @@ module turf_udp_rdwr_v2(
         end
 
         // so user_last is (READ_1_ACK and ack_i and fifo_out_tlast) or (READ_1_PEEK and fifo_out_tvalid and not fifo_out_tuser[2])
-        if (state == READ_1_ACK) user_last <= (ack_i && fifo_out_tlast);
+        if (state == READ_1_ACK) user_last <= (wb_ack_i && fifo_out_tlast);
         else if (state == READ_1_PEEK) user_last <= fifo_out_tvalid && !fifo_out_tuser[2];
         else if (state == IDLE) user_last <= 1'b0;
         
@@ -455,7 +452,7 @@ module turf_udp_rdwr_v2(
             // these never consume data
             READ_0_CHECK, READ_0, READ_0_ACK, READ_0_RESP, READ_1_RESP, WRITE_CHECK, WRITE, WRITE_RESP, RESP_HEADER: fifo_out_tready_r <= 0;
             // these consume data when the transaction completes
-            READ_1_ACK, WRITE_ACK: fifo_out_tready_r <= ack_i;
+            READ_1_ACK, WRITE_ACK: fifo_out_tready_r <= wb_ack_i;
             // this consumes data when the response has been echoed
             READ_SKIP: fifo_out_tready_r <= payload_out_tready;
             // this consumes data if it's not valid

@@ -163,7 +163,7 @@ module turf_udp_wrap #( parameter NSFP=2,
     wire drprdy;
                                         
     wb_to_drpx2 u_wbtodrp(.wb_clk_i(wb_clk_i),
-                          `CONNECT_WBS_IFS(wb_ , wb_ ),
+                          `CONNECT_WBS_IFS(wb_ , gtp_ ),
                           .drpen(drpen),
                           .drpwe(drpwe),
                           .drpaddr(drpaddr),

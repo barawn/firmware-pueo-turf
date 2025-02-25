@@ -8,8 +8,8 @@
 module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="A",
                     parameter [3:0] VER_MAJOR=4'd0,
-                    parameter [3:0] VER_MINOR=4'd1,
-                    parameter [7:0] VER_REV=4'd7,
+                    parameter [3:0] VER_MINOR=4'd2,
+                    parameter [7:0] VER_REV=4'd0,
                     parameter [15:0] FIRMWARE_DATE = {16{1'b0}})                    
                     (
 
@@ -302,6 +302,9 @@ module pueo_turf6 #(parameter IDENT="TURF",
     // bridge valid indicators
     wire [15:0] bridge_valid;
 
+    // NEED TO DO SOMETHING TO FIX THESE
+    wire bitcmd_sync_req;
+
     turf_id_ctrl #(.IDENT(IDENT),
                    .DATEVERSION(DATEVERSION),
                    .NUM_CLK_MON(5))
@@ -344,7 +347,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
     assign bridge_valid = { 1'b0, 1'b0, aurora_up[3], 1'b1,
                             1'b0, 1'b0, aurora_up[2], 1'b1,
                             1'b0, 1'b0, aurora_up[1], 1'b1,
-                            1'b0, 1'b0, aurora_up[0], 1'b1 };
+                            1'b0, 1'b0, aurora_up[0], 1'b1 };                            
     // The bridge.
     turfio_register_bridge 
         u_bridge( .wb_clk_i(ps_clk),
@@ -361,6 +364,12 @@ module pueo_turf6 #(parameter IDENT="TURF",
                   .s_resp_tuser( aurora_resp_tuser ));                                    
 
     // turfio path
+    // commands don't exist... yet.
+    // need to rewire the command encoder. it's waay simpler
+    // now though because it's JUST the trigger stuff.
+    wire [31:0] turfio_if_command67 = {32{1'b0}};
+    wire [31:0] turfio_if_command68 = {32{1'b0}};
+    
     turfio_if #( .INV_SYSCLK(INV_MMCM),
                  .TRAIN_VALUE(TRAIN_VALUE),
                  .INV_CINTIO(INV_CINTIO),
@@ -416,7 +425,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
     wire       ev_data_tlast;
     // kill the streams for now
     assign ack_tready = 1'b1;
-    assign nack_ready = 1'b1;
+    assign nack_tready = 1'b1;
     assign ev_ctrl_tvalid = 1'b0;
     assign ev_ctrl_tdata = {32{1'b0}};
     assign ev_data_tvalid = 1'b0;
@@ -443,8 +452,8 @@ module pueo_turf6 #(parameter IDENT="TURF",
             `CONNECT_AXI4S_MIN_IF( m_nack_ , nack_ ),
             `CONNECT_AXI4S_MIN_IF( s_ev_ctrl_ , ev_ctrl_ ),
             `CONNECT_AXI4S_MIN_IF( s_ev_data_ , ev_data_ ),
-            .s_ev_data_tkeep(s_ev_data_tkeep),
-            .s_ev_data_tlast(s_ev_data_tlast),
+            .s_ev_data_tkeep(ev_data_tkeep),
+            .s_ev_data_tlast(ev_data_tlast),
             .wb_clk_i(ps_clk),
             `CONNECT_WBS_IFM( gtp_ , gbe_ ),
             `CONNECT_WBM_IFM( wb_ , wb_eth_ )          
