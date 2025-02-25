@@ -218,10 +218,10 @@ end else begin : xcvr
         .qpll1refclk_in(1'b0),
 
         // Serial data
-        .gtytxp_out(xcvr_txp),
-        .gtytxn_out(xcvr_txn),
-        .gtyrxp_in(xcvr_rxp),
-        .gtyrxn_in(xcvr_rxn),
+        .gthtxp_out(xcvr_txp),
+        .gthtxn_out(xcvr_txn),
+        .gthrxp_in(xcvr_rxp),
+        .gthrxn_in(xcvr_rxn),
 
         // drpy drpy
         .drpclk_in(drpclk_in),
