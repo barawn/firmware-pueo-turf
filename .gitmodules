@@ -7,6 +7,3 @@
 [submodule "verilog-ethernet"]
 	path = verilog-ethernet
 	url = https://github.com/alexforencich/verilog-ethernet
-[submodule "verilog-axis"]
-	path = verilog-axis
-	url = https://github.com/alexforencich/verilog-axis
