@@ -28,7 +28,8 @@ module pueo_turf6 #(parameter IDENT="TURF",
         
         output GPS_TX,
         input GPS_RX,
-        
+
+        // CLK_SCL/CLK_SDA are the "3V3" guys        
         output CLK_SCL,
         inout CLK_SDA,
         
