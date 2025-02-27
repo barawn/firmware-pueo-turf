@@ -10,6 +10,8 @@ ip/fifo/axis_ccfifo64_tlast/axis_ccfifo64_tlast.xci
 ip/fifo/axis_ccfifo64_tuser4_tlast/axis_ccfifo64_tuser4_tlast.xci
 ip/fifo/ccfifo65/ccfifo65.xci
 ip/fifo/ccfifo69/ccfifo69.xci
+ip/eth/eth_mac_10g_fifo_core/eth_mac_10g_fifo_core.xci
+ip/eth/eth_phy_10g_core/eth_phy_10g_core.xci
 ip/eth/eth_xcvr_gt_channel/eth_xcvr_gt_channel.xci
 ip/eth/eth_xcvr_gt_full/eth_xcvr_gt_full.xci
 ip/debug/event_ctrl_ila/event_ctrl_ila.xci
@@ -18,5 +20,6 @@ ip/debug/intercon_ila/intercon_ila.xci
 ip/debug/register_bridge_ila/register_bridge_ila.xci
 ip/aurora/turfio_aurora/turfio_aurora.xci
 ip/debug/uart_ila/uart_ila.xci
+ip/eth/udp_complete_64_core/udp_complete_64_core.xci
 ip/debug/udp_ila/udp_ila.xci
 ip/debug/udp_rdwr_ila/udp_rdwr_ila.xci

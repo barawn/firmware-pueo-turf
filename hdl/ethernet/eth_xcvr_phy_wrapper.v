@@ -295,20 +295,9 @@ rx_reset_sync_inst (
     .out(phy_rx_rst)
 );
 
-eth_phy_10g #(
-    .DATA_WIDTH(DATA_WIDTH),
-    .CTRL_WIDTH(CTRL_WIDTH),
-    .HDR_WIDTH(HDR_WIDTH),
-    .BIT_REVERSE(1),
-    .SCRAMBLER_DISABLE(0),
-    .PRBS31_ENABLE(PRBS31_ENABLE),
-    .TX_SERDES_PIPELINE(TX_SERDES_PIPELINE),
-    .RX_SERDES_PIPELINE(RX_SERDES_PIPELINE),
-    .BITSLIP_HIGH_CYCLES(BITSLIP_HIGH_CYCLES),
-    .BITSLIP_LOW_CYCLES(BITSLIP_LOW_CYCLES),
-    .COUNT_125US(COUNT_125US)
-)
-phy_inst (
+// This is eth_phy_10g split into an IP core
+// because we're trying to factor out the LFSR generation.
+eth_phy_10g_core phy_inst (
     .tx_clk(phy_tx_clk),
     .tx_rst(phy_tx_rst),
     .rx_clk(phy_rx_clk),

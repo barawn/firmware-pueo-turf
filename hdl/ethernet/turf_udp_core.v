@@ -55,14 +55,7 @@ module turf_udp_core(
     `DEFINE_AXI4S_IF( rx_axis_ , 64);
     wire       rx_axis_tuser;
     
-    eth_mac_10g_fifo #(
-        .ENABLE_PADDING(1),
-        .ENABLE_DIC(1),
-        .MIN_FRAME_LENGTH(64),
-        .TX_FIFO_DEPTH(8192),
-        .TX_FRAME_FIFO(1),
-        .RX_FIFO_DEPTH(2048),
-        .RX_FRAME_FIFO(1))
+    eth_mac_10g_fifo_core
         u_eth_mac_10g_fifo(
             .rx_clk(sfp_rx_clk),
             .rx_rst(sfp_rx_rst),
@@ -134,8 +127,8 @@ module turf_udp_core(
                   `CONNECT_AXI4S_IF(s_eth_payload_axis_ , tx_eth_payload_ ),
                   .s_eth_payload_axis_tuser(tx_eth_payload_tuser));
 
-    // UDP core
-    udp_complete_64
+    // UDP core, now the IP packaged version
+    udp_complete_64_core
     u_udp_complete(
         .clk(clk),
         .rst(rst),
