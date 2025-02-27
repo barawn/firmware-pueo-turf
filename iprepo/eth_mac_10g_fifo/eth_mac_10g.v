@@ -122,7 +122,7 @@ end
 
 generate
 
-if (DATA_WIDTH == 64) begin
+if (DATA_WIDTH == 64) begin : D64
 
 axis_xgmii_rx_64 #(
     .DATA_WIDTH(DATA_WIDTH),
@@ -185,7 +185,7 @@ axis_xgmii_tx_inst (
     .error_underflow(tx_error_underflow)
 );
 
-end else begin
+end else begin : D32
 
 axis_xgmii_rx_32 #(
     .DATA_WIDTH(DATA_WIDTH),
