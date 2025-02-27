@@ -4,12 +4,12 @@ proc init_gui { IPINST } {
   #Adding Page
   set Page_0 [ipgui::add_page $IPINST -name "Page 0"]
   ipgui::add_param $IPINST -name "ARP_CACHE_ADDR_WIDTH" -parent ${Page_0}
+  ipgui::add_param $IPINST -name "ARP_CLOCK_PER_SEC" -parent ${Page_0}
   ipgui::add_param $IPINST -name "ARP_REQUEST_RETRY_COUNT" -parent ${Page_0}
+  ipgui::add_param $IPINST -name "ARP_REQUEST_RETRY_INTERVAL_SEC" -parent ${Page_0}
+  ipgui::add_param $IPINST -name "ARP_REQUEST_TIMEOUT_SEC" -parent ${Page_0}
   ipgui::add_param $IPINST -name "UDP_CHECKSUM_GEN_ENABLE" -parent ${Page_0}
   ipgui::add_param $IPINST -name "UDP_CHECKSUM_HEADER_FIFO_DEPTH" -parent ${Page_0}
-  ipgui::add_param $IPINST -name "ARP_CLOCK_PER_SEC" -parent ${Page_0}
-  ipgui::add_param $IPINST -name "ARP_REQUEST_TIMEOUT_SEC" -parent ${Page_0}
-  ipgui::add_param $IPINST -name "ARP_REQUEST_RETRY_INTERVAL_SEC" -parent ${Page_0}
   ipgui::add_param $IPINST -name "UDP_CHECKSUM_PAYLOAD_FIFO_DEPTH" -parent ${Page_0}
 
 
@@ -98,16 +98,19 @@ proc update_MODELPARAM_VALUE.ARP_REQUEST_RETRY_COUNT { MODELPARAM_VALUE.ARP_REQU
 	set_property value [get_property value ${PARAM_VALUE.ARP_REQUEST_RETRY_COUNT}] ${MODELPARAM_VALUE.ARP_REQUEST_RETRY_COUNT}
 }
 
-proc update_MODELPARAM_VALUE.ARP_REQUEST_RETRY_INTERVAL { MODELPARAM_VALUE.ARP_REQUEST_RETRY_INTERVAL } {
+proc update_MODELPARAM_VALUE.ARP_CLOCK_PER_SEC { MODELPARAM_VALUE.ARP_CLOCK_PER_SEC PARAM_VALUE.ARP_CLOCK_PER_SEC } {
 	# Procedure called to set VHDL generic/Verilog parameter value(s) based on TCL parameter value
-	# WARNING: There is no corresponding user parameter named "ARP_REQUEST_RETRY_INTERVAL". Setting updated value from the model parameter.
-set_property value 250000000 ${MODELPARAM_VALUE.ARP_REQUEST_RETRY_INTERVAL}
+	set_property value [get_property value ${PARAM_VALUE.ARP_CLOCK_PER_SEC}] ${MODELPARAM_VALUE.ARP_CLOCK_PER_SEC}
 }
 
-proc update_MODELPARAM_VALUE.ARP_REQUEST_TIMEOUT { MODELPARAM_VALUE.ARP_REQUEST_TIMEOUT } {
+proc update_MODELPARAM_VALUE.ARP_REQUEST_RETRY_INTERVAL_SEC { MODELPARAM_VALUE.ARP_REQUEST_RETRY_INTERVAL_SEC PARAM_VALUE.ARP_REQUEST_RETRY_INTERVAL_SEC } {
 	# Procedure called to set VHDL generic/Verilog parameter value(s) based on TCL parameter value
-	# WARNING: There is no corresponding user parameter named "ARP_REQUEST_TIMEOUT". Setting updated value from the model parameter.
-set_property value 1 ${MODELPARAM_VALUE.ARP_REQUEST_TIMEOUT}
+	set_property value [get_property value ${PARAM_VALUE.ARP_REQUEST_RETRY_INTERVAL_SEC}] ${MODELPARAM_VALUE.ARP_REQUEST_RETRY_INTERVAL_SEC}
+}
+
+proc update_MODELPARAM_VALUE.ARP_REQUEST_TIMEOUT_SEC { MODELPARAM_VALUE.ARP_REQUEST_TIMEOUT_SEC PARAM_VALUE.ARP_REQUEST_TIMEOUT_SEC } {
+	# Procedure called to set VHDL generic/Verilog parameter value(s) based on TCL parameter value
+	set_property value [get_property value ${PARAM_VALUE.ARP_REQUEST_TIMEOUT_SEC}] ${MODELPARAM_VALUE.ARP_REQUEST_TIMEOUT_SEC}
 }
 
 proc update_MODELPARAM_VALUE.UDP_CHECKSUM_GEN_ENABLE { MODELPARAM_VALUE.UDP_CHECKSUM_GEN_ENABLE PARAM_VALUE.UDP_CHECKSUM_GEN_ENABLE } {

@@ -428,7 +428,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>c3098de6</spirit:value>
+            <spirit:value>6ea5361d</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -2426,14 +2426,19 @@
         <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.ARP_REQUEST_RETRY_COUNT">4</spirit:value>
       </spirit:modelParameter>
       <spirit:modelParameter spirit:dataType="integer">
-        <spirit:name>ARP_REQUEST_RETRY_INTERVAL</spirit:name>
-        <spirit:displayName>Arp Request Retry Interval</spirit:displayName>
-        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.ARP_REQUEST_RETRY_INTERVAL">250000000</spirit:value>
+        <spirit:name>ARP_CLOCK_PER_SEC</spirit:name>
+        <spirit:displayName>Arp Clock Per Sec</spirit:displayName>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.ARP_CLOCK_PER_SEC">125000000</spirit:value>
       </spirit:modelParameter>
       <spirit:modelParameter spirit:dataType="integer">
-        <spirit:name>ARP_REQUEST_TIMEOUT</spirit:name>
-        <spirit:displayName>Arp Request Timeout</spirit:displayName>
-        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.ARP_REQUEST_TIMEOUT">1</spirit:value>
+        <spirit:name>ARP_REQUEST_RETRY_INTERVAL_SEC</spirit:name>
+        <spirit:displayName>Arp Request Retry Interval Sec</spirit:displayName>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.ARP_REQUEST_RETRY_INTERVAL_SEC">2</spirit:value>
+      </spirit:modelParameter>
+      <spirit:modelParameter spirit:dataType="integer">
+        <spirit:name>ARP_REQUEST_TIMEOUT_SEC</spirit:name>
+        <spirit:displayName>Arp Request Timeout Sec</spirit:displayName>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.ARP_REQUEST_TIMEOUT_SEC">30</spirit:value>
       </spirit:modelParameter>
       <spirit:modelParameter spirit:dataType="integer">
         <spirit:name>UDP_CHECKSUM_GEN_ENABLE</spirit:name>
@@ -2617,7 +2622,7 @@
       <spirit:file>
         <spirit:name>xgui/udp_complete_64_v1_0.tcl</spirit:name>
         <spirit:fileType>tclSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_c3098de6</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_6ea5361d</spirit:userFileType>
         <spirit:userFileType>XGUI_VERSION_2</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
@@ -2633,6 +2638,21 @@
       <spirit:name>ARP_REQUEST_RETRY_COUNT</spirit:name>
       <spirit:displayName>Arp Request Retry Count</spirit:displayName>
       <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.ARP_REQUEST_RETRY_COUNT">4</spirit:value>
+    </spirit:parameter>
+    <spirit:parameter>
+      <spirit:name>ARP_CLOCK_PER_SEC</spirit:name>
+      <spirit:displayName>Arp Clock Per Sec</spirit:displayName>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.ARP_CLOCK_PER_SEC">125000000</spirit:value>
+    </spirit:parameter>
+    <spirit:parameter>
+      <spirit:name>ARP_REQUEST_RETRY_INTERVAL_SEC</spirit:name>
+      <spirit:displayName>Arp Request Retry Interval Sec</spirit:displayName>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.ARP_REQUEST_RETRY_INTERVAL_SEC">2</spirit:value>
+    </spirit:parameter>
+    <spirit:parameter>
+      <spirit:name>ARP_REQUEST_TIMEOUT_SEC</spirit:name>
+      <spirit:displayName>Arp Request Timeout Sec</spirit:displayName>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.ARP_REQUEST_TIMEOUT_SEC">30</spirit:value>
     </spirit:parameter>
     <spirit:parameter>
       <spirit:name>UDP_CHECKSUM_GEN_ENABLE</spirit:name>
@@ -2652,21 +2672,6 @@
     <spirit:parameter>
       <spirit:name>Component_Name</spirit:name>
       <spirit:value spirit:resolve="user" spirit:id="PARAM_VALUE.Component_Name" spirit:order="1">udp_complete_64_v1_0</spirit:value>
-    </spirit:parameter>
-    <spirit:parameter>
-      <spirit:name>ARP_CLOCK_PER_SEC</spirit:name>
-      <spirit:displayName>Arp Clock Per Sec</spirit:displayName>
-      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.ARP_CLOCK_PER_SEC">125000000</spirit:value>
-    </spirit:parameter>
-    <spirit:parameter>
-      <spirit:name>ARP_REQUEST_RETRY_INTERVAL_SEC</spirit:name>
-      <spirit:displayName>Arp Request Retry Interval Sec</spirit:displayName>
-      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.ARP_REQUEST_RETRY_INTERVAL_SEC">2</spirit:value>
-    </spirit:parameter>
-    <spirit:parameter>
-      <spirit:name>ARP_REQUEST_TIMEOUT_SEC</spirit:name>
-      <spirit:displayName>Arp Request Timeout Sec</spirit:displayName>
-      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.ARP_REQUEST_TIMEOUT_SEC">30</spirit:value>
     </spirit:parameter>
   </spirit:parameters>
   <spirit:vendorExtensions>
@@ -2705,7 +2710,7 @@
       <xilinx:vendorDisplayName>Ohio State packaged alexforencich</xilinx:vendorDisplayName>
       <xilinx:vendorURL>https://github.com/alexforencich/verilog-ethernet</xilinx:vendorURL>
       <xilinx:coreRevision>2</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2025-02-27T17:32:31Z</xilinx:coreCreationDateTime>
+      <xilinx:coreCreationDateTime>2025-02-27T17:37:26Z</xilinx:coreCreationDateTime>
       <xilinx:tags>
         <xilinx:tag xilinx:name="nopcore"/>
       </xilinx:tags>
@@ -2713,10 +2718,10 @@
     <xilinx:packagingInfo>
       <xilinx:xilinxVersion>2022.2</xilinx:xilinxVersion>
       <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="d55c5097"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="918b2f52"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="af1f0dde"/>
       <xilinx:checksum xilinx:scope="ports" xilinx:value="38469f70"/>
-      <xilinx:checksum xilinx:scope="hdlParameters" xilinx:value="07bb02c1"/>
-      <xilinx:checksum xilinx:scope="parameters" xilinx:value="5e3db672"/>
+      <xilinx:checksum xilinx:scope="hdlParameters" xilinx:value="43fbbd2a"/>
+      <xilinx:checksum xilinx:scope="parameters" xilinx:value="7d6aac9d"/>
     </xilinx:packagingInfo>
   </spirit:vendorExtensions>
 </spirit:component>
