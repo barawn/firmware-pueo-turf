@@ -161,9 +161,10 @@ module turf_intercon(
     `MASTER( wbeth_ , 1);
     // Map slaves
     `SLAVE_MAP( turf_id_ctrl_ , 0 , TURF_ID_CTRL_MASK, TURF_ID_CTRL_BASE );
-    `SLAVE_MAP( aurora_ , 1, AURORA_MASK, AURORA_BASE);
-    `SLAVE_MAP( ctl_ , 2, CTL_MASK, CTL_BASE);
-    `SLAVE_MAP( evctl_ , 3, EVCTL_MASK, EVCTL_BASE );
+    `SLAVE_MAP( gbe_ , 1, GBE_MASK, GBE_BASE );
+    `SLAVE_MAP( aurora_ , 2, AURORA_MASK, AURORA_BASE);
+    `SLAVE_MAP( ctl_ , 3, CTL_MASK, CTL_BASE);
+    `SLAVE_MAP( evctl_ , 4, EVCTL_MASK, EVCTL_BASE );
 
     `SLAVE_MAP( crate_ , NUM_SLAVES-1 , CRATE_MASK, CRATE_BASE );
 
