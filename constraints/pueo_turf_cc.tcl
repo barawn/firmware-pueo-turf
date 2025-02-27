@@ -111,8 +111,35 @@ set clktypes($ifclk68) IFCLK68
 set psclk [get_clocks -of_objects [get_nets -hier -filter { NAME =~ "ps_clk" }]]
 set clktypes($psclk) PSCLK
 
-set userclk [get_clocks -of_objects [get_pins -hier -filter { NAME =~ "u_aurora/u_clock/user_clk_buf_i/O" }]]
-set clktypes($userclk) USERCLK
+## just for safety we're going to try avoiding the [] name here and create a new one
+set userbuf [get_cells -hier -filter { NAME =~ "u_aurora/u_clock/user_clk_buf_i"}]
+if { [info exists userbuf] } {
+    puts "Found userclk buf: $userbuf"
+    set user_genclk [get_clocks -of_objects $userbuf]
+    puts "Userclk was named ${user_genclk}"
+    # In synthesis, this is a USER generated clock because of the way the IP
+    # works. In implementation it's an ACTUAL generated clock, so we can rename it.
+    # Dodge that issue here.
+    set isgenclk [get_property -quiet IS_GENERATED $user_genclk]
+    set isusergenclk [get_property -quiet IS_USER_GENERATED $user_genclk]
+    if {[llength $isgenclk] && [expr $isgenclk == 1] && [llength $isusergenclk] && [expr $isusergenclk == 0]} {
+        puts "Userclk was generated: checking to see if we need to rename it"
+        if {[get_property IS_RENAMED $user_genclk]} {
+            puts "Already renamed, skipping."
+            set userclk $user_genclk
+        } else {
+            puts "Renaming $user_genclk to userclk."
+            set userclkpin [get_property SOURCE_PINS $user_genclk]
+            set userclk [create_generated_clock -name user_clock [get_pins $userclkpin]]
+        }
+    } else {
+        puts "Cannot rename $user_genclk, just saving it."
+        set userclk $user_genclk
+    }
+    set clktypes($userclk) USERCLK    
+} else {
+    puts "Cannot find userclk buffer, skipping!"
+}
 
 # create the clktypelist variable to save
 set clktypelist [array get clktypes]
