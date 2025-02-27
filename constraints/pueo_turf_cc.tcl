@@ -102,10 +102,10 @@ set ddr_clk1 [create_clock -period 3.334 -name ddr_clk1 [get_ports -filter { NAM
 set clktypes($ddr_clk1) DDRCLK1
 
 #### INTERNAL CLOCKS
-set ifclk67 [get_clocks -of_objects [get_cells -hier -filter { NAME =~ "u_tioctl/u_clocks/u_ifclk67_buf" }]
+set ifclk67 [get_clocks -of_objects [get_cells -hier -filter { NAME =~ "u_tioctl/u_clocks/u_ifclk67_buf" }]]
 set clktypes($ifclk67) IFCLK67
 
-set ifclk68 [get_clocks -of_objects [get_cells -hier -filter { NAME =~ "u_tioctl/u_clocks/u_ifclk68_buf" }]
+set ifclk68 [get_clocks -of_objects [get_cells -hier -filter { NAME =~ "u_tioctl/u_clocks/u_ifclk68_buf" }]]
 set clktypes($ifclk68) IFCLK68
 
 set psclk [get_clocks -of_objects [get_nets -hier -filter { NAME =~ "ps_clk" }]]
