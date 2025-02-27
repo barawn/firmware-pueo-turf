@@ -48,7 +48,7 @@ module turf_intercon(
     localparam [27:0] CRATE_MASK        = 28'h7FFFFFF;
     // START BOILERPLATE INTERCONNECT
     localparam NUM_MASTERS = 2;
-    localparam NUM_SLAVES = 5;    
+    localparam NUM_SLAVES = 6;    
     localparam ADDR_WIDTH = 28;
     localparam DATA_WIDTH = 32;
 	wire [NUM_MASTERS-1:0] requests;
