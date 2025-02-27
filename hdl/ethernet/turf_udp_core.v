@@ -170,6 +170,10 @@ module turf_udp_core(
         .s_ip_payload_axis_tkeep( {8{1'b0}} ),
         .s_ip_payload_axis_tuser( 1'b0 ),
         .s_ip_payload_axis_tlast( 1'b0 ),
+        // Unused UDP ports
+        .s_udp_ip_dscp({6{1'b0}}),
+        .s_udp_ip_ecn({2{1'b0}}),
+        .s_udp_ip_ttl({8{1'b0}}),
         // UDP frame input
         .s_udp_hdr_valid( s_udphdr_tvalid ),
         .s_udp_hdr_ready( s_udphdr_tready ),
