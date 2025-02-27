@@ -77,10 +77,19 @@ module turf_udp_wrap #( parameter NSFP=2,
                               .CEB(1'b0),
                               .O(sfp_mgt_refclk),
                               .ODIV2(refclk_int));
+    // uhhh... I dunno why this isn't working, let's try doing it ourselves.
+    wire bufg_gt_sync_ce;
+    wire bufg_gt_sync_clr;
+    BUFG_GT_SYNC bufg_gt_refclk_sync(.CLK(refclk_int),
+                                     .CE(sfp_gtpowergood),
+                                     .CLR(1'b0),
+                                     .CESYNC(bufg_gt_sync_ce),
+                                     .CLRSYNC(bufg_gt_sync_clr));
+
     BUFG_GT bufg_gt_refclk(.I(refclk_int),.O(sfp_refclk),
-                           .CE(sfp_gtpowergood),
+                           .CE(bufg_gt_sync_ce),
                            .CEMASK(1'b1),
-                           .CLR(1'b0),
+                           .CLR(bufg_gt_sync_clr),
                            .CLRMASK(1'b1),
                            .DIV(3'b000));
 
