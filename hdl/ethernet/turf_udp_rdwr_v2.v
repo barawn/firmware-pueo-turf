@@ -87,7 +87,7 @@ module turf_udp_rdwr_v2(
 
     // This is the response header stuff.
     reg         response_header_valid = 0;
-    (* CUSTOM_CC_DEST = ACLKTYPE *)
+    (* CUSTOM_CC_DST = ACLKTYPE *)
     reg [63:0]  response_header_data_aclk = {64{1'b0}};
     wire [63:0] response_header_data_wbclk;
     wire        response_header_complete_aclk = m_hdr_tvalid && m_hdr_tready;
