@@ -48,6 +48,7 @@ module turfio_cin_parallel_sync(
     reg enable_capture = 0;
     wire do_cin_capture = enable_capture || capture_i;
     reg enable_lock = 0;
+    (* CUSTOM_CC_SRC = CLKTYPE *)    
     reg locked = 0;
     // this is the sequence track for the *input*. It is unaligned to phase (other than our sync procedure)
     reg [3:0] ifclk_sequence = {4{1'b0}};
