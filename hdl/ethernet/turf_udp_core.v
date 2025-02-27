@@ -63,7 +63,12 @@ module turf_udp_core(
             .tx_rst(sfp_tx_rst),
             .logic_clk(clk),
             .logic_rst(rst),
-            
+            // ptp stuff, unused
+            .ptp_sample_clk(clk),
+            .ptp_ts_96( {96{1'b0}} ),
+            .ptp_ts_step( 1'b0 ),
+            .m_axis_tx_ptp_ts_ready(1'b1),
+            // end ptp           
             `CONNECT_AXI4S_IF( tx_axis_ , tx_axis_ ),
             .tx_axis_tuser(tx_axis_tuser),
             `CONNECT_AXI4S_IF( rx_axis_ , rx_axis_ ),
@@ -154,6 +159,7 @@ module turf_udp_core(
         .m_ip_payload_axis_tready( 1'b1 ),
         .s_ip_hdr_valid( 1'b0 ),
         .s_ip_dscp( 6'h00 ),
+        .s_ip_length( {16{1'b0}} ),
         .s_ip_ecn( 2'b00 ),
         .s_ip_ttl( {8{1'b0}} ),
         .s_ip_protocol( {8{1'b0}} ),
