@@ -284,6 +284,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                               `CONNECT_WBS_IFM(wbps_ , wb_ps_),
                               `CONNECT_WBS_IFM(wbeth_, wb_eth_),
                               `CONNECT_WBM_IFM(turf_id_ctrl_ , turf_idctl_ ),
+                              `CONNECT_WBM_IFM(gbe_ , gbe_ ),
                               `CONNECT_WBM_IFM(aurora_ , aurora_ ),
                               `CONNECT_WBM_IFM(ctl_ , ctl_ ),
                               `CONNECT_WBM_IFM(evctl_ , evctl_ ),
@@ -439,7 +440,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
     // We also grab the LEDs for funsies and push them to EMIOs.
     wire [3:0] sfp_led;
     turf_udp_wrap #(.WBCLKTYPE("PSCLK"),
-                    .ETHCLKTYPE("ETHCLK"))
+                    .ETHCLKTYPE("GBECLK"))
           u_ethernet(
             .sfp_led(sfp_led),
             .sfp_tx_p( GBE_TX_P ),
