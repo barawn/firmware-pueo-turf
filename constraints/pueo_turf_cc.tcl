@@ -86,14 +86,14 @@ proc set_ignore_paths { srcClk dstClk ctlist } {
 ######## CLOCK DEFINITIONS
 
 #### PIN CLOCKS
-set mgt_clock [create_clock -period 7.999 -name mgt_clock [get_ports -filter { NAME =~ "MGTCLK_N" && DIRECTION == "IN" }]]
-set clktypes($mgt_clock) MGTCLK
+set mgt_clk [create_clock -period 7.999 -name mgt_clock [get_ports -filter { NAME =~ "MGTCLK_N" && DIRECTION == "IN" }]]
+set clktypes($mgt_clk) MGTCLK
 
-set sys_clock [create_clock -period 8.000 -name sys_clock [get_ports -filter { NAME =~ "SYSCLK_N" && DIRECTION == "IN" }]]
-set clktypes($sys_clock) SYSCLK
+set sys_clk [create_clock -period 8.000 -name sys_clock [get_ports -filter { NAME =~ "SYSCLK_N" && DIRECTION == "IN" }]]
+set clktypes($sys_clk) SYSCLK
 
-set gbe_clock [create_clock -period 6.400 -name gbe_clock [get_ports -filter { NAME =~ "GBE_CLK_P" && DIRECTION == "IN" }]]
-set clktypes($gbe_clock) GBECLK
+set gbe_clk [create_clock -period 6.400 -name gbe_clock [get_ports -filter { NAME =~ "GBE_CLK_P" && DIRECTION == "IN" }]]
+set clktypes($gbe_clk) GBECLK
 
 set ddr_clk0 [create_clock -period 3.333 -name ddr_clk0 [get_ports -filter { NAME =~ "DDR_CLK_P[0]" && DIRECTION == "IN" }]]
 set clktypes($ddr_clk0) DDRCLK0
@@ -102,10 +102,10 @@ set ddr_clk1 [create_clock -period 3.334 -name ddr_clk1 [get_ports -filter { NAM
 set clktypes($ddr_clk1) DDRCLK1
 
 #### INTERNAL CLOCKS
-set ifclk67 [get_clocks -of_objects [get_nets -hier -filter { NAME =~ "if_clk67" }]]
+set ifclk67 [get_clocks -of_objects [get_nets -hier -filter { NAME =~ "u_tioctl/ifclk67_o" }]]
 set clktypes($ifclk67) IFCLK67
 
-set ifclk68 [get_clocks -of_objects [get_nets -hier -filter { NAME =~ "if_clk68" }]]
+set ifclk68 [get_clocks -of_objects [get_nets -hier -filter { NAME =~ "u_tioctl/ifclk68_o" }]]
 set clktypes($ifclk68) IFCLK68
 
 set psclk [get_clocks -of_objects [get_nets -hier -filter { NAME =~ "ps_clk" }]]
@@ -155,7 +155,7 @@ set_cc_paths $ifclk68 $psclk $clktypelist
 
 set_cc_paths $psclk $ddr_clk0 $clktypelist
 
-set_cc_paths $psclk $sys_clock $clktypelist
+set_cc_paths $psclk $sys_clk $clktypelist
 
 set_cc_path $psclk $gbe_clk $clktypelist
 set_cc_path $gbe_clk $psclk $clktypelist
