@@ -169,6 +169,11 @@ set async_regs_A [get_cells -hier -filter {NAME=~u_aurora*loopback_sync*reg_clkA
 set async_regs_B [get_cells -hier -filter {NAME=~u_aurora*loopback_sync*pipe_clkB_reg*}]
 set_max_delay -datapath_only -from $async_regs_A -to $async_regs_B 10.000
 
+# don't want to dig into the core, sigh.
+set lock_regs [get_cells -hier -filter {NAME=~u_ethernet/SFP[*]*rx_block_lock_reg_reg}]
+set stat_regs [get_cells -hier -filter {NAME=~u_ethernet/gbe_status_reg[*]}]
+set_max_delay -datapath_only -from $lock_regs -to $stat_regs 10.0
+
 # just.... blanket for now
 set_max_delay -datapath_only -from $psclk -to $userclk 10.0
 set_max_delay -datapath_only -from $userclk -to $psclk 10.0
