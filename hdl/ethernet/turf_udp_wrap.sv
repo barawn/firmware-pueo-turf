@@ -22,6 +22,9 @@ module turf_udp_wrap #( parameter NSFP=2,
         input [NSFP-1:0] sfp_npres,
         input [NSFP-1:0] sfp_los,
         output [NSFP-1:0] sfp_rs,
+        // FOR MONITORING
+        output sfp_rxclk_o,
+        output sfp_txclk_o,        
         
         // THESE STREAMS ARE ALL ETHCLK
         output aclk,
@@ -42,7 +45,7 @@ module turf_udp_wrap #( parameter NSFP=2,
         input wb_clk_i,
         // this is the DRP side interface + maybe more? who knows??
         // put the whole effing thing in reset???
-        `TARGET_NAMED_PORTS_WB_IF( gtp_ , 13, 32 ),        
+        `TARGET_NAMED_PORTS_WB_IF( gtp_ , 14, 32 ),        
         // this is the master interface        
         `HOST_NAMED_PORTS_WB_IF( wb_ , 28, 32 )
     );
@@ -106,8 +109,32 @@ module turf_udp_wrap #( parameter NSFP=2,
     wire [31:0] drpdo;
     wire [1:0] drprdy;
                                         
+    // DRP space is the top, control space is the top.
+    `DEFINE_WB_IF( drp_ , 13, 32 );
+    assign drp_cyc_o = gtp_cyc_i && gtp_adr_i[13];
+    assign drp_stb_o = drp_cyc_o;
+    assign drp_adr_o = gtp_adr_i[12:0];
+    assign drp_dat_o = gtp_dat_i;
+    assign drp_we_o = gtp_we_i;
+    assign drp_sel_o = gtp_sel_i;
+
+    // just... global up shit
+    reg [31:0] gbe_status = {32{1'b0}};
+    reg        gbe_rst = 0;
+    reg        gbe_ack = 0;
+    assign gtp_dat_o = (gtp_adr_i[13]) ? drp_dat_i : gbe_status;
+    assign gtp_ack_o = (gtp_adr_i[13]) ? drp_ack_i : (gbe_ack && gtp_cyc_i);
+    assign gtp_err_o = 1'b0;
+    assign gtp_rty_o = 1'b0;
+    always @(posedge wb_clk_i) begin
+        if (gtp_cyc_i && !gtp_adr_i[13] && gtp_stb_i && gtp_we_i && gtp_sel_i[0])
+            gbe_rst <= gtp_dat_i[0];
+        gbe_ack <= gtp_cyc_i && gtp_stb_i && !gtp_adr_i[13];
+        gbe_status <= { sfp_rx_block_lock, sfp_qpll0lock, sfp_gtpowergood };
+    end
+
     wb_to_drpx2 u_wbtodrp(.wb_clk_i(wb_clk_i),
-                          `CONNECT_WBS_IFS(wb_ , gtp_ ),
+                          `CONNECT_WBS_IFM(wb_ , drp_ ),
                           .drpen(drpen),
                           .drpwe(drpwe),
                           .drpaddr(drpaddr),
@@ -142,7 +169,7 @@ module turf_udp_wrap #( parameter NSFP=2,
             eth_xcvr_phy_wrapper #(.HAS_COMMON(i==0?1:0),
                                    .COUNT_125US(19531))
                 u_phy( .xcvr_ctrl_clk( xcvr_ctrl_clk ),
-                       .xcvr_ctrl_rst( 1'b0 ),
+                       .xcvr_ctrl_rst( gbe_rst ),
                        .xcvr_gtpowergood_out(powergood),
                        .xcvr_gtrefclk00_in(sfp_mgt_refclk),
                        .xcvr_qpll0lock_out(qpll0lock),
@@ -197,6 +224,9 @@ module turf_udp_wrap #( parameter NSFP=2,
     `DEFINE_AXI4S_MIN_IF( udpout_hdr_ , 64);
     wire [15:0] udpout_hdr_tuser;
     `DEFINE_AXI4S_IF( udpout_data_ , PAYLOAD_WIDTH);       
+    
+    assign sfp_rxclk_o = sfp_rx_clk[0];
+    assign sfp_txclk_o = sfp_tx_clk[0];
     
     // Its clock is clk156, its reset is clk156_rst.
     wire [47:0] my_mac_address;
