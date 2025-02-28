@@ -9,7 +9,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="A",
                     parameter [3:0] VER_MAJOR=4'd0,
                     parameter [3:0] VER_MINOR=4'd2,
-                    parameter [7:0] VER_REV=4'd0,
+                    parameter [7:0] VER_REV=4'd1,
                     parameter [15:0] FIRMWARE_DATE = {16{1'b0}})                    
                     (
 
@@ -186,6 +186,11 @@ module pueo_turf6 #(parameter IDENT="TURF",
     wire [1:0] gbe_clk_ibuf;
     // GBE MGT reference clock (156.25 MHz = 10 GHz/64)
     wire gbe_sysclk;
+    
+    // actual sfp recovered rxclk
+    wire sfp_rxclk;
+    // actual sfp generated txclk
+    wire sfp_txclk;
         
     // interface clock in bank 67
     wire if_clk67;
@@ -310,7 +315,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
 
     turf_id_ctrl #(.IDENT(IDENT),
                    .DATEVERSION(DATEVERSION),
-                   .NUM_CLK_MON(5))
+                   .NUM_CLK_MON(7))
         u_idctrl( .wb_clk_i(ps_clk),
                   .wb_rst_i(1'b0),
                   `CONNECT_WBS_IFM(wb_ , turf_idctl_ ),
@@ -320,7 +325,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                   .bridge_timeout_i(bridge_timeout),
                   .bridge_invalid_i(bridge_invalid_access),
 
-                  .clk_mon_i( { aurora_clk, ddr_clk[1], ddr_clk[0], gbe_sysclk, sys_clk } ));
+                  .clk_mon_i( { sfp_txclk, sfp_rxclk, aurora_clk, ddr_clk[1], ddr_clk[0], gbe_sysclk, sys_clk } ));
 
     // Aurora
     // indicates auroras are up
@@ -450,6 +455,8 @@ module pueo_turf6 #(parameter IDENT="TURF",
             .sfp_rx_n( GBE_RX_N ),
             .sfp_refclk_p(GBE_CLK_P),
             .sfp_refclk_n(GBE_CLK_N),
+            .sfp_rxclk_o(sfp_rxclk),
+            .sfp_txclk_o(sfp_txclk),
             .aclk(gbe_sysclk),
             `CONNECT_AXI4S_MIN_IF( m_ack_ , ack_ ),
             `CONNECT_AXI4S_MIN_IF( m_nack_ , nack_ ),
