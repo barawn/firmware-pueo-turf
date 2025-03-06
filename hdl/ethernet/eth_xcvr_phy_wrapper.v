@@ -39,6 +39,8 @@ module eth_xcvr_phy_wrapper #
     parameter DATA_WIDTH = 64,
     parameter CTRL_WIDTH = (DATA_WIDTH/8),
     parameter HDR_WIDTH = 2,
+    parameter TX_POLARITY = 0,
+    parameter RX_POLARITY = 0,
     parameter PRBS31_ENABLE = 0,
     parameter TX_SERDES_PIPELINE = 0,
     parameter RX_SERDES_PIPELINE = 0,
@@ -89,6 +91,16 @@ module eth_xcvr_phy_wrapper #
     input wire [15:0]             drpdi_in,
     output wire [15:0]            drpdo_out,
     output wire                   drprdy_out,
+    
+    /*
+     * DMONITOR interface and eyescan reset (PSA)
+     */
+    output wire [15:0]            dmonitor,
+    input wire                    eyescanreset_in,
+    /*
+     * loopback (PSA)
+     */
+    input wire [2:0]              loopback_in,
 
     /*
      * PHY connections
@@ -137,6 +149,7 @@ if (HAS_COMMON) begin : xcvr
         .gtwiz_reset_clk_freerun_in(xcvr_ctrl_clk),
         .gtwiz_reset_all_in(xcvr_ctrl_rst),
         .gtpowergood_out(xcvr_gtpowergood_out),
+        .loopback_in(loopback_in),
 
         // PLL
         .gtrefclk00_in(xcvr_gtrefclk00_in),
@@ -159,6 +172,11 @@ if (HAS_COMMON) begin : xcvr
         .drpdo_out(drpdo_out),
         .drprdy_out(drprdy_out),
 
+        .dmonitorout_out(dmonitor),
+        .dmonitorclk_in(xcvr_ctrl_clk),
+
+        .eyescanreset_in(eyescanreset_in),
+
         // Transmit
         .gtwiz_userclk_tx_reset_in(1'b0),
         .gtwiz_userclk_tx_srcclk_out(),
@@ -171,7 +189,7 @@ if (HAS_COMMON) begin : xcvr
         .txpmaresetdone_out(),
         .txprgdivresetdone_out(),
 
-        .txpolarity_in(1'b1),
+        .txpolarity_in(TX_POLARITY),
 
         .gtwiz_userdata_tx_in(gt_txdata),
         .txheader_in(gt_txheader),
@@ -190,7 +208,7 @@ if (HAS_COMMON) begin : xcvr
         .rxpmaresetdone_out(),
         .rxprgdivresetdone_out(),
 
-        .rxpolarity_in(1'b0),
+        .rxpolarity_in(RX_POLARITY),
 
         .rxgearboxslip_in(gt_rxgearboxslip),
         .gtwiz_userdata_rx_out(gt_rxdata),
@@ -231,6 +249,11 @@ end else begin : xcvr
         .drpdi_in(drpdi_in),
         .drpdo_out(drpdo_out),
         .drprdy_out(drprdy_out),
+        
+        .dmonitorout_out(dmonitor),
+        .dmonitorclk_in(xcvr_ctrl_clk),
+
+        .eyescanreset_in(eyescanreset_in),
 
         // Transmit
         .gtwiz_userclk_tx_reset_in(1'b0),
@@ -244,7 +267,7 @@ end else begin : xcvr
         .txpmaresetdone_out(),
         .txprgdivresetdone_out(),
 
-        .txpolarity_in(1'b1),
+        .txpolarity_in(TX_POLARITY),
 
         .gtwiz_userdata_tx_in(gt_txdata),
         .txheader_in(gt_txheader),
@@ -263,7 +286,7 @@ end else begin : xcvr
         .rxpmaresetdone_out(),
         .rxprgdivresetdone_out(),
 
-        .rxpolarity_in(1'b0),
+        .rxpolarity_in(RX_POLARITY),
 
         .rxgearboxslip_in(gt_rxgearboxslip),
         .gtwiz_userdata_rx_out(gt_rxdata),

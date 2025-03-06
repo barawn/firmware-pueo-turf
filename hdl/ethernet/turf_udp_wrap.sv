@@ -70,6 +70,8 @@ module turf_udp_wrap #( parameter NSFP=2,
     wire [63:0]     sfp_rxd[NSFP-1:0];
     wire [7:0]      sfp_rxc[NSFP-1:0];    
     wire [NSFP-1:0] sfp_rx_block_lock;
+    // watchdog stuff. this is synced to rxclk
+    wire [NSFP-1:0] sfp_rx_high_ber;
 
     wire clk156 = sfp_tx_clk[0];
     wire clk156_rst = sfp_tx_rst[0];    
@@ -108,6 +110,8 @@ module turf_udp_wrap #( parameter NSFP=2,
     wire [15:0] drpdi;
     wire [31:0] drpdo;
     wire [1:0] drprdy;
+
+    wire [31:0] dmonitor;
                                         
     // DRP space is the top, control space is the top.
     `DEFINE_WB_IF( drp_ , 13, 32 );
@@ -121,16 +125,52 @@ module turf_udp_wrap #( parameter NSFP=2,
     // just... global up shit
     reg [31:0] gbe_status = {32{1'b0}};
     reg        gbe_rst = 0;
+    reg [1:0]  eye_rst = {2{1'b0}};
+    reg [2:0]  loopback_0 = {3{1'b0}};
+    reg [2:0]  loopback_1 = {3{1'b0}};
+    wire [2:0] loopback[1:0];
+    assign loopback[0] = loopback_0;
+    assign loopback[1] = loopback_1;
     reg        gbe_ack = 0;
     assign gtp_dat_o = (gtp_adr_i[13]) ? drp_dat_i : gbe_status;
     assign gtp_ack_o = (gtp_adr_i[13]) ? drp_ack_i : (gbe_ack && gtp_cyc_i);
     assign gtp_err_o = 1'b0;
     assign gtp_rty_o = 1'b0;
+    // ok, this half-ass crap isn't going to work.
+    // let's be more organized here.
+    wire [31:0] gbe_status_in[1:0];
+    assign gbe_status_in[0][0] = gbe_rst;
+    assign gbe_status_in[0][1] = sfp_qpll0lock;
+    assign gbe_status_in[0][2] = sfp_rx_block_lock[0];
+    assign gbe_status_in[0][3] = sfp_rx_high_ber[0];
+    assign gbe_status_in[0][4] = eye_rst[0];
+    assign gbe_status_in[0][7:5] = {3{1'b0}};
+    assign gbe_status_in[0][8 +: 8] = { {5{1'b0}}, loopback_0 };
+    assign gbe_status_in[0][16 +: 16] = dmonitor[0 +: 16];
+    
+    assign gbe_status_in[1][0] = gbe_rst;
+    assign gbe_status_in[1][1] = sfp_qpll0lock;
+    assign gbe_status_in[1][2] = sfp_rx_block_lock[1];
+    assign gbe_status_in[1][3] = sfp_rx_high_ber[1];
+    assign gbe_status_in[1][4] = eye_rst[1];
+    assign gbe_status_in[1][7:5] = {3{1'b0}};
+    assign gbe_status_in[1][8 +: 8] = { {5{1'b0}}, loopback_1 };
+    assign gbe_status_in[1][16 +: 16] = dmonitor[16 +: 16];
+    
     always @(posedge wb_clk_i) begin
-        if (gtp_cyc_i && !gtp_adr_i[13] && gtp_stb_i && gtp_we_i && gtp_sel_i[0])
-            gbe_rst <= gtp_dat_i[0];
+        if (gtp_cyc_i && !gtp_adr_i[13] && gtp_stb_i && gtp_we_i) begin
+            if (gtp_sel_i[0]) begin
+                gbe_rst <= gtp_dat_i[0];
+                eye_rst[gtp_adr_i[2]] <= gtp_dat_i[4];
+            end
+            if (gtp_sel_i[1] && !gtp_adr_i[2]) loopback_0 <= gtp_dat_i[8 +: 3];
+            if (gtp_sel_i[1] && gtp_adr_i[2]) loopback_1 <= gtp_dat_i[8 +: 3];
+        end
         gbe_ack <= gtp_cyc_i && gtp_stb_i && !gtp_adr_i[13];
-        gbe_status <= { sfp_rx_block_lock, sfp_qpll0lock, sfp_gtpowergood };
+        if (gtp_cyc_i && gtp_stb_i && !gtp_we_i && !gtp_adr_i[13]) begin
+            if (!gtp_adr_i[2]) gbe_status <= gbe_status_in[0];
+            else gbe_status <= gbe_status_in[1];
+        end
     end
 
     wb_to_drpx2 u_wbtodrp(.wb_clk_i(wb_clk_i),
@@ -167,7 +207,9 @@ module turf_udp_wrap #( parameter NSFP=2,
             // 125 us. Needs to be an integer because more recent
             // versions of Vivado bitch about it.
             eth_xcvr_phy_wrapper #(.HAS_COMMON(i==0?1:0),
-                                   .COUNT_125US(19531))
+                                   .COUNT_125US(19531),
+                                   .TX_POLARITY(1'b0),
+                                   .RX_POLARITY(i==1?1:0))
                 u_phy( .xcvr_ctrl_clk( xcvr_ctrl_clk ),
                        .xcvr_ctrl_rst( gbe_rst ),
                        .xcvr_gtpowergood_out(powergood),
@@ -193,6 +235,10 @@ module turf_udp_wrap #( parameter NSFP=2,
                        .drpdi_in(drpdi),
                        .drpdo_out(drpdo[16*i +: 16]),
                        .drprdy_out(drprdy[i]),
+                       .loopback_in(loopback[i]),
+                       
+                       .dmonitor(dmonitor[16*i +: 16]),
+                       .eyescanreset_in(eye_rst[i]),
                        
                        .phy_tx_clk(sfp_tx_clk[i]),
                        .phy_tx_rst(sfp_tx_rst[i]),
@@ -202,6 +248,7 @@ module turf_udp_wrap #( parameter NSFP=2,
                        .phy_rx_rst(sfp_rx_rst[i]),
                        .phy_xgmii_rxd(sfp_rxd[i]),
                        .phy_xgmii_rxc(sfp_rxc[i]),
+                       .phy_rx_high_ber(sfp_rx_high_ber[i]),
                        .phy_rx_block_lock(sfp_rx_block_lock[i]));
            assign sfp_led[2*i + 0] = sfp_rx_block_lock[i];
            assign sfp_tx_disable[i] = 1'b0;
