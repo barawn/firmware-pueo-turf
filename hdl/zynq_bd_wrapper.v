@@ -59,8 +59,10 @@ module zynq_bd_wrapper
     output pl_clk0);
   
   wire IIC_scl_t;
-  wire IIC_scl_i = (IIC_scl_t) ? 1'b1 : IIC_scl_o;
-      
+  wire IIC_scl;
+  wire IIC_scl_i = (IIC_scl_t) ? 1'b1 : IIC_scl;
+  assign IIC_scl_o = IIC_scl_i;
+  
     // IO0 => MOSI
     // IO1 => MISO
   wire SPI0_io0_i;
@@ -89,7 +91,7 @@ module zynq_bd_wrapper
         .GPS_txd(GPS_txd),
         
         .IIC_scl_i(IIC_scl_i),
-        .IIC_scl_o(IIC_scl_o),
+        .IIC_scl_o(IIC_scl),
         .IIC_scl_t(IIC_scl_t),
         
         .IIC_sda_i(IIC_sda_i),
