@@ -297,6 +297,9 @@ module turf_udp_rdwr_v2(
     always @(posedge wb_clk_i) begin
         reset_write_valid_r <= reset_write_valid;
     
+        // lets us detect entry into resp_header
+        resp_waiting <= (state == RESP_HEADER);        
+    
         // we don't need to clear last_read_valid on a read of address 0, it's never checked
         if (wb_rst_full) last_read_valid <= 0;
         else if (state == READ_0_CHECK && fifo_out_tvalid && fifo_out_tuser[2]) last_read_valid <= 1;
