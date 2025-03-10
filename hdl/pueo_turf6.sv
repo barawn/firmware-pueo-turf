@@ -9,7 +9,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="A",
                     parameter [3:0] VER_MAJOR=4'd0,
                     parameter [3:0] VER_MINOR=4'd2,
-                    parameter [7:0] VER_REV=4'd8,
+                    parameter [7:0] VER_REV=4'd12,
                     parameter [15:0] FIRMWARE_DATE = {16{1'b0}})                    
                     (
 
@@ -100,22 +100,6 @@ module pueo_turf6 #(parameter IDENT="TURF",
     wire emio_scl;
     wire emio_sda_i;
     wire emio_sda_t;
-        
-    // NOTE: we might add in the optional TURFIO I2C controls
-    // at some point. If we do that, we need to disconnect the
-    // UART. We can only do one of those at a time because their
-    // addresses will clash.
-    // Our local addresses are only 0x62/0x6A and whatever's
-    // on the cal board (will need to check that to not clash!!)
-    // on the turfio we pick up 48/10/40/44/11/41/45/46 and 70.
-    // that's a busy I2C bus!
-    i2c_merger u_i2c_merger(.scl_in(emio_scl),
-                            .sda_in_o(emio_sda_i),
-                            .sda_in_t(emio_sda_t),
-                            .scl0_out(CLK_SCL),
-                            .sda0_out(CLK_SDA),
-                            .scl1_out(CAL_SCL),
-                            .sda1_out(CAL_SDA));
     
     wire [15:0] emio_gpio_t;
     wire [15:0] emio_gpio_i;
@@ -240,7 +224,23 @@ module pueo_turf6 #(parameter IDENT="TURF",
                  .sysclk_phase_o(sys_clk_phase),
                  .sysclk_sync_o(sys_clk_sync));
 
-    
+
+    // NOTE: we might add in the optional TURFIO I2C controls
+    // at some point. If we do that, we need to disconnect the
+    // UART. We can only do one of those at a time because their
+    // addresses will clash.
+    // Our local addresses are only 0x62/0x6A and whatever's
+    // on the cal board (will need to check that to not clash!!)
+    // on the turfio we pick up 48/10/40/44/11/41/45/46 and 70.
+    // that's a busy I2C bus!
+    i2c_merger u_i2c_merger(.clk(ps_clk),
+                            .scl_in(emio_scl),
+                            .sda_in_o(emio_sda_i),
+                            .sda_in_t(emio_sda_t),
+                            .scl0_out(CLK_SCL),
+                            .sda0_out(CLK_SDA),
+                            .scl1_out(CAL_SCL),
+                            .sda1_out(CAL_SDA));    
     
     zynq_bd_wrapper u_zynq( .EMIO_tri_t(emio_gpio_t),
                             .EMIO_tri_i(emio_gpio_i),
