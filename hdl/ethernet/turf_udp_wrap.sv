@@ -509,7 +509,8 @@ module turf_udp_wrap #( parameter NSFP=2,
                                .probe4( udpin_data_tvalid ),
                                .probe5( udpin_data_tready ),
                                .probe6( udpin_data_tlast ),
-                               .probe7( udpin_hdr_tdata[0 +: 15] ));                      
+                               .probe7( udpin_hdr_tdata[0 +: 15] ),
+                               .probe8( out_port_active) );                      
         end
         if (DEBUG_OUT == "TRUE") begin : OUTILA    
             udp_ila u_udpout_ila( .clk(clk156),
@@ -520,7 +521,8 @@ module turf_udp_wrap #( parameter NSFP=2,
                                      .probe4( udpout_data_tvalid ),
                                      .probe5( udpout_data_tready ),
                                      .probe6( udpout_data_tlast ),
-                                     .probe7( udpout_hdr_tdata[0 +: 15] ));
+                                     .probe7( udpout_hdr_tdata[0 +: 15] ),
+                                     .probe8( out_port_active) );
         end
         if (DEBUG_EVENT_VIO == "TRUE") begin : EVENTVIO
             event_ctrl_vio u_evctrlvio( .clk(clk156),
