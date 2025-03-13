@@ -339,7 +339,8 @@ module turf_udp_hsk(
                           .probe7(sclk),
                           .probe8(mosi),
                           .probe9(miso),
-                          .probe10(cs_b)
+                          .probe10(cs_b),
+                          .probe11(rx_state)
                           );
         end
     endgenerate
