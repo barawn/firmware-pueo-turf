@@ -10,7 +10,7 @@ module turf_udp_wrap #( parameter NSFP=2,
                         parameter DEBUG_EVENT_VIO="TRUE",
                         parameter WBCLKTYPE = "NONE",
                         parameter ETHCLKTYPE = "ETHCLK"
-        )(
+        )(                
         output [2*NSFP-1:0] sfp_led,
         output [NSFP-1:0] sfp_tx_p,
         output [NSFP-1:0] sfp_tx_n,
@@ -40,6 +40,12 @@ module turf_udp_wrap #( parameter NSFP=2,
         `TARGET_NAMED_PORTS_AXI4S_MIN_IF( s_ev_data_ , 64),            
         input [7:0] s_ev_data_tkeep,
         input s_ev_data_tlast,
+        // HSK PACKETS
+        input hsk_sclk_i,
+        input hsk_mosi_i,
+        output hsk_miso_o,
+        input [1:0] hsk_cs_b_i,
+        output hsk_irq_o,
 
         // WB CLK SIDE
         input wb_clk_i,
@@ -277,6 +283,12 @@ module turf_udp_wrap #( parameter NSFP=2,
     
     // Its clock is clk156, its reset is clk156_rst.
     wire [47:0] my_mac_address;
+    wire [15:0] mac_bottom_bytes[1:0];
+    
+    USR_ACCESSE2 u_macs( .DATA( { mac_bottom_bytes[1], mac_bottom_bytes[0] } ));
+    // all of ours start with FC:C2:3D:0E
+    assign my_mac_address = { 8'hFC, 8'hC2, 8'h3D, 8'h0E, mac_bottom_bytes[0] };
+    assign alt_mac_address ={ 8'hFC, 8'hC2, 8'h3D, 8'h0E, mac_bottom_bytes[1] };
     turf_udp_core u_udp_core( .clk(clk156), .rst(clk156_rst),
         .sfp_tx_clk(sfp_tx_clk[0]),
         .sfp_tx_rst(sfp_tx_rst[0]),
@@ -298,25 +310,30 @@ module turf_udp_wrap #( parameter NSFP=2,
     // OK! Now we can hook up the UDP port switch, the RDWR/ack/nack/control core and finally the fragment generator.
     // Our inbound ports are
     // 'Tr', 'Tw', 'Ta', 'Tn', 'Tc'
-    // 21601 ('Ta') - port 4 - 0x5461 0110 0001
-    // 21603 ('Tc') - port 3 - 0x5463 0110 0011
-    // 21614 ('Tn') - port 2 - 0x546E 0110 1110
-    // 21618 ('Tr') - port 1 - 0x5472 0111 0010
+    // 21601 ('Ta') - port 3 - 0x5461 0110 0001
+    // 21603 ('Tc') - port 2 - 0x5463 0110 0011
+    // 21614 ('Tn') - port 1 - 0x546E 0110 1110
+    // 21618 ('Tr') - port 0 - 0x5472 0111 0010
     // 21623 ('Tw') - port 0 - 0x5477 0111 0111
     // We combine the last two by just looking for 0x547(0-7)        
+    //
+    // Now we add 'Th' = 21608 - port 4
 
-    localparam NUM_INBOUND = 4;
+    localparam NUM_INBOUND = 5;
     localparam [NUM_INBOUND*16-1:0]
-        INBOUND = { 16'd21601,      // 3
+        INBOUND = { 16'd21608,      // 4
+                    16'd21601,      // 3
                     16'd21603,      // 2
                     16'd21614,      // 1
                     16'd21618 };    // 0
                  // 16'd21623   is covered in the last match
     localparam [NUM_INBOUND*16-1:0]
-        INBOUND_MASK = { 16'd0,                     // exact match
-                         16'd0,                     // exact match
-                         16'd0,                     // exact match
-                         16'b0000_0000_0000_0111 }; // match 21616-21623
+        INBOUND_MASK = { 16'd0,                     // 4 exact match
+                         16'd0,                     // 3 exact match
+                         16'd0,                     // 2 exact match
+                         16'd0,                     // 1 exact match
+                         16'b0000_0000_0000_0111 }; // 0 match 21616-21623
+    localparam TH_PORT = 4;
     localparam TA_PORT = 3;
     localparam TC_PORT = 2;
     localparam TN_PORT = 1;
@@ -335,8 +352,8 @@ module turf_udp_wrap #( parameter NSFP=2,
     
     wire [NUM_INBOUND-1:0] in_port_active;
     
-    localparam NUM_OUTBOUND = 5;
-    localparam T0_PORT = 4;
+    localparam NUM_OUTBOUND = 6;
+    localparam T0_PORT = 5;
     // we don't actually have to *specify* the outbound port values, but we do
     localparam [NUM_OUTBOUND*16-1:0]
         OUTBOUND = { 16'd21552, // T0 port
@@ -484,6 +501,15 @@ module turf_udp_wrap #( parameter NSFP=2,
                                 .s_data_tkeep(s_ev_data_tkeep),
                                 .s_data_tlast(s_ev_data_tlast));
 
+    // hsk is an in/out
+    turf_udp_hsk u_hsk(.aclk(clk156),.aresetn(!clk156_rst),
+                       `CONNECT_UDP_INOUT( s_udphdr_ , s_udpdata_ , m_udphdr_ , m_udpdata_ , TH_PORT),
+                       .sclk(hsk_sclk_i),
+                       .mosi(hsk_mosi_i),
+                       .miso(hsk_miso_o),
+                       .cs_b(hsk_cs_b_i),
+                       .irq_o(hsk_irq_o));
+
 
     wire [NUM_OUTBOUND-1:0] out_port_active;
     udp_port_mux #(.NUM_PORT(NUM_OUTBOUND),
@@ -510,7 +536,7 @@ module turf_udp_wrap #( parameter NSFP=2,
                                .probe5( udpin_data_tready ),
                                .probe6( udpin_data_tlast ),
                                .probe7( udpin_hdr_tdata[0 +: 15] ),
-                               .probe8( out_port_active) );                      
+                               .probe8( in_port_active) );                      
         end
         if (DEBUG_OUT == "TRUE") begin : OUTILA    
             udp_ila u_udpout_ila( .clk(clk156),

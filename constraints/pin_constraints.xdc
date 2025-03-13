@@ -1,33 +1,51 @@
 # These ALL get pullups because they can be turned into I2C magically.
 # B2B1 126 is C1 and labelled TTXA - this is OUT to TURFIO (so still TX)
 # B2B1 130 is C6 and labelled TRXA - this is IN from TURFIO (so still RX)
-set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN C1 PULLTYPE PULLUP} [get_ports TTXA] 
-set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN C6 PULLTYPE PULLUP} [get_ports TRXA] 
+set_property IOSTANDARD LVCMOS25 [get_ports TTXA]
+set_property PACKAGE_PIN C1 [get_ports TTXA]
+set_property PULLUP true [get_ports TTXA]
+set_property IOSTANDARD LVCMOS25 [get_ports TRXA]
+set_property PACKAGE_PIN C6 [get_ports TRXA]
+set_property PULLUP true [get_ports TRXA]
 
 # B2B1 89 is F4 and labelled TTXB
 # B2B1 87 is F5 and labelled TRXB
-set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN F4 PULLTYPE PULLUP} [get_ports TTXB] 
-set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN F5 PULLTYPE PULLUP} [get_ports TRXB]
+set_property IOSTANDARD LVCMOS25 [get_ports TTXB]
+set_property PACKAGE_PIN F4 [get_ports TTXB]
+set_property PULLUP true [get_ports TTXB]
+set_property IOSTANDARD LVCMOS25 [get_ports TRXB]
+set_property PACKAGE_PIN F5 [get_ports TRXB]
+set_property PULLUP true [get_ports TRXB]
 
 # B2B1 91 is E5 and labelled TTXC
 # B2B1 93 is F5 and labelled TRXC
-set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN E5 PULLTYPE PULLUP} [get_ports TTXC]
-set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN E4 PULLTYPE PULLUP} [get_ports TRXC]
+set_property IOSTANDARD LVCMOS25 [get_ports TTXC]
+set_property PACKAGE_PIN E5 [get_ports TTXC]
+set_property PULLUP true [get_ports TTXC]
+set_property IOSTANDARD LVCMOS25 [get_ports TRXC]
+set_property PACKAGE_PIN E4 [get_ports TRXC]
+set_property PULLUP true [get_ports TRXC]
 
 # B2B1 142 is C3 and labelled TTXD
 # B2B1 144 is C4 and labelled TRXD
-set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN C3 PULLTYPE PULLUP} [get_ports TTXD] 
-set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN C4 PULLTYPE PULLUP} [get_ports TRXD] 
+set_property IOSTANDARD LVCMOS25 [get_ports TTXD]
+set_property PACKAGE_PIN C3 [get_ports TTXD]
+set_property PULLUP true [get_ports TTXD]
+set_property IOSTANDARD LVCMOS25 [get_ports TRXD]
+set_property PACKAGE_PIN C4 [get_ports TRXD]
+set_property PULLUP true [get_ports TRXD]
 
 # B2B1 30 is F9 and labelled GPS_TX but it is FROM GPS (so RX here!)
 # B2B1 28 is E9 and labelled GPS_RX but it is TO GPS   (so TX here!)
-set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN F9 PULLTYPE PULLUP} [get_ports GPS_RX] 
-set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN E9} [get_ports GPS_TX] 
+set_property IOSTANDARD LVCMOS25 [get_ports GPS_RX]
+set_property PACKAGE_PIN F9 [get_ports GPS_RX]
+set_property PULLUP true [get_ports GPS_RX]
+set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN E9} [get_ports GPS_TX]
 
 # B2B1 22 is C8 and labelled SCL_2V5
 # B2B1 24 is D8 and labelled SDA_2V5
-set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN C8} [get_ports CLK_SCL] 
-set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN D8} [get_ports CLK_SDA] 
+set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN C8} [get_ports CLK_SCL]
+set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN D8} [get_ports CLK_SDA]
 
 # HSK REMAPPING:
 # HSK REMAPPING VERSION 2! THE ODDS AND EVENS SWAP, DAMNIT
@@ -51,14 +69,20 @@ set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN D8} [get_ports CLK_SDA]
 
 # TRIG_OUT -> TOUT0 B2B-1 29  H8
 
-set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN D7 PULLTYPE PULLUP} [get_ports CAL_SCL]
-set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN E7 PULLTYPE PULLUP} [get_ports CAL_SDA]
+set_property IOSTANDARD LVCMOS25 [get_ports CAL_SCL]
+set_property PACKAGE_PIN D7 [get_ports CAL_SCL]
+set_property PULLUP true [get_ports CAL_SCL]
+set_property IOSTANDARD LVCMOS25 [get_ports CAL_SDA]
+set_property PACKAGE_PIN E7 [get_ports CAL_SDA]
+set_property PULLUP true [get_ports CAL_SDA]
 
 set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN A7} [get_ports UART_SCLK]
 set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN F6} [get_ports UART_MOSI]
 set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN D6} [get_ports UART_MISO]
 set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN G6} [get_ports UART_CS_B]
-set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN B7 PULLTYPE PULLUP} [get_ports UART_IRQ_B]
+set_property IOSTANDARD LVCMOS25 [get_ports UART_IRQ_B]
+set_property PACKAGE_PIN B7 [get_ports UART_IRQ_B]
+set_property PULLUP true [get_ports UART_IRQ_B]
 
 set_property -dict {IOSTANDARD LVDS DIFF_TERM_ADV TERM_100 PACKAGE_PIN AR12} [get_ports SYSCLK_P]
 set_property -dict {IOSTANDARD LVDS DIFF_TERM_ADV TERM_100 PACKAGE_PIN AR13} [get_ports SYSCLK_N]
@@ -350,6 +374,8 @@ set_property DIFF_TERM_ADV TERM_100 [get_ports {DDR_CLK_P[1]}]
 
 
 set_property BITSTREAM.GENERAL.COMPRESS TRUE [current_design]
+# this is TURF 1, gets replaced
+set_property BITSTREAM.CONFIG.USR_ACCESS 0xD555E94A [current_design]
 set_property C_CLK_INPUT_FREQ_HZ 300000000 [get_debug_cores dbg_hub]
 set_property C_ENABLE_CLK_DIVIDER false [get_debug_cores dbg_hub]
 set_property C_USER_SCAN_CHAIN 1 [get_debug_cores dbg_hub]

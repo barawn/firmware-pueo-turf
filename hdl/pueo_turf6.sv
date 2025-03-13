@@ -9,7 +9,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="A",
                     parameter [3:0] VER_MAJOR=4'd0,
                     parameter [3:0] VER_MINOR=4'd2,
-                    parameter [7:0] VER_REV=4'd12,
+                    parameter [7:0] VER_REV=8'd18,
                     parameter [15:0] FIRMWARE_DATE = {16{1'b0}})                    
                     (
 
@@ -105,7 +105,12 @@ module pueo_turf6 #(parameter IDENT="TURF",
     wire [15:0] emio_gpio_i;
     wire [15:0] emio_gpio_o;
     
-    assign emio_gpio_i = { {15{1'b0}}, UART_IRQ_B };
+    // hsk_irq goes high when packet received, low when fifo empty
+    // might need to improve this, but this is what we got for now!
+    wire hsk_irq;
+    
+    assign emio_gpio_i = { {14{1'b0}}, hsk_irq, UART_IRQ_B };
+        
     
     //////////////////////////////////////////////
     //              REGISTER SPACES             //
@@ -242,6 +247,11 @@ module pueo_turf6 #(parameter IDENT="TURF",
                             .scl1_out(CAL_SCL),
                             .sda1_out(CAL_SDA));    
     
+    wire hsk_sclk;
+    wire hsk_mosi;
+    wire hsk_miso;
+    wire [1:0] hsk_cs_b;
+    
     zynq_bd_wrapper u_zynq( .EMIO_tri_t(emio_gpio_t),
                             .EMIO_tri_i(emio_gpio_i),
                             .EMIO_tri_o(emio_gpio_o),
@@ -254,6 +264,11 @@ module pueo_turf6 #(parameter IDENT="TURF",
                             .spi0_mosi(UART_MOSI),
                             .spi0_miso(UART_MISO),
                             .spi0_cs_b(UART_CS_B),
+    
+                            .spi1_sclk(hsk_sclk),
+                            .spi1_mosi(hsk_mosi),
+                            .spi1_miso(hsk_miso),
+                            .spi1_cs_b(hsk_cs_b),
     
                             .GPS_rxd(GPS_RX),
                             .GPS_txd(GPS_TX),
@@ -458,6 +473,13 @@ module pueo_turf6 #(parameter IDENT="TURF",
             .sfp_rxclk_o(sfp_rxclk),
             .sfp_txclk_o(sfp_txclk),
             .aclk(gbe_sysclk),
+
+            .hsk_sclk_i(hsk_sclk),
+            .hsk_mosi_i(hsk_mosi),
+            .hsk_miso_o(hsk_miso),
+            .hsk_cs_b_i(hsk_cs_b),
+            .hsk_irq_o(hsk_irq),
+
             `CONNECT_AXI4S_MIN_IF( m_ack_ , ack_ ),
             `CONNECT_AXI4S_MIN_IF( m_nack_ , nack_ ),
             `CONNECT_AXI4S_MIN_IF( s_ev_ctrl_ , ev_ctrl_ ),

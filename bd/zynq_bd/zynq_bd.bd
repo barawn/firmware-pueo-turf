@@ -1,7 +1,7 @@
 {
   "design": {
     "design_info": {
-      "boundary_crc": "0x4526733C54189814",
+      "boundary_crc": "0x2EC41909BA66C837",
       "device": "xczu19eg-ffvc1760-1-e",
       "name": "zynq_bd",
       "rev_ctrl_bd_flag": "RevCtrlBdOff",
@@ -422,6 +422,65 @@
             "direction": "O",
             "left": "3",
             "right": "0"
+          }
+        }
+      },
+      "SPI1": {
+        "mode": "Master",
+        "vlnv_bus_definition": "xilinx.com:interface:spi:1.0",
+        "vlnv": "xilinx.com:interface:spi_rtl:1.0",
+        "port_maps": {
+          "SCK_I": {
+            "physical_name": "SPI1_sck_i",
+            "direction": "I"
+          },
+          "SCK_O": {
+            "physical_name": "SPI1_sck_o",
+            "direction": "O"
+          },
+          "SCK_T": {
+            "physical_name": "SPI1_sck_t",
+            "direction": "O"
+          },
+          "IO1_I": {
+            "physical_name": "SPI1_io1_i",
+            "direction": "I"
+          },
+          "IO0_O": {
+            "physical_name": "SPI1_io0_o",
+            "direction": "O"
+          },
+          "IO0_T": {
+            "physical_name": "SPI1_io0_t",
+            "direction": "O"
+          },
+          "IO0_I": {
+            "physical_name": "SPI1_io0_i",
+            "direction": "I"
+          },
+          "IO1_O": {
+            "physical_name": "SPI1_io1_o",
+            "direction": "O"
+          },
+          "IO1_T": {
+            "physical_name": "SPI1_io1_t",
+            "direction": "O"
+          },
+          "SS_I": {
+            "physical_name": "SPI1_ss_i",
+            "direction": "I"
+          },
+          "SS_O": {
+            "physical_name": "SPI1_ss_o",
+            "direction": "O"
+          },
+          "SS1_O": {
+            "physical_name": "SPI1_ss1_o",
+            "direction": "O"
+          },
+          "SS_T": {
+            "physical_name": "SPI1_ss_t",
+            "direction": "O"
           }
         }
       }
@@ -862,7 +921,10 @@
             "value": "EMIO"
           },
           "PSU__SPI1__GRP_SS1__ENABLE": {
-            "value": "0"
+            "value": "1"
+          },
+          "PSU__SPI1__GRP_SS1__IO": {
+            "value": "EMIO"
           },
           "PSU__SPI1__GRP_SS2__ENABLE": {
             "value": "0"
@@ -1871,6 +1933,12 @@
         "interface_ports": [
           "SPI0",
           "zynq_ultra_ps_e_0/SPI_0"
+        ]
+      },
+      "zynq_ultra_ps_e_0_SPI_1": {
+        "interface_ports": [
+          "SPI1",
+          "zynq_ultra_ps_e_0/SPI_1"
         ]
       },
       "zynq_ultra_ps_e_0_UART_1": {

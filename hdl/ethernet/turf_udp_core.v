@@ -18,7 +18,7 @@ module turf_udp_core(
         input [63:0] sfp_rxd,
         input [7:0] sfp_rxc,
         // my MAC address
-        output [47:0] my_mac_address,        
+        input [47:0] my_mac_address,        
         // UDP out: combination of src ip/port + length
         // [32 +: 32] = src ip
         // [16 +: 16] = src port
@@ -38,13 +38,6 @@ module turf_udp_core(
         `TARGET_NAMED_PORTS_AXI4S_IF( s_udpdata_ , 64 )
     );
     
-    // sigh, do something with this eventually?
-    // grab the damn MAC address from the EEPROM?
-    reg [31:0] local_mac = 32'h00_00_00_00;
-    wire [47:0] MY_MAC        = { 16'h02_00, local_mac };
-
-    assign my_mac_address = MY_MAC;
-
     parameter [31:0] MY_IP_ADDRESS = { 8'd192,  8'd168,  8'd1,    8'd128 };
     parameter [31:0] MY_NETMASK    = { 8'd255,  8'd255,  8'd255,  8'd0   };
     parameter [31:0] MY_GATEWAY    = { 8'd192,  8'd168,  8'd1,    8'd1   };
@@ -194,7 +187,7 @@ module turf_udp_core(
         .m_udp_length( m_udphdr_tdata[0 +: 16] ),
         `CONNECT_AXI4S_IF( m_udp_payload_axis_ , m_udpdata_ ),
         // skip bunch o crap...
-        .local_mac( MY_MAC ),
+        .local_mac( my_mac_address ),
         .local_ip( MY_IP_ADDRESS ),
         .gateway_ip( MY_GATEWAY ),
         .subnet_mask( MY_NETMASK ),

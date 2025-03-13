@@ -226,6 +226,7 @@ end else begin : xcvr
         .gtwiz_reset_clk_freerun_in(xcvr_ctrl_clk),
         .gtwiz_reset_all_in(xcvr_ctrl_rst),
         .gtpowergood_out(xcvr_gtpowergood_out),
+        .loopback_in(loopback_in),
 
         // PLL
         .gtwiz_reset_qpll0lock_in(xcvr_qpll0lock_in),

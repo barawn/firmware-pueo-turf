@@ -15,6 +15,7 @@ proc search_repo_dir {} {
 }
 
 # convenience function add a UART fragment
+# note: removed the final close to factor it out as a function
 proc addUart { f nextFragment } {
     puts $f ""
     puts $f "\tfragment@${nextFragment} \{"
@@ -44,9 +45,36 @@ proc addUart { f nextFragment } {
     puts $f "\t\t\t\};"
     puts $f "\t\t\};"
     puts $f "\t\};"
-    puts $f "\};"
 }
 
+# ethernet is at 156.25 MHz so at 30 MHz it has 5 samples
+# per clock, plenty to detect rise/fall I hope
+proc addHsk { f nextFragment } {
+    puts $f ""
+    puts $f "\tfragment@${nextFragment} \{"
+    puts $f "\t\ttarget = <&spi1>;"
+    puts $f "\t\tfrag2: __overlay__ \{"
+    puts $f "\t\t\t#address-cells = <1>;"
+    puts $f "\t\t\t#size-cells = <0>;"
+    puts $f "\t\t\tstatus = \"okay\";"
+    puts $f "\t\t\t"
+    puts $f "\t\t\tturfhskRead: turfhskRead@0 \{"
+    puts $f "\t\t\t\tcompatible = \"osu,turfhskRead\";"
+    puts $f "\t\t\t\treg = <0>;"
+    puts $f "\t\t\t\tspi-max-frequency = <30000000>;"
+    puts $f "\t\t\t\};"
+    puts $f "\t\t\tturfhskWrite: turfhskWrite@1 \{"
+    puts $f "\t\t\t\tcompatible = \"osu,turfhskWrite\";"
+    puts $f "\t\t\t\treg = <1>;"
+    puts $f "\t\t\t\tspi-max-frequency = <30000000>;"
+    puts $f "\t\t\t\};"
+    puts $f "\t\t\};"
+    puts $f "\t\};"
+}
+
+proc finishOverlay { f } {
+    puts $f "\};"
+}
 
 # post_write_bitstream is called out of flow so we need to
 # get our fancy-pants stuff back
@@ -130,6 +158,9 @@ set lines [lreplace [lreplace $lines end end] end end]
 set f [open $dtsifn "w"]
 puts -nonewline $f [join $lines $newline]
 addUart $f $nextFragment
+set nextFragment [ expr $nextFragment + 1 ]
+addHsk $f $nextFragment
+finishOverlay $f
 close $f
 
 # and now build the dtbo
