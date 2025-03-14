@@ -26,7 +26,7 @@ module turf_udp_hsk(
 
     turf_udp_hsk_read #(.DEBUG("FALSE"))
         u_read( .aclk(aclk),.aresetn(aresetn),
-                `CONNECT_AXI4S_MIN_IF( s_udphdr_ , s_udpdhr_ ),
+                `CONNECT_AXI4S_MIN_IF( s_udphdr_ , s_udphdr_ ),
                 `CONNECT_AXI4S_IF( s_udpdata_ , s_udpdata_ ),
                 .sclk(sclk),
                 .miso(miso),
