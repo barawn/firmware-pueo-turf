@@ -2,6 +2,7 @@
 `include "interfaces.vh"
 module turf_udp_hsk_write(
         input aclk,
+        input aresetn,
         `HOST_NAMED_PORTS_AXI4S_MIN_IF( m_udphdr_ , 64 ),
         `HOST_NAMED_PORTS_AXI4S_IF( m_udpdata_ , 64 ),
         input sclk,
@@ -117,7 +118,7 @@ module turf_udp_hsk_write(
                             .full(wr_fifo_full),
                             .dout(packet_fifo_dout),
                             .valid(packet_fifo_valid),
-                            .read(packet_fifo_read));
+                            .rd_en(packet_fifo_read));
     udp_hsk_txcount u_txcount(.clk(aclk),.srst(!aresetn),
                               .din(wr_byte_count),
                               .wr_en(write_wr_byte_count),
