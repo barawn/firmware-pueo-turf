@@ -9,7 +9,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="A",
                     parameter [3:0] VER_MAJOR=4'd0,
                     parameter [3:0] VER_MINOR=4'd2,
-                    parameter [7:0] VER_REV=8'd20,
+                    parameter [7:0] VER_REV=8'd23,
                     parameter [15:0] FIRMWARE_DATE = {16{1'b0}})                    
                     (
 
@@ -105,11 +105,9 @@ module pueo_turf6 #(parameter IDENT="TURF",
     wire [15:0] emio_gpio_i;
     wire [15:0] emio_gpio_o;
     
-    // hsk_irq goes high when packet received, low when fifo empty
-    // might need to improve this, but this is what we got for now!
-    wire hsk_irq;
-    
-    assign emio_gpio_i = { {14{1'b0}}, hsk_irq, UART_IRQ_B };
+    wire hsk_irq;    
+    wire hsk_complete;
+    assign emio_gpio_i = { {13{1'b0}}, hsk_complete, hsk_irq, UART_IRQ_B };
         
     
     //////////////////////////////////////////////
@@ -479,7 +477,8 @@ module pueo_turf6 #(parameter IDENT="TURF",
             .hsk_miso_o(hsk_miso),
             .hsk_cs_b_i(hsk_cs_b),
             .hsk_irq_o(hsk_irq),
-
+            .hsk_complete_o(hsk_complete),
+            
             `CONNECT_AXI4S_MIN_IF( m_ack_ , ack_ ),
             `CONNECT_AXI4S_MIN_IF( m_nack_ , nack_ ),
             `CONNECT_AXI4S_MIN_IF( s_ev_ctrl_ , ev_ctrl_ ),

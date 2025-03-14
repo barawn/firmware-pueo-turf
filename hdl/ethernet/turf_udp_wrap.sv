@@ -46,6 +46,7 @@ module turf_udp_wrap #( parameter NSFP=2,
         output hsk_miso_o,
         input [1:0] hsk_cs_b_i,
         output hsk_irq_o,
+        output hsk_complete_o,
 
         // WB CLK SIDE
         input wb_clk_i,
@@ -508,6 +509,7 @@ module turf_udp_wrap #( parameter NSFP=2,
                        .mosi(hsk_mosi_i),
                        .miso(hsk_miso_o),
                        .cs_b(hsk_cs_b_i),
+                       .complete_o(hsk_complete_o),
                        .irq_o(hsk_irq_o));
 
 
