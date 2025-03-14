@@ -72,6 +72,25 @@ proc addHsk { f nextFragment } {
     puts $f "\t\};"
 }
 
+# add housekeeping gpio-keys interrupt
+proc addHskInterrupt { f nextFragment } {
+    puts $f ""
+    puts $f "\tfragment@${nextFragment} \{"
+    puts $f "\t\ttarget-path = \"/\";"
+    puts $f "\t\t__overlay__ \{"
+    puts $f "\t\t\thsk-gpio-keys \{"
+    puts $f "\t\t\t\tcompatible = \"gpio-keys\";"
+    puts $f "\t\t\t\thsk0 \{"
+    puts $f "\t\t\t\t\tlabel = \"hsk0\";"
+    puts $f "\t\t\t\t\tgpios = <&gpio 79 0>;"
+    puts $f "\t\t\t\t\tlinux,code = <30>;"
+    puts $f "\t\t\t\t\tgpio-key,wakeup;"
+    puts $f "\t\t\t\t\};"
+    puts $f "\t\t\t\};"
+    puts $f "\t\t\};"
+    puts $f "\t\};"    
+}
+
 proc finishOverlay { f } {
     puts $f "\};"
 }
@@ -160,6 +179,8 @@ puts -nonewline $f [join $lines $newline]
 addUart $f $nextFragment
 set nextFragment [ expr $nextFragment + 1 ]
 addHsk $f $nextFragment
+set nextFragment [ expr $nextFragment + 1 ]
+addHskInterrupt $f $nextFragment
 finishOverlay $f
 close $f
 
