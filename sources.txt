@@ -33,6 +33,9 @@ hdl/ethernet/turf_acknack_port.sv
 hdl/ethernet/turf_event_ctrl_port.sv
 hdl/turf_id_ctrl.sv
 hdl/turf_intercon.sv
+hdl/ethernet/turf_udp_hsk.sv
+hdl/ethernet/turf_udp_hsk_read.sv
+hdl/ethernet/turf_udp_hsk_write.sv
 hdl/ethernet/turf_udp_wrap.sv
 hdl/aurora/turfio_aurora_clock.sv
 hdl/aurora/turfio_aurora_reset_v2.sv

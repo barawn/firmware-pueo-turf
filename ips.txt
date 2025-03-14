@@ -6,6 +6,7 @@ ip/aurora/aurora_resp_ccfifo/aurora_resp_ccfifo.xci
 ip/aurora/aurora_resp_switch/aurora_resp_switch.xci
 ip/debug/aurora_tx_ila/aurora_tx_ila.xci
 ip/debug/axil2wb_ila/axil2wb_ila.xci
+ip/eth/axis_8to64/axis_8to64.xci
 ip/fifo/axis_ccfifo64_tlast/axis_ccfifo64_tlast.xci
 ip/fifo/axis_ccfifo64_tuser4_tlast/axis_ccfifo64_tuser4_tlast.xci
 ip/fifo/ccfifo65/ccfifo65.xci
@@ -16,10 +17,18 @@ ip/eth/eth_xcvr_gt_channel/eth_xcvr_gt_channel.xci
 ip/eth/eth_xcvr_gt_full/eth_xcvr_gt_full.xci
 ip/debug/event_ctrl_ila/event_ctrl_ila.xci
 ip/debug/event_ctrl_vio/event_ctrl_vio.xci
+ip/debug/hsk_ila/hsk_ila.xci
+ip/debug/hsk_tx_ila/hsk_tx_ila.xci
+ip/debug/i2c_merge_ila/i2c_merge_ila.xci
+ip/debug/i2c_merge_vio/i2c_merge_vio.xci
 ip/debug/intercon_ila/intercon_ila.xci
 ip/debug/register_bridge_ila/register_bridge_ila.xci
 ip/aurora/turfio_aurora/turfio_aurora.xci
 ip/debug/uart_ila/uart_ila.xci
 ip/eth/udp_complete_64_core/udp_complete_64_core.xci
+ip/fifo/udp_hsk_rxcount/udp_hsk_rxcount.xci
+ip/fifo/udp_hsk_rxfifo/udp_hsk_rxfifo.xci
+ip/fifo/udp_hsk_txcount/udp_hsk_txcount.xci
+ip/fifo/udp_hsk_txfifo/udp_hsk_txfifo.xci
 ip/debug/udp_ila/udp_ila.xci
 ip/debug/udp_rdwr_ila/udp_rdwr_ila.xci
