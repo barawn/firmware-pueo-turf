@@ -503,6 +503,7 @@ module turf_udp_wrap #( parameter NSFP=2,
                                 .s_data_tlast(s_ev_data_tlast));
 
     // hsk is an in/out
+    assign hdrout_tuser[16*TH_PORT +: 16] = OUTBOUND[16*TH_PORT +: 16];
     turf_udp_hsk u_hsk(.aclk(clk156),.aresetn(!clk156_rst),
                        `CONNECT_UDP_INOUT( s_udphdr_ , s_udpdata_ , m_udphdr_ , m_udpdata_ , TH_PORT),
                        .sclk(hsk_sclk_i),
