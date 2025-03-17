@@ -100,7 +100,8 @@ module zynq_bd_wrapper
   wire SPI1_sck_o;
   wire SPI1_sck_t;
   wire SPI1_ss1_o;
-  wire SPI1_ss_i;
+  // tie high to avoid wackiness
+  wire SPI1_ss_i = 1'b1;
   wire SPI1_ss_o;
   wire SPI1_ss_t;
   assign spi1_sclk = (SPI1_sck_t) ? 1'b0 : SPI1_sck_o;
