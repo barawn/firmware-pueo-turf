@@ -9,7 +9,7 @@ module turf_udp_hsk_write(
         input mosi,
         input cs_b,
         input [15:0] port_i,
-        input [15:0] ip_i
+        input [31:0] ip_i
     );
     parameter DEBUG = "TRUE";
     
