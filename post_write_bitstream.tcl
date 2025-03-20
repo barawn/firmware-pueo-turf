@@ -31,7 +31,8 @@ proc addUart { f nextFragment } {
     puts $f "\t\t\t\tclock-frequency = <14745600>;"
     puts $f "\t\t\t\tinterrupt-parent = <&gpio>;"
     # this is on EMIO 0 so it's 78, 2 is IRQ_TYPE_EDGE_FALLING
-    puts $f "\t\t\t\tinterrupts = <78 2>;"
+    # EFF YOU, NO: IT WANTS TO BE IRQ_TYPE_LOW WHICH IS 8
+    puts $f "\t\t\t\tinterrupts = <78 8>;"
     puts $f "\t\t\t\t#gpio-controller;"
     puts $f "\t\t\t\t#gpio-cells = <2>;"
     puts $f "\t\t\t\tspi-max-frequency = <4000000>;"
