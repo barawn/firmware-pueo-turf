@@ -37,10 +37,10 @@ module turf_udp_core(
         input [15:0] s_udphdr_tuser,
         `TARGET_NAMED_PORTS_AXI4S_IF( s_udpdata_ , 64 )
     );
-    
-    parameter [31:0] MY_IP_ADDRESS = { 8'd192,  8'd168,  8'd1,    8'd128 };
+    // 10.68.65.81
+    parameter [31:0] MY_IP_ADDRESS = { 8'd10,  "DAQ" };
     parameter [31:0] MY_NETMASK    = { 8'd255,  8'd255,  8'd255,  8'd0   };
-    parameter [31:0] MY_GATEWAY    = { 8'd192,  8'd168,  8'd1,    8'd1   };
+    parameter [31:0] MY_GATEWAY    = { 8'd10,  "DA",    8'd1   };
         
     // Link between MAC and Ethernet
     `DEFINE_AXI4S_IF( tx_axis_ , 64);
