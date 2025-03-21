@@ -34,9 +34,8 @@ module turf_udp_hsk(
                 .irq_o(irq_o),
                 .complete_o(complete_o));
 
-    // we always respond to the last IP/port that sent data    
-    // BY DEFAULT we start out at 192.168.1.1 and port 16'h5368;
-    reg [31:0] this_ip = 32'hC0A80101;
+    // we always respond to the last IP/port that sent data
+    reg [31:0] this_ip = { 8'd10, "DA", 8'd1};
     reg [15:0] this_port = 16'h5368;
 
     always @(posedge aclk) begin
