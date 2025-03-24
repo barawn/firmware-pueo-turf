@@ -26,13 +26,13 @@ set_property IOSTANDARD LVCMOS25 [get_ports TRXC]
 set_property PACKAGE_PIN E4 [get_ports TRXC]
 set_property PULLUP true [get_ports TRXC]
 
-# B2B1 142 is C3 and labelled TTXD
-# B2B1 144 is C4 and labelled TRXD
+# B2B1 142 is C3 and labelled TTXD - NO! TRXD!
+# B2B1 144 is C4 and labelled TRXD - NO! TTXD!
 set_property IOSTANDARD LVCMOS25 [get_ports TTXD]
-set_property PACKAGE_PIN C3 [get_ports TTXD]
+set_property PACKAGE_PIN C4 [get_ports TTXD]
 set_property PULLUP true [get_ports TTXD]
 set_property IOSTANDARD LVCMOS25 [get_ports TRXD]
-set_property PACKAGE_PIN C4 [get_ports TRXD]
+set_property PACKAGE_PIN C3 [get_ports TRXD]
 set_property PULLUP true [get_ports TRXD]
 
 # B2B1 30 is F9 and labelled GPS_TX but it is FROM GPS (so RX here!)
