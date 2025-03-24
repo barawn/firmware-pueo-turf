@@ -59,6 +59,9 @@ module turfio_aurora_reset_v2(
     always @(posedge init_clk_i) begin
         reset_rereg <= reset_i;
         
+        // NOTE NOTE NOTE NOTE NOTE
+        // are we maybe getting stuck here or something?? I don't see how that would work??
+        // AAAUUGH
         case (state)
             RESET: if (!enable_hotplug_delay || hotplug_delay_reached) state <= RESET_ENDING;
             RESET_ENDING: if (!system_reset_resync[2]) state <= IDLE;
@@ -104,7 +107,8 @@ module turfio_aurora_reset_v2(
                                    .probe0(state),
                                    .probe1(system_reset_initclk),
                                    .probe2(system_reset_resync[2]),
-                                   .probe3(gt_reset));
+                                   .probe3(gt_reset),
+                                   .probe4(reset_i));
         end
     endgenerate
 
