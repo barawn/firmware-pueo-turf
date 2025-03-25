@@ -90,13 +90,13 @@ module turfio_register_bridge(
     assign bridge_valid_vec[2] = bridge_valid_i[8 +: 4];
     assign bridge_valid_vec[3] = bridge_valid_i[12 +: 4];
     // bridge type register captured
-    reg [15:0] bridge_type_reg = {16{1'b0}};
+    reg [7:0] bridge_type_reg = {8{1'b0}};
     // and vectored
-    wire [3:0] bridge_type_vec[3:0];
-    assign bridge_type_vec[0] = bridge_type_reg[0 +: 4];
-    assign bridge_type_vec[1] = bridge_type_reg[4 +: 4];
-    assign bridge_type_vec[2] = bridge_type_reg[8 +: 4];
-    assign bridge_type_vec[3] = bridge_type_reg[12 +: 4];
+    wire [1:0] bridge_type_vec[3:0];
+    assign bridge_type_vec[0] = bridge_type_reg[0 +: 2];
+    assign bridge_type_vec[1] = bridge_type_reg[2 +: 2];
+    assign bridge_type_vec[2] = bridge_type_reg[4 +: 2];
+    assign bridge_type_vec[3] = bridge_type_reg[6 +: 2];
 
     // this determines where we're going
     wire [1:0] bridge_selection = bridge_adr_i[26:25];
@@ -141,8 +141,8 @@ module turfio_register_bridge(
         else begin
             case (state)
                 IDLE: if (bridge_cyc_i && bridge_stb_i) begin
-                    // First figure out if the bride is even valid.
-                    if (!bridge_valid_vec[bridge_selection]) state <= RESPOND;
+                    // First figure out if the bridge is even valid.
+                    if (!bridge_valid_vec[bridge_type_vec[bridge_selection]]) state <= RESPOND;
                     else begin
                         if (bridge_type_vec[bridge_selection] == BRIDGE_TYPE_AURORA) state <= AURORA_ADDR;
                         else state <= RESPOND;
