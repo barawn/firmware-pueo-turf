@@ -22,6 +22,7 @@ module turfio_if #( parameter [31:0] TRAIN_VALUE=32'hA55A6996,
                     parameter [3:0] CIN_CLKTYPE = 4'h0,
                     parameter [3:0] COUT_CLKTYPE = 4'h0,
                     parameter INV_SYSCLK = "TRUE",
+                    parameter WBCLKTYPE = "NONE",
                     // CLKTYPE of clk300
                     parameter CLK300_CLKTYPE = "DDRCLK0"
         )(
@@ -128,7 +129,7 @@ module turfio_if #( parameter [31:0] TRAIN_VALUE=32'hA55A6996,
     `ASSIGN_CIN_VEC( 3, d, D );
 
     // reset the bank 67 IDELAYCTRL. This needs to get sync'd over to refclk.
-    (* CUSTOM_CC_SRC = "PLCLK" *)
+    (* CUSTOM_CC_SRC = WBCLKTYPE *)
     reg idelayctrl67_rst = 0;
     // synchronizer for idelayctrl67
     (* ASYNC_REG = "TRUE", CUSTOM_CC_DST = CLK300_CLKTYPE *)
@@ -136,7 +137,7 @@ module turfio_if #( parameter [31:0] TRAIN_VALUE=32'hA55A6996,
     // IDELAYCTRL for bank 67 is ready
     wire idelayctrl67_rdy;
     // reset the bank 68 IDELAYCTRL. This needs to get sync'd over to refclk.
-    (* CUSTOM_CC_SRC = "PLCLK" *)
+    (* CUSTOM_CC_SRC = WBCLKTYPE *)
     reg idelayctrl68_rst = 0;
     // synchronizer for idelayctrl68
     (* ASYNC_REG = "TRUE", CUSTOM_CC_DST = CLK300_CLKTYPE *)
