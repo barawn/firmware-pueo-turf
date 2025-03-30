@@ -26,6 +26,7 @@ hdl/zynq_bd_wrapper.v
 hdl/aurora/aurora_cmd_fwd_switch.sv
 hdl/axil2wb.sv
 hdl/turfio/bit_align.sv
+hdl/event/event_pueo_wrap.sv
 hdl/i2c_merger.sv
 verilog-library-barawn/hdl/simple_clock_mon.sv
 hdl/clock/system_clock_v2.sv
@@ -50,6 +51,7 @@ hdl/ethernet/udp_port_mux.sv
 hdl/ethernet/udp_port_switch.sv
 hdl/ethernet/wb_to_drpx2.sv
 hdl/pueo_turf6.sv
-hdl/aurora/turfio_aurora_reset.sv
 hdl/ethernet/turf_udp_rdwr.v
+hdl/aurora/turfio_aurora_reset.sv
+hdl/event/turfio_event_accumulator.sv
 hdl/ethernet/wb_if_cc.sv

@@ -1,2 +1,3 @@
 constraints/pin_constraints.xdc
 constraints/pueo_turf_cc.tcl
+constraints/ddr_pin_constraints.xdc
