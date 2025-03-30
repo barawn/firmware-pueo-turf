@@ -95,7 +95,26 @@ set clktypes($sys_clk) SYSCLK
 set gbe_clk [create_clock -period 6.400 -name gbe_clock [get_ports -filter { NAME =~ "GBE_CLK_P" && DIRECTION == "IN" }]]
 set clktypes($gbe_clk) GBECLK
 
-set ddr_clk0 [create_clock -period 3.333 -name ddr_clk0 [get_ports -filter { NAME =~ "DDR_CLK_P[0]" && DIRECTION == "IN" }]]
+#set ddr_clk0 [create_clock -period 3.333 -name ddr_clk0 [get_ports -filter { NAME =~ "DDR_CLK_P[0]" && DIRECTION == "IN" }]]
+#set clktypes($ddr_clk0) DDRCLK0
+set ddr_genclk [get_clocks -of_objects [get_cells u_tioctl/u_idelayctrl67] ]
+puts "DDR clock was named ${ddr_genclk} - renaming to ddr_clk0"
+set isgenclk [get_property -quiet IS_GENERATED $ddr_genclk]
+set isusergenclk [get_property -quiet IS_USER_GENERATED $ddr_genclk]
+if {[llength $isgenclk] && [expr $isgenclk == 1] && [llength $isusergenclk] && [expr $isusergenclk == 0]} {
+    puts "DDR clk was generated: checking to see if we need to rename it"
+    if {[get_property IS_RENAMED $ddr_genclk ]} {
+        puts "Already renamed, skipping."
+        set userclk $user_genclk
+    } else {
+        puts "Renaming $ddr_genclk to ddrclk0."
+        set ddr_genclkpin [get_property SOURCE_PINS $ddr_genclk]
+        set ddr_clk0 [create_generated_clock -name ddrclk0 [get_pins $ddr_genclkpin]]
+    }
+} else {
+    puts "Cannot rename $ddr_genclk, just saving it."
+    set ddr_clk0 $ddr_genclk
+}
 set clktypes($ddr_clk0) DDRCLK0
 
 set ddr_clk1 [create_clock -period 3.334 -name ddr_clk1 [get_ports -filter { NAME =~ "DDR_CLK_P[1]" && DIRECTION == "IN" }]]
