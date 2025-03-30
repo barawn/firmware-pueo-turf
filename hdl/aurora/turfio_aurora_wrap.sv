@@ -70,9 +70,13 @@ module turfio_aurora_wrap
         // Aurora clock output for monitoring
         output      aurora_clk_o,
 
-        // blah, no interface for now
-        // COMING SOON (heh)
-    
+        // array of MGT interfaces
+        output [32*NUM_MGT-1:0] m_aurora_tdata,
+        output [NUM_MGT-1:0]    m_aurora_tvalid,
+        output [NUM_MGT-1:0]    m_aurora_tlast,
+        // ignored
+        input  [NUM_MGT-1:0]    m_aurora_tready,
+            
         input MGTCLK_P,
         input MGTCLK_N,
         
@@ -94,6 +98,10 @@ module turfio_aurora_wrap
     // create the interfaces. 
     `DEFINE_AXI4S_IFV( aurora_tx_ , 32, [NUM_MGT-1:0] );
     `DEFINE_AXI4S_IFV( aurora_rx_ , 32, [NUM_MGT-1:0] );
+    // and devec-ify for the output (ignoring tkeep)
+    assign m_aurora_tdata = { aurora_rx_tdata[3], aurora_rx_tdata[2], aurora_rx_tdata[1], aurora_rx_tdata[0] };
+    assign m_aurora_tvalid ={ aurora_rx_tvalid[3], aurora_rx_tvalid[2], aurora_rx_tvalid[1], aurora_rx_tvalid[0] };
+    assign m_aurora_tlast = { aurora_rx_tlast[3], aurora_rx_tvalid[2], aurora_rx_tvalid[1], aurora_rx_tvalid[0] };
 
     // The UFC interfaces are spliced into the normal ones:
     // their AXI4-Stream data indicates the *length*. The data
