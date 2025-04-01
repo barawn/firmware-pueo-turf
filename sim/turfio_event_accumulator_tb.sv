@@ -19,10 +19,10 @@ module turfio_event_accumulator_tb;
     
     wire [63:0] outdata;
     wire        outdata_valid;
-    wire        outdata_ready = 1'b1;
-    wire        outdata_tlast;
-    wire [4:0]  outdata_tuser;
-    
+    wire        outdata_last;
+    wire [4:0]  outdata_ident;
+    reg         outdata_has_space = 0;
+        
     wire [63:0] hdrdata;
     wire        hdrvalid;
     wire        hdrready = 1'b1;
@@ -75,17 +75,20 @@ module turfio_event_accumulator_tb;
                                   .m_hdr_tvalid(hdrvalid),
                                   .m_hdr_tready(hdrready),
                                   .m_hdr_tlast(hdrtlast),
-                                  .m_payload_tdata(outdata ),
-                                  .m_payload_tvalid(outdata_valid),
-                                  .m_payload_tready(outdata_ready),
-                                  .m_payload_tlast(outdata_tlast),
-                                  .m_payload_tuser(outdata_tuser));
+                                  .payload_o(outdata ),
+                                  .payload_valid_o(outdata_valid),
+                                  .payload_last_o(outdata_last),
+                                  .payload_ident_o(outdata_ident),
+                                  .payload_has_space_i(outdata_has_space));
     initial begin
         #100;
         @(posedge aclk);
         #1 start = 1;
         @(posedge aclk);
         #1 start = 0;
+        #70000;
+        @(posedge memclk);
+        #0.1 outdata_has_space = 1;
     end                                  
 
 endmodule
