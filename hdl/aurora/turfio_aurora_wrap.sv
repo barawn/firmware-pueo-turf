@@ -41,7 +41,8 @@
 module turfio_aurora_wrap
     #(  parameter TX_CLOCK_SEL = 0,
         parameter NUM_MGT = 4,
-        parameter USE_DEBUG = 4'b0001 )
+        parameter USE_DEBUG = 4'b0001,
+        parameter WBCLKTYPE = "NONE" )
     (
         // this is the LOCAL aurora WISHBONE interface
         // it is NOT the interface for talking to the
@@ -159,11 +160,15 @@ module turfio_aurora_wrap
     // register for handling the logic of tsize
     reg        second_xfer = 0;        
     assign     cmd_userclk_tuser = cmd_userclk_tvalid && (cmd_userclk_tlast ^ !second_xfer);
-    // FIGURE THIS OUT LATER
-    wire       user_aresetn = 1'b1;
+    (* CUSTOM_CC_SRC = WBCLKTYPE *)
+    reg        wb_user_areset = 0;
+    (* CUSTOM_CC_DST = "USERCLK", ASYNC_REG = "TRUE" *)
+    reg        [1:0] user_areset = 2'b00;;
+    wire       user_aresetn = !user_areset[1];
     
     // second xfer logic
     always @(posedge user_clk) begin
+        user_areset <= { user_areset[0], wb_user_areset };
         if (!user_aresetn) second_xfer <= 1'b0;
         else begin
             // tvalid && tready && !tlast
@@ -177,7 +182,7 @@ module turfio_aurora_wrap
     // needed.
     aurora_cmd_ccfifo u_cmdccfifo( .s_aclk(wb_clk_i),
                                    .m_aclk(user_clk),
-                                   .s_aresetn(!wb_rst_i),
+                                   .s_aresetn(!wb_user_areset),
                                    `CONNECT_AXI4S_MIN_IF( s_axis_ , s_cmd_ ),
                                    .s_axis_tdest( s_cmd_tdest ),
                                    .s_axis_tlast( s_cmd_tlast ),
@@ -201,7 +206,7 @@ module turfio_aurora_wrap
                                                      ufc_tx_aurora_data[0] } ));
     // UFC *receive* works correctly though, so a normal switch will work here
     aurora_resp_switch u_respswitch( .aclk(wb_clk_i),
-                                     .aresetn(!wb_rst_i),
+                                     .aresetn(!wb_user_areset),
                                      .s_req_suppress(4'b0000),
                                      .s_axis_tdata( { ufc_rx_wbclk_tdata[3], ufc_rx_wbclk_tdata[2], ufc_rx_wbclk_tdata[1], ufc_rx_wbclk_tdata[0] } ),
                                      .s_axis_tvalid({ ufc_rx_wbclk_tvalid[3],ufc_rx_wbclk_tvalid[2],ufc_rx_wbclk_tvalid[1],ufc_rx_wbclk_tvalid[0]} ),
@@ -283,7 +288,9 @@ module turfio_aurora_wrap
             // [2] = eyescan_reset
             // [3] = powerdown
             // [6:4] = loopback
-            // [29:7] = reserved
+            // [7] = reserved
+            // [8] = user_areset
+            // [29:9] = reserved
             // [30] = datapath reset
             // [31] = link error reset
             
@@ -316,7 +323,9 @@ module turfio_aurora_wrap
             assign link_control[i][2] = eyescan_reset[i];
             assign link_control[i][3] = gt_powerdown[i];
             assign link_control[i][4 +: 3] = gt_loopback[i];
-            assign link_control[i][7 +: 23] = {23{1'b0}};
+            assign link_control[i][7] = 1'b0;
+            assign link_control[i][8] = user_areset;
+            assign link_control[i][9 +: 21] = {21{1'b0}};
             assign link_control[i][30] = datapath_reset[i];
             assign link_control[i][31] = linkerr_reset[i];
             
@@ -479,7 +488,9 @@ module turfio_aurora_wrap
     // only one right now
     wire [31:0] glob_ctrlstat;
     assign glob_ctrlstat = { global_linkerr_reset, global_datapath_reset,
-                             {28{1'b0}},
+                             {21{1'b0}},
+                             user_areset,
+                             {6{1'b0}},
                              gt_reset_in , reset_in };
     
     reg [31:0] dat_out = {32{1'b0}};
@@ -502,6 +513,9 @@ module turfio_aurora_wrap
                     reset_in <= wb_dat_i[0];
                     gt_reset_in <= wb_dat_i[1];
                 end
+                if (wb_sel_i[1]) begin
+                    wb_user_areset <= wb_dat_i[8];
+                end                    
                 if (wb_sel_i[3]) begin
                     global_linkerr_reset <= wb_dat_i[31];
                     global_datapath_reset <= wb_dat_i[30];
