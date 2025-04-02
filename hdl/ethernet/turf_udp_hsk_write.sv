@@ -58,7 +58,9 @@ module turf_udp_hsk_write(
     // we sleaze the FIFO slightly to pass tlast in a 72-bit word:
     // we drop tkeep[0] (since it's always set) and replace it with
     // tlast.
-    wire [71:0] wr_fifo_din = { wc64_tkeep[6:1], wc64_tlast, wc64_tdata };
+    // 
+    // YOU NEED 7 TKEEP BITS IDIOT
+    wire [71:0] wr_fifo_din = { wc64_tkeep[7:1], wc64_tlast, wc64_tdata };
     wire        wr_fifo_full;
     wire        wr_fifo_wren = (wc64_tready && wc64_tvalid);
     assign wc64_tready = !wr_fifo_full;
@@ -112,6 +114,7 @@ module turf_udp_hsk_write(
                         `CONNECT_AXI4S_MIN_IF(s_axis_ , wc_ ),
                         .s_axis_tlast(wc_tlast),
                         `CONNECT_AXI4S_IF(m_axis_ , wc64_ ));
+    
     udp_hsk_txfifo u_txfifo(.clk(aclk),.srst(!aresetn),
                             .din(wr_fifo_din),
                             .wr_en(wr_fifo_wren),
@@ -158,7 +161,8 @@ module turf_udp_hsk_write(
     
     assign m_udpdata_tdata = packet_fifo_dout[0 +: 64];
     assign m_udpdata_tlast = packet_fifo_dout[64];
-    assign m_udpdata_tkeep = { packet_fifo_dout[65 +: 6], 1'b1 };
+    // GODDAMNIT YOU'RE AN IDIOT
+    assign m_udpdata_tkeep = { packet_fifo_dout[65 +: 7], 1'b1 };
     assign m_udpdata_tvalid = packet_fifo_valid;
     assign packet_fifo_read = (m_udpdata_tvalid && m_udpdata_tready); 
                                         
