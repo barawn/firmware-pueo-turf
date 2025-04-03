@@ -9,22 +9,26 @@ module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="A",
                     parameter [3:0] VER_MAJOR=4'd0,
                     parameter [3:0] VER_MINOR=4'd3,
-                    parameter [7:0] VER_REV=8'd5,
+                    parameter [7:0] VER_REV=8'd6,
                     parameter [15:0] FIRMWARE_DATE = {16{1'b0}})                    
                     (
 
         // SLOW PERIPHERALS
         output TTXA,
         input TRXA,
-        
+        inout TRESETB_A,        // used to be TGPIO1A pin 124 D2
+
         output TTXB,
         input TRXB,
+        inout TRESETB_B,        // used to be TGPIO1B pin 74 B3
         
         output TTXC,
         input TRXC,
+        inout TRESETB_C,        // used to be TGPIO1C pin 88 E2
         
         output TTXD,
         input TRXD,
+        inout TRESETB_D,        // used to be TGPIO1D pin 92 E1
         
         output GPS_TX,
         input GPS_RX,
@@ -101,14 +105,29 @@ module pueo_turf6 #(parameter IDENT="TURF",
     wire emio_sda_i;
     wire emio_sda_t;
     
+    // the TOP 4 BITS of the EMIO are the resets to the TURFIOs
     wire [15:0] emio_gpio_t;
     wire [15:0] emio_gpio_i;
-    wire [15:0] emio_gpio_o;
+    wire [15:0] emio_gpio_o;    
     
     wire hsk_irq;    
     wire hsk_complete;
-    assign emio_gpio_i = { {13{1'b0}}, hsk_complete, hsk_irq, UART_IRQ_B };
-        
+    assign emio_gpio_i[11:0] = { {9{1'b0}}, hsk_complete, hsk_irq, UART_IRQ_B };
+    
+    // TURFIO resets
+    IOBUF u_tioa_resetb(.IO(TRESETB_A),.I(emio_gpio_o[12]),
+                                       .O(emio_gpio_i[12]),
+                                       .T(emio_gpio_t[12]));
+    IOBUF u_tiob_resetb(.IO(TRESETB_B),.I(emio_gpio_o[13]),
+                                       .O(emio_gpio_i[13]),
+                                       .T(emio_gpio_t[13]));
+    IOBUF u_tiob_resetc(.IO(TRESETB_C),.I(emio_gpio_o[14]),
+                                       .O(emio_gpio_i[14]),
+                                       .T(emio_gpio_t[14]));
+    IOBUF u_tiob_resetd(.IO(TRESETB_D),.I(emio_gpio_o[15]),
+                                       .O(emio_gpio_i[15]),
+                                       .T(emio_gpio_t[15]));
+                                                                              
     
     //////////////////////////////////////////////
     //              REGISTER SPACES             //

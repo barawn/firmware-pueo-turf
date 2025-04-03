@@ -35,6 +35,13 @@ set_property IOSTANDARD LVCMOS25 [get_ports TRXD]
 set_property PACKAGE_PIN C3 [get_ports TRXD]
 set_property PULLUP true [get_ports TRXD]
 
+# these do NOT get any pullups: they can be used to detect
+# presence of a programmed TURFIO D2/B3/E2/E1
+set_property -dict { IOSTANDARD LVCMOS25 PACKAGE_PIN D2 } [get_ports TRESETB_A]
+set_property -dict { IOSTANDARD LVCMOS25 PACKAGE_PIN B3 } [get_ports TRESETB_B]
+set_property -dict { IOSTANDARD LVCMOS25 PACKAGE_PIN E2 } [get_ports TRESETB_C]
+set_property -dict { IOSTANDARD LVCMOS25 PACKAGE_PIN E1 } [get_ports TRESETB_D]
+
 # B2B1 30 is F9 and labelled GPS_TX but it is FROM GPS (so RX here!)
 # B2B1 28 is E9 and labelled GPS_RX but it is TO GPS   (so TX here!)
 set_property IOSTANDARD LVCMOS25 [get_ports GPS_RX]
