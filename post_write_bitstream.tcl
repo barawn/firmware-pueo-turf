@@ -85,6 +85,7 @@ proc addHskInterrupt { f nextFragment } {
     puts $f "\t\t\t\t\tlabel = \"hsk0\";"
     puts $f "\t\t\t\t\tgpios = <&gpio 79 0>;"
     puts $f "\t\t\t\t\tlinux,code = <30>;"
+    puts $f "\t\t\t\t\tdebounce-interval = <0>;"
     puts $f "\t\t\t\t\tgpio-key,wakeup;"
     puts $f "\t\t\t\t\};"
     puts $f "\t\t\t\};"
