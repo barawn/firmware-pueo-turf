@@ -41,7 +41,7 @@
 module turfio_aurora_wrap
     #(  parameter TX_CLOCK_SEL = 0,
         parameter NUM_MGT = 4,
-        parameter USE_DEBUG = 4'b0001,
+        parameter USE_DEBUG = 4'b0011,
         parameter WBCLKTYPE = "NONE" )
     (
         // this is the LOCAL aurora WISHBONE interface
