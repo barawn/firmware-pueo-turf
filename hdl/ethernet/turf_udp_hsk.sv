@@ -24,7 +24,7 @@ module turf_udp_hsk(
         `HOST_NAMED_PORTS_AXI4S_IF( m_udpdata_ , 64 )
     );
 
-    turf_udp_hsk_read #(.DEBUG("FALSE"))
+    turf_udp_hsk_read #(.DEBUG("TRUE"))
         u_read( .aclk(aclk),.aresetn(aresetn),
                 `CONNECT_AXI4S_MIN_IF( s_udphdr_ , s_udphdr_ ),
                 `CONNECT_AXI4S_IF( s_udpdata_ , s_udpdata_ ),
