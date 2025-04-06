@@ -1,9 +1,10 @@
 `timescale 1ns / 1ps
 module turfio_event_accumulator_tb;
     wire aclk;
-    wire memclk;
+    wire ddr4_clk_p;
+    wire ddr4_clk_n = !ddr4_clk_p;
     tb_rclk #(.PERIOD(8)) u_aclk(.clk(aclk));
-    tb_rclk #(.PERIOD(3.333)) u_memclk(.clk(memclk));
+    tb_rclk #(.PERIOD(3.333)) u_refclk(.clk(ddr4_clk_p));
 
     reg start = 0;    
     reg run_indata = 0;
@@ -21,7 +22,7 @@ module turfio_event_accumulator_tb;
     wire        outdata_valid;
     wire        outdata_last;
     wire [4:0]  outdata_ident;
-    reg         outdata_has_space = 0;
+    wire        outdata_has_space;
         
     wire [63:0] hdrdata;
     wire        hdrvalid;
@@ -62,7 +63,8 @@ module turfio_event_accumulator_tb;
             indata_valid <= 1'b1;
         end
     end
-    
+
+    // ok now start with turfio event accumulator...    
     turfio_event_accumulator uut( .aclk(aclk),
                                   .aresetn(1'b1),
                                   .memclk(memclk),
@@ -80,15 +82,125 @@ module turfio_event_accumulator_tb;
                                   .payload_last_o(outdata_last),
                                   .payload_ident_o(outdata_ident),
                                   .payload_has_space_i(outdata_has_space));
+    // and pass over to the req gen.
+    // we need a done input...
+    reg [15:0] done_tdata = {16{1'b0}};
+    reg        done_tvalid = 0;
+    wire       done_tready;
+    // and a completion output    
+    wire [63:0] cmpl_tdata;
+    wire        cmpl_tvalid;
+    wire        cmpl_tready = 1;
+    // and an AXI link
+    `AXIM_DECLARE( dmaxi_ , 1);
+    // need to kill the IDs to hook it up to the RAM
+    wire [2:0] dmaxi_arid = {3{1'b0}};
+    wire [2:0] dmaxi_awid = {3{1'b0}};
+    wire [2:0] dmaxi_bid = {3{1'b0}};
+    wire [2:0] dmaxi_rid = {3{1'b0}};
+    // req gen
+    pueo_turfio_event_req_gen u_reqgen(.memclk(memclk),
+                                       .memresetn(1'b1),
+                                       .payload_i(outdata),
+                                       .payload_valid_i(outdata_valid),
+                                       .payload_last_i(outdata_last),
+                                       .payload_ident_i(outdata_ident),
+                                       .payload_has_space_o(outdata_has_space),
+                                       `CONNECT_AXIM( m_axi_ , dmaxi_ ),
+                                       `CONNECT_AXI4S_MIN_IF( s_done_ , done_ ),
+                                       `CONNECT_AXI4S_MIN_IF( m_cmpl_ , cmpl_ ));
+    // need connections for MIG->RAM...
+    wire DDR4_ACT_N;
+    wire [16:0] DDR4_A;
+    wire [1:0] DDR4_BA;
+    wire [0:0] DDR4_BG;
+    wire [0:0] DDR4_CKE;
+    wire [0:0] DDR4_ODT;
+    wire [0:0] DDR4_CS_N;
+    wire [0:0] DDR4_CK_T;
+    wire [0:0] DDR4_CK_C;
+    wire DDR4_RESET_N;
+    wire [7:0] DDR4_DM_DBI_N;
+    wire [63:0] DDR4_DQ;
+    wire [7:0] DDR4_DQS_T;
+    wire [7:0] DDR4_DQS_C;
+    wire ddr4_ready;   
+//        input c0_ddr4_act_n,
+//        input [16:0] c0_ddr4_adr,
+//        input [1:0] c0_ddr4_ba,
+//        input [0:0] c0_ddr4_bg,
+//        input [0:0] c0_ddr4_cke,
+//        input [0:0] c0_ddr4_odt,
+//        input [0:0] c0_ddr4_cs_n,
+//        input [0:0] c0_ddr4_ck_t,
+//        input [0:0] c0_ddr4_ck_c,
+//        input c0_ddr4_reset_n,
+//        inout [7:0] c0_ddr4_dm_dbi_n,
+//        inout [63:0] c0_ddr4_dq,
+//        inout [7:0] c0_ddr4_dqs_t,
+//        inout [7:0] c0_ddr4_dqs_c 
+wire ddr4_reset = 0;               
+ddr4_mig u_memory( .c0_sys_clk_p(ddr4_clk_p),.c0_sys_clk_n(ddr4_clk_n),
+         `CONNECT_AXIM( c0_ddr4_s_axi_      ,   dmaxi_       ),
+                       .c0_ddr4_s_axi_arid  (   dmaxi_arid   ),
+                       .c0_ddr4_s_axi_awid  (   dmaxi_awid   ),
+                       .c0_ddr4_s_axi_rid   (   dmaxi_rid    ),
+                       .c0_ddr4_s_axi_bid   (   dmaxi_bid    ),
+                       
+                       .c0_ddr4_aresetn( 1'b1 ),
+                       .sys_rst( ddr4_reset ),
+                       
+                       .c0_ddr4_act_n( DDR4_ACT_N ),
+                       .c0_ddr4_adr  ( DDR4_A ),
+                       .c0_ddr4_ba   ( DDR4_BA ),
+                       .c0_ddr4_bg   ( DDR4_BG ),
+                       .c0_ddr4_ck_c ( DDR4_CK_C ),
+                       .c0_ddr4_ck_t ( DDR4_CK_T ),
+                       .c0_ddr4_cke  ( DDR4_CKE ),
+                       .c0_ddr4_cs_n ( DDR4_CS_N ),
+                       .c0_ddr4_dm_dbi_n ( DDR4_DM_DBI_N ),
+                       .c0_ddr4_dq   ( DDR4_DQ ),
+                       .c0_ddr4_dqs_c( DDR4_DQS_C ),
+                       .c0_ddr4_dqs_t( DDR4_DQS_T ),
+                       .c0_ddr4_odt  ( DDR4_ODT ),
+                       .c0_ddr4_reset_n ( DDR4_RESET_N ),
+                       .c0_init_calib_complete( ddr4_ready ),
+                       .c0_ddr4_ui_clk( memclk ));
+    // and the memory
+sim_mem_wrapper u_mem(                     
+                     .c0_ddr4_act_n            (DDR4_ACT_N),
+                     .c0_ddr4_adr              (DDR4_A),
+                     .c0_ddr4_ba               (DDR4_BA),
+                     .c0_ddr4_bg               (DDR4_BG),
+                     .c0_ddr4_ck_c             (DDR4_CK_C),
+                     .c0_ddr4_ck_t             (DDR4_CK_T),
+                     .c0_ddr4_cke              (DDR4_CKE),
+                     .c0_ddr4_cs_n             (DDR4_CS_N),
+                     .c0_ddr4_dm_dbi_n         (DDR4_DM_DBI_N),
+                     .c0_ddr4_dq               (DDR4_DQ),
+                     .c0_ddr4_dqs_c            (DDR4_DQS_C),
+                     .c0_ddr4_dqs_t            (DDR4_DQS_T),
+                     .c0_ddr4_odt              (DDR4_ODT),
+                     .c0_ddr4_reset_n          (DDR4_RESET_N));                                                   
+
+    reg run_doneaddr = 0;
+    always @(posedge memclk) begin
+        if (run_doneaddr) done_tvalid <= 1;
+        if (done_tready) done_tdata <= done_tdata + 1;
+    end        
+                                  
     initial begin
-        #100;
+        #500;        
+        @(posedge memclk);
+        while (!ddr4_ready) #0.1 @(posedge memclk);
+        #10;
         @(posedge aclk);
         #1 start = 1;
         @(posedge aclk);
         #1 start = 0;
-        #70000;
         @(posedge memclk);
-        #0.1 outdata_has_space = 1;
+        #1 run_doneaddr = 1;
+        #70000;
     end                                  
 
 endmodule
