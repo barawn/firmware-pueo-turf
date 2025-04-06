@@ -214,7 +214,11 @@ module pueo_turfio_event_req_gen(
     assign cmd_fifo_read = dm_cmd_tvalid && dm_cmd_tready;
 
     `DEFINE_AXI4S_IF( dm_data_ , 512 );
-
+    // 512 bits = 64 bytes = 8 qwords
+    // No matter what we send multiples of 8 qwords, either
+    // 192 (unexpanded) or 256 (expanded). So just set tkeep
+    // to all 1s.
+    assign dm_data_tkeep = {64{1'b1}};
     `DEFINE_AXI4S_MIN_IF( dm_stat_ , 8);
 
     //////////////////////////////////////////////////////////
@@ -405,8 +409,8 @@ module pueo_turfio_event_req_gen(
     // and the DataMover
     turfio_datamover u_datamover( .m_axi_s2mm_aclk( memclk),
                                   .m_axi_s2mm_aresetn( memresetn ),
-                                  .m_axi_s2mm_cmdsts_awclk( memclk ),
-                                  .m_axi_s2mm_cmdsts_aresetn( memresetn ),
+                                  .m_axis_s2mm_cmdsts_awclk( memclk ),
+                                  .m_axis_s2mm_cmdsts_aresetn( memresetn ),
                                   `CONNECT_AXI4S_IF( s_axis_s2mm_ , dm_data_ ),
                                   `CONNECT_AXI4S_MIN_IF( s_axis_s2mm_cmd_ , dm_cmd_ ),
                                   `CONNECT_AXI4S_MIN_IF( m_axis_s2mm_sts_ , dm_stat_ ),
