@@ -4,6 +4,7 @@
 // expanding 12->16. however this module also allows
 // for just 64 -> 512 by just taking 8 in (uses a different
 // FIFO).
+`include "interfaces.vh"
 module event_expand_and_store(
         input clk,
         input rst,
@@ -37,6 +38,7 @@ module event_expand_and_store(
             wire         fifo_in_write = feed_control[1];
             wire         fifo_in_full; // pointless but leave for debugging
             wire         fifo_in_prog_full; // if set, don't have space for a chunk readout
+            assign       space_avail_o = !fifo_in_prog_full;
             
             wire [385:0] fifo_out_data;
             // skip over tlasts...
@@ -61,7 +63,7 @@ module event_expand_and_store(
                                     .din(fifo_in_data),
                                     .wr_en(fifo_in_write),
                                     .full(fifo_in_full),
-                                    .prog_full(space_avail_o),
+                                    .prog_full(fifo_in_prog_full),
                                     .dout(fifo_out_data),
                                     .rd_en(fifo_out_read),
                                     .valid(fifo_out_valid));
@@ -72,6 +74,10 @@ module event_expand_and_store(
         end else begin : NEXP
             wire [64:0] fifo_in_data = { payload_last_i, payload_i };
             wire [519:0] fifo_out_data;
+            wire         fifo_in_prog_full;
+            
+            assign       space_avail_o = !fifo_in_prog_full;
+            
             // note that a SURF chunk is normally 384 x 64 bits,
             // = 2 x 1024 x 12 = 24,576
             // which is still just 48x512 so we can just grab the top TLAST.
@@ -96,7 +102,7 @@ module event_expand_and_store(
                                              .srst(rst),
                                              .din(fifo_in_data),
                                              .wr_en(payload_valid_i),
-                                             .prog_full(space_avail_o),
+                                             .prog_full(fifo_in_prog_full),
                                              .dout(fifo_out_data),
                                              .valid(m_axis_tvalid),
                                              .rd_en(m_axis_tvalid && m_axis_tready));                                   
