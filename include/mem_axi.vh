@@ -68,8 +68,6 @@
 `AXIM_BUILDO( htype ,  8 , multiplier , name``len      ) `AXIM_``term \
 `AXIM_BUILDO( htype ,  3 , multiplier , name``prot     ) `AXIM_``term \
 `AXIM_BUILDO( htype ,  3 , multiplier , name``size     ) `AXIM_``term \
-`AXIM_BUILDO( htype ,  1 , multiplier , name``lock     ) `AXIM_``term \
-`AXIM_BUILDO( htype ,  4 , multiplier , name``qos      ) `AXIM_``term \
 `AXIM_BUILDO( htype ,  1 , multiplier , name``valid    )
 
 
@@ -138,8 +136,6 @@
         .``port``prot ( name``prot  `AXIM_SUFFIX(  3, idx , type   )),  \
         .``port``ready( name``ready `AXIM_SUFFIX(  1, idx , type   )),  \
         .``port``size ( name``size  `AXIM_SUFFIX(  3, idx , type   )),  \
-        .``port``lock ( name``lock  `AXIM_SUFFIX(  1, idx , type   )),  \
-        .``port``qos  ( name``qos   `AXIM_SUFFIX(  4, idx , type   )),  \
         .``port``valid( name``valid `AXIM_SUFFIX(  1, idx , type   ))
 
     `define AXIM_CONNECTB( port, name , idx , type )                    \
