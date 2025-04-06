@@ -18,8 +18,13 @@ ip/eth/eth_phy_10g_core/eth_phy_10g_core.xci
 ip/eth/eth_xcvr_gt_channel/eth_xcvr_gt_channel.xci
 ip/eth/eth_xcvr_gt_full/eth_xcvr_gt_full.xci
 ip/event/event_chunk_fifo/event_chunk_fifo.xci
+ip/event/event_cmpl_fifo/event_cmpl_fifo.xci
 ip/debug/event_ctrl_ila/event_ctrl_ila.xci
 ip/debug/event_ctrl_vio/event_ctrl_vio.xci
+ip/event/event_dm_cmd_fifo/event_dm_cmd_fifo.xci
+ip/event/event_done_addrfifo/event_done_addrfifo.xci
+ip/event/event_in_dm_fifo/event_in_dm_fifo.xci
+ip/event/event_in_dm_fifo_noexpand/event_in_dm_fifo_noexpand.xci
 ip/debug/hsk_ila/hsk_ila.xci
 ip/debug/hsk_tx_ila/hsk_tx_ila.xci
 ip/debug/i2c_merge_ila/i2c_merge_ila.xci
@@ -28,6 +33,7 @@ ip/debug/intercon_ila/intercon_ila.xci
 ip/debug/register_bridge_ila/register_bridge_ila.xci
 ip/event/surf_fifo/surf_fifo.xci
 ip/aurora/turfio_aurora/turfio_aurora.xci
+ip/event/turfio_datamover/turfio_datamover.xci
 ip/debug/uart_ila/uart_ila.xci
 ip/eth/udp_complete_64_core/udp_complete_64_core.xci
 ip/fifo/udp_hsk_rxcount/udp_hsk_rxcount.xci

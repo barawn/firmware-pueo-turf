@@ -55,3 +55,5 @@ hdl/ethernet/turf_udp_rdwr.v
 hdl/aurora/turfio_aurora_reset.sv
 hdl/event/turfio_event_accumulator.sv
 hdl/ethernet/wb_if_cc.sv
+hdl/event/pueo_turfio_event_req_gen.sv
+hdl/event/event_expand_and_store.sv
