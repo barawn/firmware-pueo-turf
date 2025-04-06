@@ -30,21 +30,59 @@ module event_expand_and_store(
     generate
         if (EXPAND_DATA == "TRUE") begin : EXP
             reg [127:0] payload_storage = {128{1'b0}};
+            // CRAP WE NEED TO BE CAREFUL HERE ABOUT ORDERING:
+            // OUR DATA BASICALLY COMES IN *BACKWARDS*
+            // AS IN, PAYLOAD_I COMES IN
+            // sample[0], sample[1], sample[2], sample[3], sample[4], sample[5][11:8]
+            // sample[5][7:0], sample[6], sample[7], sample[8], sample[9], sample[10][11:4]
+            // sample[10][3:0], sample[11], sample[12], sample[13], sample[14], sample[15]
+            // THIS IS FINE, B/C WE'RE GOING TO REORDER WHEN WE FEED INTO THE FIFO
+            // (192 bits = 16 samples @ 12 bits)
+            // we're trying to feed in 192 bits at a time (every 3 clocks
+            // feed control goes
+            // clk  valid   feed_control
+            // 0    0       00
+            // 1    1       00
+            // 2    1       01
+            // 3    1       11
+            // 4    1       00
+            // etc.
             reg [1:0] feed_control = {2{1'b0}};
-            reg       fifo_last = 0;
+            wire      fifo_last = (payload_last_i && feed_control[1]);
             
             // FIFO FOR EXPANDING FROM 192->384
-            wire [192:0] fifo_in_data = { fifo_last, payload_storage, payload_i };
+            // WE REORDER THINGS HERE SO THAT THE FIRST SAMPLE IS LOWEST ADDRESS
+            wire [192:0] fifo_in_data;
+            assign fifo_in_data[0   +:  12] = payload_storage[116 +: 12];
+            assign fifo_in_data[12  +:  12] = payload_storage[104 +: 12];
+            assign fifo_in_data[24  +:  12] = payload_storage[ 92 +: 12];
+            assign fifo_in_data[36  +:  12] = payload_storage[ 80 +: 12];
+            assign fifo_in_data[48  +:  12] = payload_storage[ 68 +: 12];
+            assign fifo_in_data[60  +:  12] = payload_storage[ 56 +: 12];
+            assign fifo_in_data[72  +:  12] = payload_storage[ 44 +: 12];
+            assign fifo_in_data[84  +:  12] = payload_storage[ 32 +: 12];
+            assign fifo_in_data[96  +:  12] = payload_storage[ 20 +: 12];
+            assign fifo_in_data[108 +:  12] = payload_storage[ 08 +: 12];
+            assign fifo_in_data[120 +:  12] = {payload_storage[ 0 +: 8], payload_i[60 +: 4] };
+            assign fifo_in_data[132 +:  12] = payload_i[48 +: 12];
+            assign fifo_in_data[144 +:  12] = payload_i[36 +: 12];
+            assign fifo_in_data[156 +:  12] = payload_i[24 +: 12];
+            assign fifo_in_data[168 +:  12] = payload_i[12 +: 12];
+            assign fifo_in_data[180 +:  12] = payload_i[0 +: 12];
+            // I dunno why I ever thought I needed to qualify this
+            assign fifo_in_data[192] = payload_last_i;
             wire         fifo_in_write = feed_control[1];
             wire         fifo_in_full; // pointless but leave for debugging
             wire         fifo_in_prog_full; // if set, don't have space for a chunk readout
             assign       space_avail_o = !fifo_in_prog_full;
             
             wire [385:0] fifo_out_data;
-            // skip over tlasts...
-            wire [383:0] fifo_out_payload = { fifo_out_data[193 +: 192], fifo_out_data[0 +: 192] };
+            // FIFO orderings when width expanding is always
+            // { oldest, newest } and we want
+            // { newest, oldest } - so flop again here, jumping over tlast
+            wire [383:0] fifo_out_payload = { fifo_out_data[0 +: 192], fifo_out_data[193 +: 192] };            
             // repack
-            wire [1:0]   fifo_out_last = { fifo_out_data[385], fifo_out_data[192] };
+            wire [1:0]   fifo_out_last = { fifo_out_data[192], fifo_out_data[385] };
             wire         fifo_out_valid;
             wire         fifo_out_read;
             
@@ -56,7 +94,6 @@ module event_expand_and_store(
                 end
                 if (payload_valid_i)
                     payload_storage <= { payload_storage[63:0], payload_i };
-                fifo_last <= (feed_control[1] && payload_last_i );                        
             end
             event_in_dm_fifo u_fifo(.clk(clk),
                                     .srst(rst),
@@ -69,7 +106,7 @@ module event_expand_and_store(
                                     .valid(fifo_out_valid));
             assign m_axis_tdata = expand_data(fifo_out_payload);
             assign m_axis_tvalid = fifo_out_valid;
-            assign m_axis_tlast = fifo_out_last;
+            assign m_axis_tlast = fifo_out_last[1];
             assign fifo_out_read = m_axis_tvalid && m_axis_tready;
         end else begin : NEXP
             wire [64:0] fifo_in_data = { payload_last_i, payload_i };
