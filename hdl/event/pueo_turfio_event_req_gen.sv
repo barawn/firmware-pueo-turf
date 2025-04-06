@@ -240,12 +240,21 @@ module pueo_turfio_event_req_gen(
     // If payload_ident_i[5:2] != 6 it then jumps to INCREMENT_ADDRESS
     // where it adds SURF_ADDR_INCR. Otherwise it jumps to LOAD_BASE_ADDRESS
     // where it starts again.
-    localparam FSM_BITS = 2;
-    localparam [FSM_BITS-1:0] IDLE = 0;
-    localparam [FSM_BITS-1:0] LOAD_BASE_ADDRESS = 1;
-    localparam [FSM_BITS-1:0] WAIT_FOR_TLAST_TO_ISSUE = 2;
-    localparam [FSM_BITS-1:0] INCREMENT_ADDRESS = 3;
+    localparam FSM_BITS = 3;
+    localparam [FSM_BITS-1:0] RESET_0 = 0;
+    localparam [FSM_BITS-1:0] RESET_1 = 1;
+    localparam [FSM_BITS-1:0] RESET_2 = 2;
+    localparam [FSM_BITS-1:0] RESET_3 = 3;
+    localparam [FSM_BITS-1:0] IDLE = 4;
+    localparam [FSM_BITS-1:0] LOAD_BASE_ADDRESS = 5;
+    localparam [FSM_BITS-1:0] WAIT_FOR_TLAST_TO_ISSUE = 6;
+    localparam [FSM_BITS-1:0] INCREMENT_ADDRESS = 7;
     reg [FSM_BITS-1:0] state = IDLE;
+
+    wire dm_cmd_reset = (state == RESET_0 ||
+                         state == RESET_1 ||
+                         state == RESET_2 ||
+                         state == RESET_3);
  
     // error sticky
     reg [3:0] cmd_err_full = 4'h0;
@@ -335,9 +344,13 @@ module pueo_turfio_event_req_gen(
             state == LOAD_BASE_ADDRESS) begin
                 this_addr <= addr_addend_A + addr_addend_B;
         end
-        if (!memresetn) state <= IDLE;
+        if (!memresetn) state <= RESET_0;
         else begin
             case (state)
+                RESET_0: state <= RESET_1;
+                RESET_1: state <= RESET_2;
+                RESET_2: state <= RESET_3;
+                RESET_3: state <= IDLE;
                 IDLE: if (payload_valid_i && s_done_tvalid) state <= LOAD_BASE_ADDRESS;
                 LOAD_BASE_ADDRESS: state <= WAIT_FOR_TLAST_TO_ISSUE;
                 WAIT_FOR_TLAST_TO_ISSUE: if (payload_valid_i && payload_last_i) begin
@@ -410,7 +423,7 @@ module pueo_turfio_event_req_gen(
     turfio_datamover u_datamover( .m_axi_s2mm_aclk( memclk),
                                   .m_axi_s2mm_aresetn( memresetn ),
                                   .m_axis_s2mm_cmdsts_awclk( memclk ),
-                                  .m_axis_s2mm_cmdsts_aresetn( memresetn ),
+                                  .m_axis_s2mm_cmdsts_aresetn( !dm_cmd_reset ),
                                   `CONNECT_AXI4S_IF( s_axis_s2mm_ , dm_data_ ),
                                   `CONNECT_AXI4S_MIN_IF( s_axis_s2mm_cmd_ , dm_cmd_ ),
                                   `CONNECT_AXI4S_MIN_IF( m_axis_s2mm_sts_ , dm_stat_ ),
