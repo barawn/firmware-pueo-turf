@@ -86,6 +86,12 @@ module event_pueo_wrap(
 
     // This is the AXI4 interface used for DDR.
     `AXIM_DECLARE( memaxi_ , 1 );
+    // add in the qos/locks
+    wire [3:0] memaxi_arqos;
+    wire [3:0] memaxi_awqos;
+    wire       memaxi_arlock;
+    wire       memaxi_awlock;
+    // and the IDs
     wire [2:0] memaxi_arid;
     wire [2:0] memaxi_awid;
     wire [2:0] memaxi_bid;
@@ -126,6 +132,10 @@ module event_pueo_wrap(
                     .c0_ddr4_aresetn(memresetn),
                     .c0_ddr4_ui_clk( memclk ),
       `CONNECT_AXIM( c0_ddr4_s_axi_ ,     memaxi_       ),
+                    .c0_ddr4_s_axi_awqos( memaxi_awqos  ),
+                    .c0_ddr4_s_axi_arqos( memaxi_arqos  ),
+                    .c0_ddr4_s_axi_awlock(memaxi_awlock ),
+                    .c0_ddr4_s_axi_arlock(memaxi_arlock ),
                     .c0_ddr4_s_axi_arid ( memaxi_arid   ),
                     .c0_ddr4_s_axi_awid ( memaxi_awid   ),
                     .c0_ddr4_s_axi_rid  ( memaxi_rid    ),
