@@ -56,12 +56,12 @@
         "C0.DDR4_ChipSelect": [ { "value": "true", "resolve_type": "user", "format": "bool", "usage": "all" } ],
         "C0.DDR4_isCKEShared": [ { "value": "false", "resolve_type": "user", "format": "bool", "usage": "all" } ],
         "C0.DDR4_AxiDataWidth": [ { "value": "512", "resolve_type": "user", "format": "long", "usage": "all" } ],
-        "C0.DDR4_AxiArbitrationScheme": [ { "value": "RD_PRI_REG", "resolve_type": "user", "usage": "all" } ],
+        "C0.DDR4_AxiArbitrationScheme": [ { "value": "ROUND_ROBIN", "value_src": "user", "resolve_type": "user", "usage": "all" } ],
         "C0.DDR4_AxiNarrowBurst": [ { "value": "false", "resolve_type": "user", "format": "bool", "usage": "all" } ],
         "C0.DDR4_AxiAddressWidth": [ { "value": "32", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "C0.DDR4_AxiIDWidth": [ { "value": "3", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "C0.DDR4_Capacity": [ { "value": "512", "resolve_type": "user", "format": "long", "usage": "all" } ],
-        "C0.DDR4_Mem_Add_Map": [ { "value": "BANK_ROW_COLUMN", "value_src": "user", "resolve_type": "user", "usage": "all" } ],
+        "C0.DDR4_Mem_Add_Map": [ { "value": "ROW_COLUMN_BANK", "value_src": "user", "resolve_type": "user", "usage": "all" } ],
         "C0.DDR4_MemoryName": [ { "value": "MainMemory", "resolve_type": "user", "usage": "all" } ],
         "C0.DDR4_AutoPrecharge": [ { "value": "false", "resolve_type": "user", "format": "bool", "usage": "all" } ],
         "C0.DDR4_UserRefresh_ZQCS": [ { "value": "false", "resolve_type": "user", "format": "bool", "usage": "all" } ],
@@ -151,7 +151,7 @@
         "MCS_WO_DSP": [ { "value": "false", "resolve_type": "user", "format": "bool", "usage": "all" } ]
       },
       "model_parameters": {
-        "C0.DDR4_Mem_Add_Map": [ { "value": "BANK_ROW_COLUMN", "resolve_type": "generated", "usage": "simulation.tlm" } ],
+        "C0.DDR4_Mem_Add_Map": [ { "value": "ROW_COLUMN_BANK", "resolve_type": "generated", "usage": "simulation.tlm" } ],
         "System_Clock": [ { "value": "Differential", "resolve_type": "generated", "usage": "simulation.tlm" } ],
         "C0.ControllerType": [ { "value": "DDR4_SDRAM", "resolve_type": "generated", "usage": "all" } ],
         "C0.APP_ADDR_WIDTH": [ { "value": "29", "resolve_type": "generated", "format": "long", "usage": "all" } ],
