@@ -99,8 +99,9 @@ module turfio_event_accumulator_tb;
     wire [2:0] dmaxi_bid = {3{1'b0}};
     wire [2:0] dmaxi_rid = {3{1'b0}};
     // req gen
+    reg reset_reqgen = 0;
     pueo_turfio_event_req_gen u_reqgen(.memclk(memclk),
-                                       .memresetn(1'b1),
+                                       .memresetn(!reset_reqgen),
                                        .payload_i(outdata),
                                        .payload_valid_i(outdata_valid),
                                        .payload_last_i(outdata_last),
@@ -194,6 +195,10 @@ sim_mem_wrapper u_mem(
         @(posedge memclk);
         while (!ddr4_ready) #0.1 @(posedge memclk);
         #10;
+        @(posedge memclk);
+        #0.1 reset_reqgen = 1;
+        @(posedge memclk);
+        #0.1 reset_reqgen = 0;
         @(posedge aclk);
         #1 start = 1;
         @(posedge aclk);
