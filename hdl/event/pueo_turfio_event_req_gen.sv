@@ -241,21 +241,19 @@ module pueo_turfio_event_req_gen(
     // where it adds SURF_ADDR_INCR. Otherwise it jumps to LOAD_BASE_ADDRESS
     // where it starts again.
     localparam FSM_BITS = 3;
-    localparam [FSM_BITS-1:0] RESET_0 = 0;
-    localparam [FSM_BITS-1:0] RESET_1 = 1;
-    localparam [FSM_BITS-1:0] RESET_2 = 2;
-    localparam [FSM_BITS-1:0] RESET_3 = 3;
-    localparam [FSM_BITS-1:0] IDLE = 4;
-    localparam [FSM_BITS-1:0] LOAD_BASE_ADDRESS = 5;
-    localparam [FSM_BITS-1:0] WAIT_FOR_TLAST_TO_ISSUE = 6;
-    localparam [FSM_BITS-1:0] INCREMENT_ADDRESS = 7;
+    localparam [FSM_BITS-1:0] RESET = 0;
+    localparam [FSM_BITS-1:0] RESET_WAIT = 1;
+    localparam [FSM_BITS-1:0] IDLE = 2;
+    localparam [FSM_BITS-1:0] LOAD_BASE_ADDRESS = 3;
+    localparam [FSM_BITS-1:0] WAIT_FOR_TLAST_TO_ISSUE = 4;
+    localparam [FSM_BITS-1:0] INCREMENT_ADDRESS = 5;
+    localparam [FSM_BITS-1:0] WAIT_NEXT_CHUNK = 6;
     reg [FSM_BITS-1:0] state = IDLE;
-
-    wire dm_cmd_reset = (state == RESET_0 ||
-                         state == RESET_1 ||
-                         state == RESET_2 ||
-                         state == RESET_3);
- 
+    
+    reg [3:0] reset_counter = {4{1'b0}};
+    
+    wire dm_cmd_reset = (reset_counter != {4{1'b0}});
+    
     // error sticky
     reg [3:0] cmd_err_full = 4'h0;
  
@@ -263,9 +261,9 @@ module pueo_turfio_event_req_gen(
     reg [8:0] this_addr = {9{1'b0}};
       
     // writes to command fifo
-    wire   cmd_last_command = (payload_ident_i[5:2] == 6 && payload_ident_i[1:0] == 3);
+    wire   cmd_last_command = (payload_ident_i[2:0] == 6 && payload_ident_i[4:3] == 3);
     assign cmd_fifo_in = { cmd_last_command,
-                           s_done_tdata,    // 13 bits for event address
+                           s_done_tdata[12:0],    // 13 bits for event address
                            this_addr };     // 9 bits for this address
                                             // 10 bits zero (aligned on 1kb boundaries)
     assign cmd_fifo_write = (state == WAIT_FOR_TLAST_TO_ISSUE) && payload_last_i && payload_valid_i;                                            
@@ -331,6 +329,11 @@ module pueo_turfio_event_req_gen(
 
     // LOGIC
     always @(posedge memclk) begin
+        if (state == RESET || state == RESET_WAIT)
+            reset_counter <= reset_counter + 1;
+        else
+            reset_counter <= {4{1'b0}};
+                        
         if (!memresetn) begin
             cmd_err_full <= 4'h0;
         end else begin
@@ -344,26 +347,33 @@ module pueo_turfio_event_req_gen(
             state == LOAD_BASE_ADDRESS) begin
                 this_addr <= addr_addend_A + addr_addend_B;
         end
-        if (!memresetn) state <= RESET_0;
+        if (!memresetn) state <= RESET;
         else begin
             case (state)
-                RESET_0: state <= RESET_1;
-                RESET_1: state <= RESET_2;
-                RESET_2: state <= RESET_3;
-                RESET_3: state <= IDLE;
+                RESET: state <= RESET_WAIT;
+                RESET_WAIT: if (reset_counter == {4{1'b0}}) state <= IDLE;
                 IDLE: if (payload_valid_i && s_done_tvalid) state <= LOAD_BASE_ADDRESS;
                 LOAD_BASE_ADDRESS: state <= WAIT_FOR_TLAST_TO_ISSUE;
                 WAIT_FOR_TLAST_TO_ISSUE: if (payload_valid_i && payload_last_i) begin
-                    if (payload_ident_i[5:2] == 6) begin
+                    // the payload idents go
+                    // chunk counter, surf counter
+                    // so it's
+                    // 0,1,2,3,4,5,6
+                    // 8,9,10,11,12,13,14
+                    // 16,17,18,19,20,21,22
+                    // 24,25,26,27,28,29,30
+                    if (payload_ident_i[2:0] == 6) begin
                         if (cmd_last_command) state <= IDLE;
                         // NOTE: this relies on the fact that chunks are delivered
                         // atomically. If it's last_i, we're GOING to transition
                         // to the next SURF, so if it's the last one, jump back to zero
                         // and the chunk indicator WILL increment.
-                        else state <= LOAD_BASE_ADDRESS;
+                        else state <= WAIT_NEXT_CHUNK;
                     end else state <= INCREMENT_ADDRESS;
                 end
                 INCREMENT_ADDRESS: state <= WAIT_FOR_TLAST_TO_ISSUE;
+                // generally after a chunk completes we'll be waiting a while for the next
+                WAIT_NEXT_CHUNK: if (payload_valid_i) state <= LOAD_BASE_ADDRESS;
             endcase
         end
         
@@ -421,7 +431,7 @@ module pueo_turfio_event_req_gen(
                 
     // and the DataMover
     turfio_datamover u_datamover( .m_axi_s2mm_aclk( memclk),
-                                  .m_axi_s2mm_aresetn( memresetn ),
+                                  .m_axi_s2mm_aresetn( !dm_cmd_reset),
                                   .m_axis_s2mm_cmdsts_awclk( memclk ),
                                   .m_axis_s2mm_cmdsts_aresetn( !dm_cmd_reset ),
                                   `CONNECT_AXI4S_IF( s_axis_s2mm_ , dm_data_ ),
@@ -444,9 +454,10 @@ module pueo_turfio_event_req_gen(
     assign      cmd_err_o = cmd_err_full;
     
     // and mark our space available.
-    // Note that the next chunk readout cannot even begin until we're in
-    // IDLE so this doesn't incur any deadtime. I could just do s_done_tvalid, really.
-    assign      payload_has_space_o = (fifo_has_space &&
-                                       (state == IDLE && s_done_tvalid));
+    // we have space available if we're sitting in WAIT_NEXT_CHUNK (because we already _have_ an address)
+    // or if we're sitting in IDLE and we have an address available.
+    // Also if the FIFO has enough space to accept a chunk.
+    assign      payload_has_space_o = (fifo_has_space && (state == WAIT_NEXT_CHUNK ||
+                                       (state == IDLE && s_done_tvalid)));
                                        
 endmodule
