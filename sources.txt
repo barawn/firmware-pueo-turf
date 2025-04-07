@@ -57,3 +57,6 @@ hdl/event/turfio_event_accumulator.sv
 hdl/ethernet/wb_if_cc.sv
 hdl/event/pueo_turfio_event_req_gen.sv
 hdl/event/event_expand_and_store.sv
+bd/ddr_intercon/ddr_intercon.bd
+bd/ddr_intercon_nodebug/ddr_intercon_nodebug.bd
+hdl/event/ddr_intercon_wrapper.v

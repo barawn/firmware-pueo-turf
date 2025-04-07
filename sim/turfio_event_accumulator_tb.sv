@@ -17,18 +17,7 @@ module turfio_event_accumulator_tb;
     wire       indata_tvalid = indata_valid || run_indata;
     reg        indata_tlast = 0;
     wire       indata_tready;
-    
-    wire [63:0] outdata;
-    wire        outdata_valid;
-    wire        outdata_last;
-    wire [4:0]  outdata_ident;
-    wire        outdata_has_space;
         
-    wire [63:0] hdrdata;
-    wire        hdrvalid;
-    wire        hdrready = 1'b1;
-    wire        hdrtlast;
-    
     always @(posedge aclk) begin
         if (start) run_indata <= 1;
         else if (indata_counter == 24582) run_indata <= 0;
@@ -63,53 +52,161 @@ module turfio_event_accumulator_tb;
             indata_valid <= 1'b1;
         end
     end
+    
+    // AXI links
+    `AXIM_DECLARE( dmaxi_ , 5);
+    `AXIM_DECLARE( outaxi_ , 1);
+    `AXIM_DECLARE( memaxi_ , 1);
+    // kill the qos/lock for mem
+    wire [3:0] memaxi_arqos = {4{1'b0}};
+    wire [3:0] memaxi_awqos = {4{1'b0}};
+    wire memaxi_arlock = 1'b0;
+    wire memaxi_awlock = 1'b0;
+    // now we have to define and hook up the IDs
+    wire [2:0] memaxi_arid;
+    wire [2:0] memaxi_awid;
+    wire [2:0] memaxi_bid;
+    wire [2:0] memaxi_rid;
+    
+    
+    
+    // tedious crap
+    `define KILL_SAXI_ADDR( pfx )            \
+        assign pfx``addr = {32{1'b0}};      \
+        assign pfx``len = {8{1'b0}};        \
+        assign pfx``size = {3{1'b0}};       \
+        assign pfx``burst = {2{1'b0}};      \
+        assign pfx``lock = 1'b0;            \
+        assign pfx``cache = {4{1'b0}};      \
+        assign pfx``prot = {3{1'b0}};       \
+        assign pfx``qos = {4{1'b0}};        \
+        assign pfx``valid = 1'b0
 
-    // ok now start with turfio event accumulator...    
-    turfio_event_accumulator uut( .aclk(aclk),
-                                  .aresetn(1'b1),
-                                  .memclk(memclk),
-                                  .memresetn(1'b1),
-                                  .s_axis_tdata( indata_tdata ),
-                                  .s_axis_tvalid(indata_tvalid),
-                                  .s_axis_tready(indata_tready),
-                                  .s_axis_tlast( indata_tlast),
-                                  .m_hdr_tdata( hdrdata ),
-                                  .m_hdr_tvalid(hdrvalid),
-                                  .m_hdr_tready(hdrready),
-                                  .m_hdr_tlast(hdrtlast),
-                                  .payload_o(outdata ),
-                                  .payload_valid_o(outdata_valid),
-                                  .payload_last_o(outdata_last),
-                                  .payload_ident_o(outdata_ident),
-                                  .payload_has_space_i(outdata_has_space));
-    // and pass over to the req gen.
-    // we need a done input...
-    reg [15:0] done_tdata = {16{1'b0}};
-    reg        done_tvalid = 0;
-    wire       done_tready;
-    // and a completion output    
-    wire [63:0] cmpl_tdata;
-    wire        cmpl_tvalid;
-    wire        cmpl_tready = 1;
-    // and an AXI link
-    `AXIM_DECLARE( dmaxi_ , 1);
-    // need to kill the IDs to hook it up to the RAM
-    wire [2:0] dmaxi_arid = {3{1'b0}};
-    wire [2:0] dmaxi_awid = {3{1'b0}};
-    wire [2:0] dmaxi_bid = {3{1'b0}};
-    wire [2:0] dmaxi_rid = {3{1'b0}};
-    // req gen
+    `define KILL_SAXI_DATA( pfx )           \
+        assign pfx``wdata = {512{1'b0}};    \
+        assign pfx``wstrb = {64{1'b0}};     \
+        assign pfx``wvalid = 1'b0;          \
+        assign pfx``wlast = 1'b0;           \
+        assign pfx``rready = 1'b1;          \
+        assign pfx``bready = 1'b1
+        
+        
+    `define KILL_AXI_VEC_ADDR( pfx, idx) \
+        assign pfx``addr[32*idx +: 32] = {32{1'b0}}; \
+        assign pfx``len[8*idx +: 8] = {8{1'b0}};    \
+        assign pfx``size[3*idx +: 3] = {3{1'b0}};   \
+        assign pfx``burst[2*idx +: 2] = {2{1'b0}};  \
+        assign pfx``cache[4*idx +: 4] = {4{1'b0}};  \
+        assign pfx``prot[3*idx +: 3] = {3{1'b0}};   \
+        assign pfx``valid[idx] = 1'b0
+
+    `define KILL_AXI_VEC_DATA( pfx , idx ) \
+        assign pfx``wdata[512*idx +: 512] = {512{1'b0}};    \
+        assign pfx``wstrb[64*idx +: 64] = {64{1'b0}};     \
+        assign pfx``wvalid[idx] = 1'b0;          \
+        assign pfx``wlast[idx] = 1'b0;           \
+        assign pfx``rready[idx] = 1'b1;          \
+        assign pfx``bready[idx] = 1'b1
+
+    `KILL_AXI_VEC_ADDR( dmaxi_aw , 4 );
+    `KILL_AXI_VEC_ADDR( dmaxi_ar , 4 );
+    `KILL_AXI_VEC_DATA( dmaxi_ , 4 );
+
+    `KILL_SAXI_ADDR( outaxi_aw );
+    `KILL_SAXI_ADDR( outaxi_ar );
+    `KILL_SAXI_DATA( outaxi_ );
+
+    wire memclk;
+
+    // req gen reset
     reg reset_reqgen = 0;
-    pueo_turfio_event_req_gen u_reqgen(.memclk(memclk),
-                                       .memresetn(!reset_reqgen),
-                                       .payload_i(outdata),
-                                       .payload_valid_i(outdata_valid),
-                                       .payload_last_i(outdata_last),
-                                       .payload_ident_i(outdata_ident),
-                                       .payload_has_space_o(outdata_has_space),
-                                       `CONNECT_AXIM( m_axi_ , dmaxi_ ),
-                                       `CONNECT_AXI4S_MIN_IF( s_done_ , done_ ),
-                                       `CONNECT_AXI4S_MIN_IF( m_cmpl_ , cmpl_ ));
+    reg run_doneaddr = 0;        
+    generate
+        genvar i;
+        for (i=0;i<4;i=i+1) begin : TFIO
+                // this is now internal in the loop
+                wire [63:0] outdata;
+                wire        outdata_valid;
+                wire        outdata_last;
+                wire [4:0]  outdata_ident;
+                wire        outdata_has_space;
+                    
+                wire [63:0] hdrdata;
+                wire        hdrvalid;
+                wire        hdrready = 1'b1;
+                wire        hdrtlast;
+            
+                // ok now start with turfio event accumulator...    
+                turfio_event_accumulator uut( .aclk(aclk),
+                                              .aresetn(1'b1),
+                                              .memclk(memclk),
+                                              .memresetn(1'b1),
+                                              .s_axis_tdata( indata_tdata ),
+                                              .s_axis_tvalid(indata_tvalid),
+                                              .s_axis_tready(indata_tready),
+                                              .s_axis_tlast( indata_tlast),
+                                              .m_hdr_tdata( hdrdata ),
+                                              .m_hdr_tvalid(hdrvalid),
+                                              .m_hdr_tready(hdrready),
+                                              .m_hdr_tlast(hdrtlast),
+                                              .payload_o(outdata ),
+                                              .payload_valid_o(outdata_valid),
+                                              .payload_last_o(outdata_last),
+                                              .payload_ident_o(outdata_ident),
+                                              .payload_has_space_i(outdata_has_space));
+                // and pass over to the req gen.
+                // we need a done input...
+                reg [15:0] done_tdata = {16{1'b0}};
+                reg        done_tvalid = 0;
+                wire       done_tready;
+                always @(posedge memclk) begin
+                    if (run_doneaddr) done_tvalid <= 1;
+                    if (done_tready) done_tdata <= done_tdata + 1;
+                end        
+                // and a completion output    
+                wire [63:0] cmpl_tdata;
+                wire        cmpl_tvalid;
+                wire        cmpl_tready = 1;
+                // you need base addresses now!
+                // TIO0 = 0_4000
+                // TIO1 = 2_0000
+                // TIO2 = 3_C000
+                // TIO3 = 5_8000
+                // We pass the top 7 bits, which is the 3 top bits
+                // plus next nybble, so 0x04, 0x20, 0x3C, 0x58
+                // or 4, 32, 60, 88.
+                // This also helps the write bandwidth:
+                // the column sizes are 8 kB (8 x 1024) and so
+                // if we order row, bank, column none of our
+                // TURFIOs are in the same bank, so the data
+                // can fly at the same time.
+                pueo_turfio_event_req_gen #(.BASE_ADDRESS_4KB(4 + 28*i))
+                                          u_reqgen(.memclk(memclk),
+                                                   .memresetn(!reset_reqgen),
+                                                   .payload_i(outdata),
+                                                   .payload_valid_i(outdata_valid),
+                                                   .payload_last_i(outdata_last),
+                                                   .payload_ident_i(outdata_ident),
+                                                   .payload_has_space_o(outdata_has_space),
+                                                   `CONNECT_AXIM_VEC( m_axi_ , dmaxi_ , i),
+                                                   `CONNECT_AXI4S_MIN_IF( s_done_ , done_ ),
+                                                   `CONNECT_AXI4S_MIN_IF( m_cmpl_ , cmpl_ ));
+        end
+    endgenerate        
+    // interconnect
+    reg intercon_reset = 1;
+    ddr_intercon_wrapper #(.DEBUG("FALSE"))
+        u_intercon(.aclk(memclk),
+                   .aresetn(!intercon_reset),
+                   `CONNECT_AXIM( s_axi_in_ , dmaxi_ ),
+                   `CONNECT_AXIM( s_axi_out_ , outaxi_ ),
+                   `CONNECT_AXIM( m_axi_ , memaxi_ ),
+                   .m_axi_arid( memaxi_arid ),
+                   .m_axi_awid( memaxi_awid ),
+                   .m_axi_bid(  memaxi_bid ),
+                   .m_axi_rid(  memaxi_rid )
+                   );
+
     // need connections for MIG->RAM...
     wire DDR4_ACT_N;
     wire [16:0] DDR4_A;
@@ -142,12 +239,11 @@ module turfio_event_accumulator_tb;
 //        inout [7:0] c0_ddr4_dqs_c 
 wire ddr4_reset = 0;               
 ddr4_mig u_memory( .c0_sys_clk_p(ddr4_clk_p),.c0_sys_clk_n(ddr4_clk_n),
-         `CONNECT_AXIM( c0_ddr4_s_axi_      ,   dmaxi_       ),
-                       .c0_ddr4_s_axi_arid  (   dmaxi_arid   ),
-                       .c0_ddr4_s_axi_awid  (   dmaxi_awid   ),
-                       .c0_ddr4_s_axi_rid   (   dmaxi_rid    ),
-                       .c0_ddr4_s_axi_bid   (   dmaxi_bid    ),
-                       
+         `CONNECT_AXIM( c0_ddr4_s_axi_      ,   memaxi_       ),
+                       .c0_ddr4_s_axi_arid( memaxi_arid ),
+                       .c0_ddr4_s_axi_awid( memaxi_awid ),
+                       .c0_ddr4_s_axi_bid( memaxi_bid ),
+                       .c0_ddr4_s_axi_rid( memaxi_rid ),                       
                        .c0_ddr4_aresetn( 1'b1 ),
                        .sys_rst( ddr4_reset ),
                        
@@ -183,12 +279,6 @@ sim_mem_wrapper u_mem(
                      .c0_ddr4_dqs_t            (DDR4_DQS_T),
                      .c0_ddr4_odt              (DDR4_ODT),
                      .c0_ddr4_reset_n          (DDR4_RESET_N));                                                   
-
-    reg run_doneaddr = 0;
-    always @(posedge memclk) begin
-        if (run_doneaddr) done_tvalid <= 1;
-        if (done_tready) done_tdata <= done_tdata + 1;
-    end        
                                   
     initial begin
         #500;        
@@ -197,6 +287,7 @@ sim_mem_wrapper u_mem(
         #10;
         @(posedge memclk);
         #0.1 reset_reqgen = 1;
+        intercon_reset = 0;
         @(posedge memclk);
         #0.1 reset_reqgen = 0;
         @(posedge aclk);
