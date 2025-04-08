@@ -76,31 +76,40 @@
 // W channel is host-to-target (ready = ttype, all others = htype)
 
 // Channels have
-`define AXIM_DEF( name , multiplier , htype, ttype , term  )            \
+`define AXIM_DEF( name , multiplier , htype, ttype , dwidth, term  )            \
 `AXIM_ADDRDEF( htype , ttype , term ,  name``ar , multiplier ) `AXIM_``term \
 `AXIM_ADDRDEF( htype , ttype , term ,  name``aw , multiplier ) `AXIM_``term \
 `AXIM_BUILDO( htype , 1  , multiplier , name``bready         ) `AXIM_``term \
 `AXIM_BUILDO( ttype , 2  , multiplier , name``bresp          ) `AXIM_``term \
 `AXIM_BUILDO( ttype , 1  , multiplier , name``bvalid         ) `AXIM_``term \
 `AXIM_BUILDO( htype , 1  , multiplier , name``rready         ) `AXIM_``term \
-`AXIM_BUILDO( ttype , 512, multiplier , name``rdata          ) `AXIM_``term \
+`AXIM_BUILDO( ttype , dwidth , multiplier , name``rdata          ) `AXIM_``term \
 `AXIM_BUILDO( ttype , 2  , multiplier , name``rresp          ) `AXIM_``term \
 `AXIM_BUILDO( ttype , 1  , multiplier , name``rlast          ) `AXIM_``term \
 `AXIM_BUILDO( ttype , 1  , multiplier , name``rvalid         ) `AXIM_``term \
 `AXIM_BUILDO( ttype , 1  , multiplier , name``wready         ) `AXIM_``term \
-`AXIM_BUILDO( htype , 512, multiplier , name``wdata          ) `AXIM_``term \
+`AXIM_BUILDO( htype , dwidth , multiplier , name``wdata          ) `AXIM_``term \
 `AXIM_BUILDO( htype , 1  , multiplier , name``wlast          ) `AXIM_``term \
-`AXIM_BUILDO( htype , 64 , multiplier , name``wstrb          ) `AXIM_``term \
+`AXIM_BUILDO( htype , (dwidth/8) , multiplier , name``wstrb          ) `AXIM_``term \
 `AXIM_BUILDO( htype , 1  , multiplier , name``wvalid         )
 
     `define M_AXIM_PORT( name , multiplier )    \
-        `AXIM_DEF( name , multiplier , output , input , TERM_PORT )
+        `AXIM_DEF( name , multiplier , output , input , 512, TERM_PORT )
     
     `define S_AXIM_PORT( name , multiplier )    \
-        `AXIM_DEF( name , multiplier , input , output , TERM_PORT )
+        `AXIM_DEF( name , multiplier , input , output , 512, TERM_PORT )
     
     `define AXIM_DECLARE( name , multiplier )       \
-        `AXIM_DEF( name , multiplier , wire , wire , TERM_LINE )
+        `AXIM_DEF( name , multiplier , wire , wire , 512, TERM_LINE )
+
+    `define M_AXIM_PORT_DW( name , multiplier, dwidth )    \
+        `AXIM_DEF( name , multiplier , output , input , dwidth , TERM_PORT )
+    
+    `define S_AXIM_PORT_DW( name , multiplier, dwidth )    \
+        `AXIM_DEF( name , multiplier , input , output , dwidth , TERM_PORT )
+    
+    `define AXIM_DECLARE_DW( name , multiplier, dwidth )       \
+        `AXIM_DEF( name , multiplier , wire , wire , dwidth , TERM_LINE )
 
 //    // the connect macro needs to generate something like
 //    // .s_axi_araddr ( wire_araddr [ 32 * idx +: 32 ] )
@@ -143,30 +152,27 @@
                             .``port``bresp      ( name``bresp   `AXIM_SUFFIX( 2  , idx , type )),   \
                             .``port``bvalid     ( name``bvalid  `AXIM_SUFFIX( 1  , idx , type ))
 
-    `define AXIM_CONNECTW( port, name, idx, type )                                                  \
-                            .``port``wdata      ( name``wdata   `AXIM_SUFFIX( 512, idx , type )),   \
+    `define AXIM_CONNECTW( port, name, idx, dwidth, type )                                                  \
+                            .``port``wdata      ( name``wdata   `AXIM_SUFFIX( dwidth , idx , type )),   \
                             .``port``wlast      ( name``wlast   `AXIM_SUFFIX( 1  , idx , type )),   \
                             .``port``wready     ( name``wready  `AXIM_SUFFIX( 1  , idx , type )),   \
-                            .``port``wstrb      ( name``wstrb   `AXIM_SUFFIX( 64 , idx , type )),   \
+                            .``port``wstrb      ( name``wstrb   `AXIM_SUFFIX( dwidth/8 , idx , type )),   \
                             .``port``wvalid     ( name``wvalid  `AXIM_SUFFIX( 1  , idx , type ))
 
 
-    `define AXIM_CONNECTR( port , name, idx, type)                      \
-                            .``port``rdata      ( name``rdata   `AXIM_SUFFIX( 512, idx , type )),   \
+    `define AXIM_CONNECTR( port , name, idx, dwidth, type)                      \
+                            .``port``rdata      ( name``rdata   `AXIM_SUFFIX( dwidth , idx , type )),   \
                             .``port``rlast      ( name``rlast   `AXIM_SUFFIX( 1  , idx , type )),   \
                             .``port``rready     ( name``rready  `AXIM_SUFFIX( 1  , idx , type )),   \
                             .``port``rvalid     ( name``rvalid  `AXIM_SUFFIX( 1  , idx , type )),   \
                             .``port``rresp      ( name``rresp   `AXIM_SUFFIX( 2  , idx , type ))
-
     
     `define AXIM_CONNECTANY( port , name , idx , type )                 \
         `AXIM_ADDR_CONNECTANY( port``ar         , name``ar      , idx , type ),                     \
         `AXIM_ADDR_CONNECTANY( port``aw         , name``aw      , idx , type ),                     \
         `AXIM_CONNECTB( port, name, idx, type ),                                                    \
-        `AXIM_CONNECTW( port, name, idx, type ),                                                    \
-        `AXIM_CONNECTR( port, name, idx, type )
-
-
+        `AXIM_CONNECTW( port, name, idx, 512, type ),                                                    \
+        `AXIM_CONNECTR( port, name, idx, 512, type )
 
     `define CONNECT_AXIM_W( port , name ) \
         `AXIM_ADDR_CONNECTANY( port``aw         , name``aw      , 0 , NONE ),                     \
@@ -180,6 +186,14 @@
     `define CONNECT_AXIM( port , name ) \
         `AXIM_CONNECTANY( port , name , 0 , NONE )
 
+    // specialty for variable width
+    `define CONNECT_AXIM_DW( port , name, dwidth ) \
+        `AXIM_ADDR_CONNECTANY( port``ar         , name``ar      , 0 , type ),                     \
+        `AXIM_ADDR_CONNECTANY( port``aw         , name``aw      , 0 , type ),                     \
+        `AXIM_CONNECTB( port, name, 0, type ),                                                    \
+        `AXIM_CONNECTW( port, name, 0, dwidth , type ),                                                    \
+        `AXIM_CONNECTR( port, name, 0, dwidth , type )
+    
     
     `define CONNECT_AXIM_INDEX( port , name , idx )   \
         `AXIM_CONNECTANY( port , name , idx , INDEX )
