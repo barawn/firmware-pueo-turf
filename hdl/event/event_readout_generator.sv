@@ -78,6 +78,7 @@ module event_readout_generator(
             1'b1,   // incrementing
             CMD_BTT };  // 23-bit bytes to transfer
     assign cmd_tvalid = (state == ISSUE_CMD);
+    assign cmd_tdata = { cmd_upper_byte, cmd_full_addr, cmd_lower_command };
 
     reg    control_issued = 0;
     wire   issue_control_memclk = (state == ISSUE_CONTROL && !control_issued);
@@ -87,7 +88,7 @@ module event_readout_generator(
     wire   control_complete_memclk;    
 
 
-    assign m_ctrl_data = { upper_addr_aclk[11:0], 1'b0, BTT };
+    assign m_ctrl_tdata = { upper_addr_aclk[11:0], 1'b0, BTT };
     assign m_ctrl_tvalid = control_valid_aclk;
     
     reg any_error_seen = 0;
@@ -123,7 +124,7 @@ module event_readout_generator(
                                t2_error_reg || t3_error_reg || thdr_error_reg);
         end
     
-        cmpl_tready <= memresetn && all_valid && (state == IDLE);
+        cmpl_tready <= !memresetn && all_valid && (state == IDLE);
     
         if (!memresetn) state <= IDLE;
         else begin
@@ -163,12 +164,12 @@ module event_readout_generator(
     wire [64:0] evfifo_din = { evin_tlast, evin_tdata };
     wire        evfifo_write = (evin_tready && evin_tvalid);
     wire        evfifo_full;
-    assign      evfifo_tready = !evfifo_full;
+    assign      evin_tready = !evfifo_full;
 
     wire [64:0] evfifo_dout;
     wire        evfifo_read = (m_data_tvalid && m_data_tready);
-    wire        evfifo_tvalid;
-    assign      m_data_tvalid = evfifo_tvalid;
+    wire        evfifo_valid;
+    assign      m_data_tvalid = evfifo_valid;
     assign      m_data_tkeep = {8{1'b1}};
     assign      m_data_tdata = evfifo_dout[63:0];
     assign      m_data_tlast = evfifo_dout[64];
