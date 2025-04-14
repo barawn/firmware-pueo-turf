@@ -177,23 +177,27 @@
     `define CONNECT_AXIM_W( port , name ) \
         `AXIM_ADDR_CONNECTANY( port``aw         , name``aw      , 0 , NONE ),                     \
         `AXIM_CONNECTB( port, name, 0 , NONE ),                                                    \
-        `AXIM_CONNECTW( port, name, 0 , NONE )
+        `AXIM_CONNECTW( port, name, 0 , 512, NONE )
 
     `define CONNECT_AXIM_R( port , name ) \
         `AXIM_ADDR_CONNECTANY( port``ar         , name``ar      , 0 , NONE ),                     \
-        `AXIM_CONNECTR( port, name, 0 , NONE )
+        `AXIM_CONNECTR( port, name, 0 , 512, NONE )
 
     `define CONNECT_AXIM( port , name ) \
         `AXIM_CONNECTANY( port , name , 0 , NONE )
 
     // specialty for variable width
     `define CONNECT_AXIM_DW( port , name, dwidth ) \
-        `AXIM_ADDR_CONNECTANY( port``ar         , name``ar      , 0 , type ),                     \
-        `AXIM_ADDR_CONNECTANY( port``aw         , name``aw      , 0 , type ),                     \
-        `AXIM_CONNECTB( port, name, 0, type ),                                                    \
-        `AXIM_CONNECTW( port, name, 0, dwidth , type ),                                                    \
-        `AXIM_CONNECTR( port, name, 0, dwidth , type )
-    
+        `AXIM_ADDR_CONNECTANY( port``ar         , name``ar      , 0 , NONE ),                     \
+        `AXIM_ADDR_CONNECTANY( port``aw         , name``aw      , 0 , NONE ),                     \
+        `AXIM_CONNECTB( port, name, 0, NONE ),                                                    \
+        `AXIM_CONNECTW( port, name, 0, dwidth , NONE ),                                                    \
+        `AXIM_CONNECTR( port, name, 0, dwidth , NONE )
+
+    `define CONNECT_AXIM_W_DW( port , name, dwidth ) \
+        `AXIM_ADDR_CONNECTANY( port``aw         , name``aw      , 0 , NONE ),                     \
+        `AXIM_CONNECTB( port, name, 0 , NONE ),                                                    \
+        `AXIM_CONNECTW( port, name, 0 , dwidth, NONE )
     
     `define CONNECT_AXIM_INDEX( port , name , idx )   \
         `AXIM_CONNECTANY( port , name , idx , INDEX )
