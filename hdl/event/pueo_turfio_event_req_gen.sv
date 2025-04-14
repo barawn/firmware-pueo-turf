@@ -303,6 +303,7 @@ module pueo_turfio_event_req_gen(
     wire dm_err_any = |dm_cur_err;
     reg [26:0] dm_err_shreg = {27{1'b0}};
     
+    // 4 bits + 28 indivdual errors.
     wire [31:0] dm_err_data = { dm_err_any, dm_err_shreg, dm_status_err | dm_cur_err };
     // And now the doneaddr FIFO...
     wire [12:0] doneaddr_fifo_in = s_done_tdata;
@@ -445,6 +446,8 @@ module pueo_turfio_event_req_gen(
 
     // generate completions
     assign      m_cmpl_tvalid = cmpl_fifo_valid;
+    // cmpl_fifo_out[31:0] = errors
+    // cmpl_fifo_out[32 +: 13] = address
     assign      m_cmpl_tdata = { {19{1'b0}}, cmpl_fifo_out };    
 
     // eat up dones
