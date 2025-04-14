@@ -16,9 +16,7 @@ module turf_fragment_gen(
         // control interface
         `TARGET_NAMED_PORTS_AXI4S_MIN_IF( s_ctrl_ , 32 ),
         // data interface
-        `TARGET_NAMED_PORTS_AXI4S_MIN_IF( s_data_ , 64 ),
-        input [7:0] s_data_tkeep,
-        input       s_data_tlast,
+        `TARGET_NAMED_PORTS_AXI4S_IF( s_data_ , 64 ),
         
         // UDP header interface, without the global statics
         // (dscp/ecn/ttl/source port/dest ip/dest port)
