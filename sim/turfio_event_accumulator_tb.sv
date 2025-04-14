@@ -1,11 +1,14 @@
 `timescale 1ns / 1ps
+`include "interfaces.vh"
+`include "mem_axi.vh"
 module turfio_event_accumulator_tb;
     wire aclk;
+    wire ethclk;
     wire ddr4_clk_p;
     wire ddr4_clk_n = !ddr4_clk_p;
-    tb_rclk #(.PERIOD(8)) u_aclk(.clk(aclk));
+    tb_rclk #(.PERIOD(6.4)) u_aclk(.clk(aclk));
     tb_rclk #(.PERIOD(3.333)) u_refclk(.clk(ddr4_clk_p));
-
+    tb_rclk #(.PERIOD(6.4)) u_ethclk(.clk(ethclk));
     reg start = 0;    
     reg run_indata = 0;
     // this ends up being 24,584: each SURF has (1536*8 + 4) = 12,292 words and it takes
@@ -54,7 +57,8 @@ module turfio_event_accumulator_tb;
     end
     
     // AXI links
-    `AXIM_DECLARE( dmaxi_ , 5);
+    `AXIM_DECLARE( dmaxi_ , 4);
+    `AXIM_DECLARE_DW( hdraxi_ , 1, 64 );
     `AXIM_DECLARE( outaxi_ , 1);
     `AXIM_DECLARE( memaxi_ , 1);
     // kill the qos/lock for mem
@@ -108,19 +112,25 @@ module turfio_event_accumulator_tb;
         assign pfx``rready[idx] = 1'b1;          \
         assign pfx``bready[idx] = 1'b1
 
-    `KILL_AXI_VEC_ADDR( dmaxi_aw , 4 );
-    `KILL_AXI_VEC_ADDR( dmaxi_ar , 4 );
-    `KILL_AXI_VEC_DATA( dmaxi_ , 4 );
-
-    `KILL_SAXI_ADDR( outaxi_aw );
-    `KILL_SAXI_ADDR( outaxi_ar );
-    `KILL_SAXI_DATA( outaxi_ );
-
     wire memclk;
 
     // req gen reset
     reg reset_reqgen = 0;
-    reg run_doneaddr = 0;        
+    reg run_doneaddr = 0;
+    // ACTUALLY create completion links now
+    wire [63:0] tfio_cmpl_tdata[3:0];
+    wire [3:0] tfio_cmpl_tvalid;
+    wire [3:0] tfio_cmpl_tready;
+    // header completions
+    wire [23:0] hdr_cmpl_tdata;
+    wire hdr_cmpl_tvalid;
+    wire hdr_cmpl_tready;
+    
+    // and the header links
+    wire [63:0] tfio_hdr_tdata[3:0];
+    wire [3:0] tfio_hdr_tvalid;
+    wire [3:0] tfio_hdr_tready;
+    wire [3:0] tfio_hdr_tlast;            
     generate
         genvar i;
         for (i=0;i<4;i=i+1) begin : TFIO
@@ -131,10 +141,13 @@ module turfio_event_accumulator_tb;
                 wire [4:0]  outdata_ident;
                 wire        outdata_has_space;
                     
-                wire [63:0] hdrdata;
-                wire        hdrvalid;
-                wire        hdrready = 1'b1;
-                wire        hdrtlast;
+                `DEFINE_AXI4S_MIN_IF( hdr_ , 64);
+                wire hdr_tlast;
+                
+                assign tfio_hdr_tdata[i] = hdr_tdata;
+                assign tfio_hdr_tvalid[i] = hdr_tvalid;
+                assign tfio_hdr_tlast[i] = hdr_tlast;
+                assign hdr_tready = tfio_hdr_tready[i];
             
                 // ok now start with turfio event accumulator...    
                 turfio_event_accumulator uut( .aclk(aclk),
@@ -145,10 +158,8 @@ module turfio_event_accumulator_tb;
                                               .s_axis_tvalid(indata_tvalid),
                                               .s_axis_tready(indata_tready),
                                               .s_axis_tlast( indata_tlast),
-                                              .m_hdr_tdata( hdrdata ),
-                                              .m_hdr_tvalid(hdrvalid),
-                                              .m_hdr_tready(hdrready),
-                                              .m_hdr_tlast(hdrtlast),
+                                              `CONNECT_AXI4S_MIN_IF( m_hdr_ , hdr_ ),
+                                              .m_hdr_tlast( hdr_tlast ),
                                               .payload_o(outdata ),
                                               .payload_valid_o(outdata_valid),
                                               .payload_last_o(outdata_last),
@@ -163,10 +174,10 @@ module turfio_event_accumulator_tb;
                     if (run_doneaddr) done_tvalid <= 1;
                     if (done_tready) done_tdata <= done_tdata + 1;
                 end        
-                // and a completion output    
-                wire [63:0] cmpl_tdata;
-                wire        cmpl_tvalid;
-                wire        cmpl_tready = 1;
+                `DEFINE_AXI4S_MIN_IF( mycmpl_ , 64 );
+                assign tfio_cmpl_tdata[i] = mycmpl_tdata;
+                assign tfio_cmpl_tvalid[i] = mycmpl_tvalid;
+                assign mycmpl_tready = tfio_cmpl_tready[i];
                 // you need base addresses now!
                 // TIO0 = 0_4000
                 // TIO1 = 2_0000
@@ -190,14 +201,91 @@ module turfio_event_accumulator_tb;
                                                    .payload_has_space_o(outdata_has_space),
                                                    `CONNECT_AXIM_VEC( m_axi_ , dmaxi_ , i),
                                                    `CONNECT_AXI4S_MIN_IF( s_done_ , done_ ),
-                                                   `CONNECT_AXI4S_MIN_IF( m_cmpl_ , cmpl_ ));
+                                                   `CONNECT_AXI4S_MIN_IF( m_cmpl_ , mycmpl_ ));
         end
     endgenerate        
-    // interconnect
+    // now the header accumulator.
+    // need turf data.
+    // turf data needs to fill up 128 bytes = 16 beats
+    reg [63:0] thdr_tdata = {64{1'b0}};
+    reg thdr_tvalid = 0;
+    wire thdr_tlast;
+    wire thdr_tready;
+    wire [3:0] tio_mask = {4{1'b0}};
+    reg [15:0] hdone_tdata = {16{1'b0}};
+    reg        hdone_tvalid = 0;
+    wire       hdone_tready;
+    always @(posedge memclk) begin
+        if (run_doneaddr) hdone_tvalid <= 1;
+        if (hdone_tready) hdone_tdata <= hdone_tdata + 1;
+    end        
+    hdr_accumulator u_hdr( .aclk(aclk),
+                           .aresetn(1'b1),
+                           .tio_mask_i(tio_mask),
+                           `CONNECT_AXI4S_MIN_IF( s_done_ , hdone_ ),
+                           `CONNECT_AXI4S_MIN_IF( m_cmpl_ , hdr_cmpl_ ),
+                           `CONNECT_AXI4S_MIN_IF( s_thdr_ , thdr_ ),
+                           .s_thdr_tlast(thdr_tlast),
+                           .s_hdr0_tdata( tfio_hdr_tdata[0] ),
+                           .s_hdr0_tvalid(tfio_hdr_tvalid[0]),
+                           .s_hdr0_tready(tfio_hdr_tready[0]),
+                           .s_hdr0_tlast( tfio_hdr_tlast[0] ),
+
+                           .s_hdr1_tdata( tfio_hdr_tdata[1] ),
+                           .s_hdr1_tvalid(tfio_hdr_tvalid[1]),
+                           .s_hdr1_tready(tfio_hdr_tready[1]),
+                           .s_hdr1_tlast( tfio_hdr_tlast[1] ),
+
+                           .s_hdr2_tdata( tfio_hdr_tdata[2] ),
+                           .s_hdr2_tvalid(tfio_hdr_tvalid[2]),
+                           .s_hdr2_tready(tfio_hdr_tready[2]),
+                           .s_hdr2_tlast( tfio_hdr_tlast[2] ),
+
+                           .s_hdr3_tdata( tfio_hdr_tdata[3] ),
+                           .s_hdr3_tvalid(tfio_hdr_tvalid[3]),
+                           .s_hdr3_tready(tfio_hdr_tready[3]),
+                           .s_hdr3_tlast( tfio_hdr_tlast[3] ),
+                           
+                           .memclk(memclk),
+                           .memresetn(!reset_reqgen),
+                           `CONNECT_AXIM_DW( m_axi_ , hdraxi_ , 64 ));
+    // and now FINALLY the event generator
     reg intercon_reset = 1;
+
+    `DEFINE_AXI4S_MIN_IF( ev_ctrl_ , 32 );
+    `DEFINE_AXI4S_IF( ev_data_ , 64 );
+    
+    assign ev_ctrl_tready = 1'b1;
+    assign ev_data_tready = 1'b1;
+    wire any_err;
+    event_readout_generator u_generator( .memclk(memclk),
+                                         .memresetn(!intercon_reset),
+                                         `CONNECT_AXI4S_MIN_IF( s_hdr_ , hdr_cmpl_ ),
+                                         .s_t0_tdata( tfio_cmpl_tdata[0] ),
+                                         .s_t1_tdata( tfio_cmpl_tdata[1] ),
+                                         .s_t2_tdata( tfio_cmpl_tdata[2] ),
+                                         .s_t3_tdata( tfio_cmpl_tdata[3] ),
+                                         .s_t0_tready(tfio_cmpl_tready[0]),
+                                         .s_t1_tready(tfio_cmpl_tready[1]),
+                                         .s_t2_tready(tfio_cmpl_tready[2]),
+                                         .s_t3_tready(tfio_cmpl_tready[3]),
+                                         .s_t0_tvalid(tfio_cmpl_tvalid[0]),
+                                         .s_t1_tvalid(tfio_cmpl_tvalid[1]),
+                                         .s_t2_tvalid(tfio_cmpl_tvalid[2]),
+                                         .s_t3_tvalid(tfio_cmpl_tvalid[3]),
+                                         .aclk(ethclk),
+                                         .aresetn(1'b1),
+                                         `CONNECT_AXI4S_MIN_IF( m_ctrl_ , ev_ctrl_ ),
+                                         `CONNECT_AXI4S_MIN_IF( m_data_ , ev_data_ ),
+                                         `CONNECT_AXIM( m_axi_ , outaxi_ ),
+                                         .any_err_o(any_err));
+
+
+    // interconnect
     ddr_intercon_wrapper #(.DEBUG("FALSE"))
         u_intercon(.aclk(memclk),
                    .aresetn(!intercon_reset),
+                   `CONNECT_AXIM_DW( s_axi_hdr_ , hdraxi_ , 64 ),
                    `CONNECT_AXIM( s_axi_in_ , dmaxi_ ),
                    `CONNECT_AXIM( s_axi_out_ , outaxi_ ),
                    `CONNECT_AXIM( m_axi_ , memaxi_ ),
@@ -279,6 +367,15 @@ sim_mem_wrapper u_mem(
                      .c0_ddr4_dqs_t            (DDR4_DQS_T),
                      .c0_ddr4_odt              (DDR4_ODT),
                      .c0_ddr4_reset_n          (DDR4_RESET_N));                                                   
+
+    reg [4:0] thdr_beats = {5{1'b0}};
+    assign thdr_tlast = (thdr_beats == 5'd15);
+    always @(posedge memclk) begin
+        // when we hit 15 we've sent 
+        if (thdr_tvalid && thdr_tready)
+            thdr_beats <= #0.1 thdr_beats + 1;
+        thdr_tvalid <= #0.1 (run_doneaddr && thdr_beats < 5'd15);        
+    end
                                   
     initial begin
         #500;        
