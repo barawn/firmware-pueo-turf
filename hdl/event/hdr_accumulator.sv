@@ -46,7 +46,7 @@ module hdr_accumulator(
         `M_AXIM_PORT_DW( m_axi_ , 1, 64)
     );
     // our low 19 bits are fixed, it's 0x4000 back 256.
-    localparam [18:0] BASE_ADDR = 19'h03E00;
+    localparam [18:0] BASE_ADDR = 19'h03F00;
     
     // each of the TURFIOs needs to go in a FIFO.
     // we also need to have a fake stream generator, which
