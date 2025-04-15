@@ -270,7 +270,8 @@ module pueo_turfio_event_req_gen(
 
     // the address calculation isn't actually hard because we only have 4 chunks
     // so map it out here.
-    wire [8:0] addr_addend_A = (state == LOAD_BASE_ADDRESS) ? chunk_lookup[payload_ident_i[1:0]] :
+    // except this is TOTALLY WRONG because what we're actually looking for is payload_ident_i[4:3]
+    wire [8:0] addr_addend_A = (state == LOAD_BASE_ADDRESS) ? chunk_lookup[payload_ident_i[4:3]] :
                                                               this_addr;
     wire [8:0] addr_addend_B = (state == INCREMENT_ADDRESS) ? SURF_SIZE_KB :
                                                               9'h00;      
