@@ -124,7 +124,8 @@ module event_readout_generator(
                                t2_error_reg || t3_error_reg || thdr_error_reg);
         end
     
-        cmpl_tready <= !memresetn && all_valid && (state == IDLE);
+        // how did this get screwed up again??!?
+        cmpl_tready <= memresetn && all_valid && (state == IDLE);
     
         if (!memresetn) state <= IDLE;
         else begin
