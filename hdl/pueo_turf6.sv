@@ -9,7 +9,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="A",
                     parameter [3:0] VER_MAJOR=4'd0,
                     parameter [3:0] VER_MINOR=4'd3,
-                    parameter [7:0] VER_REV=8'd9,
+                    parameter [7:0] VER_REV=8'd11,
                     parameter [15:0] FIRMWARE_DATE = {16{1'b0}})                    
                     (
 
@@ -32,7 +32,9 @@ module pueo_turf6 #(parameter IDENT="TURF",
         
         output GPS_TX,
         input GPS_RX,
-
+        input [1:0] GPS_TIMEPULSE,
+        output [1:0] GPS_EXTINT,
+    
         // CLK_SCL/CLK_SDA are the "3V3" guys        
         output CLK_SCL,
         inout CLK_SDA,
@@ -106,14 +108,16 @@ module pueo_turf6 #(parameter IDENT="TURF",
     wire emio_sda_t;
     
     // the TOP 4 BITS of the EMIO are the resets to the TURFIOs
+    // the NEXT 4 BITS are GPSy: TP1/TP0 EXTINT1/EXTINT0
     wire [15:0] emio_gpio_t;
     wire [15:0] emio_gpio_i;
     wire [15:0] emio_gpio_o;    
     
     wire hsk_irq;    
     wire hsk_complete;
-    assign emio_gpio_i[11:0] = { {9{1'b0}}, hsk_complete, hsk_irq, UART_IRQ_B };
-    
+    assign emio_gpio_i[11:0] = { GPS_TIMEPULSE, {7{1'b0}}, hsk_complete, hsk_irq, UART_IRQ_B };
+    assign GPS_EXTINT[0] = !emio_gpio_t[8] && emio_gpio_o[8];
+    assign GPS_EXTINT[1] = !emio_gpio_t[9] && emio_gpio_o[9];
     // TURFIO resets
     IOBUF u_tioa_resetb(.IO(TRESETB_A),.I(emio_gpio_o[12]),
                                        .O(emio_gpio_i[12]),
