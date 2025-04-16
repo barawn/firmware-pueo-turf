@@ -57,6 +57,8 @@ module turf_udp_wrap #( parameter NSFP=2,
         `HOST_NAMED_PORTS_WB_IF( wb_ , 28, 32 )
     );
 
+    localparam SFP_USED = 0;
+    localparam SFP_UNUSED = 1;
 
     localparam COMMON_SFP=0;
     
@@ -80,8 +82,8 @@ module turf_udp_wrap #( parameter NSFP=2,
     // watchdog stuff. this is synced to rxclk
     wire [NSFP-1:0] sfp_rx_high_ber;
 
-    wire clk156 = sfp_tx_clk[0];
-    wire clk156_rst = sfp_tx_rst[0];    
+    wire clk156 = sfp_tx_clk[SFP_USED];
+    wire clk156_rst = sfp_tx_rst[SFP_USED];    
 
     wire refclk_int;
     // the defaults here are all 0, which implies ODIV2 is actually just O = 161 MHz
@@ -264,8 +266,8 @@ module turf_udp_wrap #( parameter NSFP=2,
     endgenerate
 
     // kill the unused. well, make it go idle I guess
-    assign sfp_txd[1] = 64'h0707070707070707;
-    assign sfp_txc[1] = 8'hff;
+    assign sfp_txd[SFP_UNUSED] = 64'h0707070707070707;
+    assign sfp_txc[SFP_UNUSED] = 8'hff;
     
     // the header path is always 64 bits
     localparam PAYLOAD_WIDTH=64;
@@ -279,8 +281,8 @@ module turf_udp_wrap #( parameter NSFP=2,
     wire [15:0] udpout_hdr_tuser;
     `DEFINE_AXI4S_IF( udpout_data_ , PAYLOAD_WIDTH);       
     
-    assign sfp_rxclk_o = sfp_rx_clk[0];
-    assign sfp_txclk_o = sfp_tx_clk[0];
+    assign sfp_rxclk_o = sfp_rx_clk[SFP_USED];
+    assign sfp_txclk_o = sfp_tx_clk[SFP_USED];
     
     // Its clock is clk156, its reset is clk156_rst.
     wire [47:0] my_mac_address;
@@ -291,14 +293,14 @@ module turf_udp_wrap #( parameter NSFP=2,
     assign my_mac_address = { 8'hFC, 8'hC2, 8'h3D, 8'h0E, mac_bottom_bytes[0] };
     assign alt_mac_address ={ 8'hFC, 8'hC2, 8'h3D, 8'h0E, mac_bottom_bytes[1] };
     turf_udp_core u_udp_core( .clk(clk156), .rst(clk156_rst),
-        .sfp_tx_clk(sfp_tx_clk[0]),
-        .sfp_tx_rst(sfp_tx_rst[0]),
-        .sfp_txd(sfp_txd[0]),
-        .sfp_txc(sfp_txc[0]),
-        .sfp_rx_clk(sfp_rx_clk[0]),
-        .sfp_rx_rst(sfp_rx_rst[0]),
-        .sfp_rxd(sfp_rxd[0]),
-        .sfp_rxc(sfp_rxc[0]),
+        .sfp_tx_clk(sfp_tx_clk[SFP_USED]),
+        .sfp_tx_rst(sfp_tx_rst[SFP_USED]),
+        .sfp_txd(sfp_txd[SFP_USED]),
+        .sfp_txc(sfp_txc[SFP_USED]),
+        .sfp_rx_clk(sfp_rx_clk[SFP_USED]),
+        .sfp_rx_rst(sfp_rx_rst[SFP_USED]),
+        .sfp_rxd(sfp_rxd[SFP_USED]),
+        .sfp_rxc(sfp_rxc[SFP_USED]),
         .my_mac_address(my_mac_address),
         `CONNECT_AXI4S_MIN_IF( m_udphdr_ , udpin_hdr_ ),
         .m_udphdr_tdest( udpin_hdr_tdest ),
