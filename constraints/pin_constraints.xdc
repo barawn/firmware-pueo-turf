@@ -49,6 +49,11 @@ set_property PACKAGE_PIN F9 [get_ports GPS_RX]
 set_property PULLUP true [get_ports GPS_RX]
 set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN E9} [get_ports GPS_TX]
 
+set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN B8} [get_ports {GPS_EXTINT[1]}]
+set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN A8} [get_ports {GPS_EXTINT[0]}]
+set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN J9} [get_ports {GPS_TIMEPULSE[1]}]
+set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN H9} [get_ports {GPS_TIMEPULSE[0]}]
+
 # B2B1 22 is C8 and labelled SCL_2V5
 # B2B1 24 is D8 and labelled SDA_2V5
 set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN C8} [get_ports CLK_SCL]
