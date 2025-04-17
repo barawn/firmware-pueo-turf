@@ -10,7 +10,7 @@ module turf_fragment_gen(
         input aclk,
         input aresetn,
         // Payload uint64_ts in a fragment.
-        input [9:0] nfragment_count_i,        
+        input [9:0] nfragment_count_i,   
         // Mask of source port
         input [15:0] fragsrc_mask_i,
         // control interface
