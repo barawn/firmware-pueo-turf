@@ -32,14 +32,14 @@ module ack_done_generator(
     // CC the nack path, that's all we need to do
     wire [43:0] nack_din = { s_nack_tdata[46], s_nack_tdata[42:0] };
     wire        nack_full;
-    assign      m_nack_tready = !nack_full;
+    assign      s_nack_tready = !nack_full;
     wire [43:0] nack_dout;
     assign       m_nack_tdata = { 1'b0, nack_dout[43], {3{1'b0}},
                                   nack_dout[42:0] };
     nack_ccfifo u_nackfifo( .wr_clk( aclk ),
                             .srst( !aresetn ),
                             .din(nack_din),
-                            .wr_en( m_nack_tvalid && m_nack_tready ),
+                            .wr_en( s_nack_tvalid && s_nack_tready ),
                             .full(nack_full),
                             .rd_clk( memclk ),
                             .dout( nack_dout ),
