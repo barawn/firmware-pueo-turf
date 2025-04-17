@@ -12,8 +12,8 @@
 module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="A",
                     parameter [3:0] VER_MAJOR=4'd0,
-                    parameter [3:0] VER_MINOR=4'd3,
-                    parameter [7:0] VER_REV=8'd5,
+                    parameter [3:0] VER_MINOR=4'd4,
+                    parameter [7:0] VER_REV=8'd0,
                     parameter [15:0] FIRMWARE_DATE = {16{1'b0}})                    
                     (
 
@@ -539,13 +539,15 @@ module pueo_turf6 #(parameter IDENT="TURF",
     
                            
     // Dummy evctl
-    wbs_dummy #(.ADDRESS_WIDTH(15),.DATA_WIDTH(32)) u_evctl(`CONNECT_WBS_IFM(wb_ , evctl_ ));    
+    //wbs_dummy #(.ADDRESS_WIDTH(15),.DATA_WIDTH(32)) u_evctl(`CONNECT_WBS_IFM(wb_ , evctl_ ));    
 
     event_pueo_wrap #(.WBCLKTYPE("PSCLK"),
                       .ETHCLKTYPE("GBECLK"),
                       .ACLKTYPE("USERCLK"),
                       .MEMCLKTYPE("DDRCLK0"))
-                    u_event( .DDR_CLK_P(DDR_CLK_P[0]),
+                    u_event( .wb_clk_i(ps_clk),
+                             `CONNECT_WBS_IFM( wb_ , evctl_ ),                    
+                             .DDR_CLK_P(DDR_CLK_P[0]),
                              .DDR_CLK_N(DDR_CLK_N[0]),
                              // UI clock output
                              .ddr4_clk_o(ddr_clk[0]),
