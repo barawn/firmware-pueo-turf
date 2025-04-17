@@ -175,8 +175,10 @@ module event_pueo_wrap(
                          .aresetn( aresetn ),
                          `CONNECT_AXI4S_MIN_IFV( s_axis_ , aur_ , [i] ),
                          .s_axis_tlast( aur_tlast[i] ),
+                         .memclk( memclk ),
+                         .memresetn( memresetn ),
                          `CONNECT_AXI4S_MIN_IFV( m_hdr_ , hdr_ , [i] ),
-                         .m_hdr_tlast( hdr_tlast[i] ),
+                         .m_hdr_tlast( hdr_tlast[i] ),                         
                          .payload_o(payload),
                          .payload_ident_o(payload_ident),
                          .payload_valid_o(payload_valid),
@@ -199,6 +201,18 @@ module event_pueo_wrap(
                           .cmd_err_o( tio_errdet_memclk[ MEMCLK_ERR_SIZE*i + 1 +: 4 ] ));
         end
     endgenerate        
+    
+    // turf headers, just look for a last on any of the other headers to generate it.
+    wire turf_start_event = hdr_tlast[0] && hdr_tvalid[0] && hdr_tready[0];
+    wire turf_start_event_memclk;
+    flag_sync u_startsync(.in_clkA(turf_start_event),.out_clkB(turf_start_event_memclk),
+                          .clkA(aclk),.clkB(memclk));
+                          
+    turf_header_generator_v1 u_thdr( .memclk(memclk),
+                                     .memresetn(memresetn),
+                                     .event_i(turf_start_event),
+                                     `CONNECT_AXI4S_MIN_IF( m_thdr_ , thdr_ ),
+                                     .m_thdr_tlast( thdr_tlast ));  
     
     // now the header accumulator
     hdr_accumulator u_headers( .aclk(aclk),
