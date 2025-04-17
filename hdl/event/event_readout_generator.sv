@@ -10,6 +10,19 @@
 //
 // The datamover's MM2S output stream is passed through a
 // resizer and a 64-bit FIFO heading to the fragment generator.
+//
+// The readout generator ALSO needs to take in the nack stream:
+// if a nack is received, it has priority and gets pushed out.
+//
+// We don't handle the ack stream directly - it's broadcast
+// to the req gens and header accumulator - but we DO take in
+// an allow flag which increments a counter indicating how many
+// in flight events we can run with. When all the completions are
+// ready, we wait until this counter is positive and then issue
+// a command, which decrements the counter.
+//
+// Nacks either tell us to generate a missing fragment or possibly
+// the whole event.
 module event_readout_generator(
         input memclk,
         input memresetn,
@@ -20,13 +33,16 @@ module event_readout_generator(
         `TARGET_NAMED_PORTS_AXI4S_MIN_IF( s_t3_ , 64 ),
         
         `M_AXIM_PORT( m_axi_ , 1 ),
+        // THIS HAS TO BE CROSSED OVER TO MEMCLK
+        `TARGET_NAMED_PORTS_AXI4S_MIN_IF( s_nack_ , 48 ),
+        // FLAG IN MEMCLK
+        input allow_i,
         
         // THIS IS ETHCLK NOT AURORA CLOCK
         input aclk,
         input aresetn,
         `HOST_NAMED_PORTS_AXI4S_MIN_IF( m_ctrl_ , 32 ),
         `HOST_NAMED_PORTS_AXI4S_IF( m_data_ , 64 ),
-        
         output any_err_o       
     );
     
@@ -35,8 +51,29 @@ module event_readout_generator(
     
     localparam [18:0] START_OFFSET = 19'h03E00;
     localparam [18:0] BTT = 19'd459008;
-    localparam [22:0] CMD_BTT = { {4{1'b0}}, BTT };
-    
+    // decode nack structure
+    // allow is ignored (bit 47), it comes from the done broadcaster.
+    wire full_event = s_nack_tdata[46] || !s_nack_tvalid;
+    // nack_tdata is in qwords, so upshift it by 3, leaving 5 top bits
+    wire [18:0] nack_btt = { {5{1'b0}}, s_nack_tdata[32 +: 11], 3'b000 };
+    wire [18:0] nack_offset = s_nack_tdata[0 +: 19];
+    wire [11:0] nack_upper_addr = s_nack_tdata[20 +: 12];
+    // either BTT or nack_btt
+    reg [18:0] event_bytes = {19{1'b0}};
+    wire [22:0] cmd_btt = { {4{1'b0}}, event_bytes };
+    // either s_hdr_tdata[8 +: 13], {19{1'b0}} + START_OFFSET
+    // or     nack_upper_addr, nack_offset[18:0] & {19{!full_event_nack}} + START_OFFSET
+    // = { (s_nack_tvalid ? nack_upper_addr : upper_addr), (full_event ? {19{1'b0}}, nack_offset }} + START_OFFSET
+    reg [18:0] event_lower_addr = {19{1'b0}};
+    // we can handle as many events in flight as possible
+    reg [12:0] allow_counter = {13{1'b0}};
+    // pipeline the comparison. there's no race here because we can't *decrease*
+    // until we pass the gate, and once we pass the gate it will take much longer than 1 clock
+    // to recheck it.
+    reg is_allowed = 0;        
+    // this is a nack readout
+    reg nack_readout = 0;
+
     wire all_valid = (s_hdr_tvalid && 
                       s_t0_tvalid &&
                       s_t1_tvalid &&
@@ -53,6 +90,7 @@ module event_readout_generator(
     localparam [FSM_BITS-1:0] DONE = 3;
     reg [FSM_BITS-1:0] state = IDLE;
 
+    // cmpl_tready 
     reg cmpl_tready = 0;
     assign s_hdr_tready = cmpl_tready;
     assign s_t0_tready = cmpl_tready;
@@ -60,15 +98,20 @@ module event_readout_generator(
     assign s_t2_tready = cmpl_tready;
     assign s_t3_tready = cmpl_tready;
     
+    reg nack_tready = 0;
+    
     // note that the top bit of the upper addr never gets
     // sent along due to stupidity, and it never gets pulled
     // back in from acks either.
+
+    // = { upper_addr, (full_event ? {19{1'b0}}, nack_offset }} + START_OFFSET
+    // when (state == IDLE) if s_nack_tvalid = nack_upper_addr else from completion 
     (* CUSTOM_CC_SRC = MEMCLKTYPE *)
     reg [12:0] upper_addr = {13{1'b0}};
     (* CUSTOM_CC_DST = ACLKTYPE *)
     reg [12:0] upper_addr_aclk = {13{1'b0}};    
 
-    wire [31:0] cmd_full_addr = { upper_addr, START_OFFSET };
+    wire [31:0] cmd_full_addr = { upper_addr , event_lower_addr };
     wire [7:0] cmd_upper_byte = {8{1'b0}};
     wire [31:0] cmd_lower_command = 
         {
@@ -76,7 +119,7 @@ module event_readout_generator(
             1'b1,   // yes tlast
             6'b000000, // no dre
             1'b1,   // incrementing
-            CMD_BTT };  // 23-bit bytes to transfer
+            cmd_btt };  // 23-bit bytes to transfer
     assign cmd_tvalid = (state == ISSUE_CMD);
     assign cmd_tdata = { cmd_upper_byte, cmd_full_addr, cmd_lower_command };
 
@@ -108,6 +151,19 @@ module event_readout_generator(
 
     always @(posedge memclk) begin
         if (!memresetn) begin
+            allow_counter <= {13{1'b0}};
+        end else begin
+            if (allow_i && !(cmd_tready && cmd_tvalid && !nack_readout))
+                allow_counter <= allow_counter + 1;
+            else if (!allow_i && cmd_tready && cmd_tvalid && !nack_readout)     
+                allow_counter <= allow_counter - 1;
+        end
+        // this could _probably_ be merged into something
+        // but WHATEVER
+        if (!memresetn) is_allowed <= 0;
+        else is_allowed <= (allow_counter != {13{1'b0}});
+        
+        if (!memresetn) begin
             any_error_seen <= 0;
             t0_error_reg <= 0;
             t1_error_reg <= 0;
@@ -125,19 +181,46 @@ module event_readout_generator(
         end
     
         // how did this get screwed up again??!?
-        cmpl_tready <= memresetn && all_valid && (state == IDLE);
-    
+        // we don't need to ack cmpl_tready in IDLE. We can just ack when
+        // we issue the command if it's not a nack command.
+        cmpl_tready <= memresetn && cmd_tvalid && cmd_tready && !nack_readout;
+        nack_tready <= memresetn && cmd_tvalid && cmd_tready && nack_readout;
+        
+        // I don't need a memresetn clause here it should happen automatically.
+        if (state == IDLE) begin
+            // upper addr stays static through the transfer, so just capture it
+            // when idle. It'll get pushed out in aclk in issue_control.
+            // force top bit to zero here due to stupidity
+            if (s_nack_tvalid) upper_addr <= {1'b0, nack_upper_addr};
+            else upper_addr <= {1'b0, s_hdr_tdata[8 +: 12]};
+            
+            // nack readout stays static through transfer
+            nack_readout <= s_nack_tvalid;
+            // determine readout length.
+            if (full_event)
+                event_bytes <= cmd_btt;
+            else
+                event_bytes <= nack_btt;
+            // determine start address (except top addr)
+            if (full_event)
+                event_lower_addr <= START_OFFSET;
+            else
+                event_lower_addr <= nack_offset + START_OFFSET;                                        
+        end
+        
         if (!memresetn) state <= IDLE;
         else begin
             case(state)
-                IDLE: if (all_valid) state <= ISSUE_CMD;
+                // s_nack_tready is just state == IDLE && memresetn anyway
+                IDLE: if (s_nack_tvalid || (all_valid && is_allowed))
+                    state <= ISSUE_CMD;
                 ISSUE_CMD: if (cmd_tready) state <= ISSUE_CONTROL;
                 ISSUE_CONTROL: if (control_complete_memclk) state <= DONE;
                 DONE: if (stat_tvalid) state <= IDLE;
             endcase
         end
-        if (state == IDLE && all_valid)
-            upper_addr <= s_hdr_tdata[8 +: 13];
+//        if (state == IDLE && all_valid)
+//            upper_addr <= s_hdr_tdata[8 +: 13];
 
         control_issued <= issue_control_memclk;
     end
