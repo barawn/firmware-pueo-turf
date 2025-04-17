@@ -1,4 +1,6 @@
 hdl/hsk_uart_brg.v
+bd/ddr_intercon/ddr_intercon.bd
+bd/ddr_intercon_nodebug/ddr_intercon_nodebug.bd
 bd/zynq_bd/zynq_bd.bd
 verilog-ethernet/lib/axis/rtl/arbiter.v
 verilog-library-barawn/hdl/async_register.v
@@ -6,6 +8,7 @@ verilog-ethernet/lib/axis/rtl/axis_arb_mux.v
 verilog-ethernet/lib/axis/rtl/axis_demux.v
 verilog-ethernet/lib/axis/rtl/axis_mux.v
 verilog-library-barawn/hdl/clk_div_ce.v
+hdl/event/ddr_intercon_wrapper.v
 verilog-library-barawn/hdl/dsp_counter_terminal_count.v
 verilog-library-barawn/hdl/dsp_timed_counter.v
 verilog-ethernet/rtl/eth_axis_rx.v
@@ -23,11 +26,16 @@ hdl/turfio/turfio_if.v
 verilog-library-barawn/hdl/wbs_dummy.v
 verilog-library-barawn/hdl/wishbone_arbiter.v
 hdl/zynq_bd_wrapper.v
+hdl/event/ack_done_generator.sv
 hdl/aurora/aurora_cmd_fwd_switch.sv
 hdl/axil2wb.sv
 hdl/turfio/bit_align.sv
+hdl/event/event_expand_and_store.sv
 hdl/event/event_pueo_wrap.sv
+hdl/event/event_readout_generator.sv
+hdl/event/hdr_accumulator.sv
 hdl/i2c_merger.sv
+hdl/event/pueo_turfio_event_req_gen.sv
 verilog-library-barawn/hdl/simple_clock_mon.sv
 hdl/clock/system_clock_v2.sv
 hdl/ethernet/turf_acknack_port.sv
@@ -44,6 +52,7 @@ hdl/aurora/turfio_aurora_wrap.sv
 hdl/turfio/turfio_bit.sv
 hdl/turfio/turfio_cin_parallel_sync.sv
 hdl/turfio/turfio_cout.sv
+hdl/event/turfio_event_accumulator.sv
 hdl/turfio/turfio_if_clocks.sv
 hdl/bridge/turfio_register_bridge.sv
 hdl/turfio/turfio_single_if.sv
@@ -53,10 +62,4 @@ hdl/ethernet/wb_to_drpx2.sv
 hdl/pueo_turf6.sv
 hdl/ethernet/turf_udp_rdwr.v
 hdl/aurora/turfio_aurora_reset.sv
-hdl/event/turfio_event_accumulator.sv
 hdl/ethernet/wb_if_cc.sv
-hdl/event/pueo_turfio_event_req_gen.sv
-hdl/event/event_expand_and_store.sv
-bd/ddr_intercon/ddr_intercon.bd
-bd/ddr_intercon_nodebug/ddr_intercon_nodebug.bd
-hdl/event/ddr_intercon_wrapper.v
