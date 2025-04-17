@@ -66,6 +66,12 @@ module hdr_accumulator(
     `AXIS_VASSIGN( tio_ , [2],  s_hdr2_ );
     `AXIS_VASSIGN( tio_ , [3],  s_hdr3_ );
 
+    // We need to generate a flag to indicate when the masked TURFIOs
+    // need to start, then clock-cross it to aclk.
+    wire start_masked_turfio = s_thdr_tlast && s_thdr_tvalid && s_thdr_tready;
+    wire start_masked_turfio_aclk;
+    flag_sync u_startsync(.in_clkA(start_masked_turfio),.out_clkB(start_masked_turfio_aclk),
+                          .clkA(memclk),.clkB(aclk));
 
     `DEFINE_AXI4S_MIN_IFV( tiofifo_ , 64, [3:0] );        
     wire [3:0] tiofifo_tlast;
@@ -84,7 +90,7 @@ module hdr_accumulator(
             assign fifo_wren = (tio_tvalid[i] || masked_turfio_valid) && !fifo_full;
             always @(posedge aclk) begin 
                 if (!tio_mask_i[i]) masked_turfio_valid <= 0;
-                else if (s_thdr_tlast && s_thdr_tvalid && s_thdr_tready) masked_turfio_valid <= 1;
+                else if (start_masked_turfio_aclk) masked_turfio_valid <= 1;
                 else if (masked_turfio_counter == 2'd3) masked_turfio_valid <= 0;
                 
                 if (!tio_mask_i[i])
