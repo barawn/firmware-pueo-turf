@@ -484,8 +484,8 @@ module pueo_turf6 #(parameter IDENT="TURF",
                   .CIND_N(CIND_N));
 
     // ETHERNET STREAMS AND CONTROLS
-    `DEFINE_AXI4S_MIN_IF( ack_ , 16);
-    `DEFINE_AXI4S_MIN_IF( nack_ , 16);
+    `DEFINE_AXI4S_MIN_IF( ack_ , 48);
+    `DEFINE_AXI4S_MIN_IF( nack_ , 48);
     wire event_open;
     `DEFINE_AXI4S_MIN_IF( ev_ctrl_ , 32);
     `DEFINE_AXI4S_MIN_IF( ev_data_ , 64);
