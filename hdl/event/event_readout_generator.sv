@@ -90,6 +90,9 @@ module event_readout_generator(
     localparam [FSM_BITS-1:0] DONE = 3;
     reg [FSM_BITS-1:0] state = IDLE;
 
+    // stat_tready is whenever we're in done
+    assign stat_tready = (state == DONE);
+
     // cmpl_tready 
     reg cmpl_tready = 0;
     assign s_hdr_tready = cmpl_tready;
