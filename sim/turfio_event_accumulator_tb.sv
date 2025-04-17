@@ -20,7 +20,8 @@ module turfio_event_accumulator_tb;
     wire       indata_tvalid = indata_valid || run_indata;
     reg        indata_tlast = 0;
     wire       indata_tready;
-        
+
+    // okay I need to make this more viewable or some bullshit        
     always @(posedge aclk) begin
         if (start) run_indata <= 1;
         else if (indata_counter == 24582) run_indata <= 0;
@@ -46,7 +47,10 @@ module turfio_event_accumulator_tb;
             // C1 C3 C5 C7 (TURFIO - ignored)
             //
             // the output data for SURF0 would then start off
-            // 08 0A 0C 0E 10 12 14 16
+            // 08 0A 0C 0E 10 12 14 16 18
+            // which gets expanded to
+            // 0080 0a0c 00e1 0012 0141 0618            
+            // 09 0B 0D 0F 11 13 15 17 19
             // etc. for SURF1/2/3/4/5/6
             indata[0 +: 8] <= indata[0 +: 8] + 1;
             indata[8 +: 8] <= indata[8 +: 8] + 1;
