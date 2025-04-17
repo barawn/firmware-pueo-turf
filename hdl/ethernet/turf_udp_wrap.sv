@@ -565,13 +565,16 @@ module turf_udp_wrap #( parameter NSFP=2,
                                         .probe_in2( event_is_open ));
         end
         if (DEBUG_ACKNACK == "TRUE") begin : ACKNACKILA
+            // we need to extract off the data. don't
+            // really want to expand things.
+            // just pull the constant
             acknack_ila u_ila(.clk(clk156),
                               .probe0( m_ack_tvalid ),
                               .probe1( m_ack_tready ),
-                              .probe2( m_ack_tdata ),
+                              .probe2( m_ack_tdata[31:16] ),
                               .probe3( m_nack_tvalid ),
                               .probe4( m_nack_tready ),
-                              .probe5( m_nack_tdata ));
+                              .probe5( m_nack_tdata[31:16] ));
         end
     endgenerate
     // interface conversion/clock cross
