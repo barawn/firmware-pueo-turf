@@ -10,7 +10,7 @@ module turf_udp_hsk_read(
         `TARGET_NAMED_PORTS_AXI4S_IF( s_udpdata_ , 64 ),
         
         input sclk,
-        input miso,
+        output miso,
         input cs_b,
         output irq_o,
         output complete_o
