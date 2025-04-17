@@ -165,7 +165,7 @@ module event_pueo_wrap(
         for (i=0;i<4;i=i+1) begin : TIO
             // we need an accumulator->reqgen path
             wire [63:0] payload;
-            wire [5:0]  payload_ident;
+            wire [4:0]  payload_ident;
             wire        payload_valid;
             wire        payload_last;
             wire        payload_has_space;
@@ -194,8 +194,8 @@ module event_pueo_wrap(
                           .payload_last_i(payload_last),
                           .payload_has_space_o(payload_has_space),
                           `CONNECT_AXIM_VEC( m_axi_ , tioaxi_ , i ),
-                          `CONNECT_AXI4S_MIN_IFV( s_done_ , addr_ , i ),
-                          `CONNECT_AXI4S_MIN_IFV( m_cmpl_ , cmpl_ , i ),
+                          `CONNECT_AXI4S_MIN_IFV( s_done_ , addr_ , [i] ),
+                          `CONNECT_AXI4S_MIN_IFV( m_cmpl_ , cmpl_ , [i] ),
                           .cmd_err_o( tio_errdet_memclk[ MEMCLK_ERR_SIZE*i + 1 +: 4 ] ));
         end
     endgenerate        
