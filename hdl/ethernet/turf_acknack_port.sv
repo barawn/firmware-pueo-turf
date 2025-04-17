@@ -18,20 +18,31 @@ module turf_acknack_port #(
         input aclk,
         input aresetn,
         input event_open_i,
+        // this is only used for nacks
+        input [9:0] nfragment_count_i,
         `TARGET_NAMED_PORTS_AXI4S_MIN_IF( s_udphdr_ , 64 ),
         `TARGET_NAMED_PORTS_AXI4S_IF( s_udpdata_ , 64 ),
         `HOST_NAMED_PORTS_AXI4S_MIN_IF( m_udphdr_ , 64),
         `HOST_NAMED_PORTS_AXI4S_IF( m_udpdata_ , 64),
-        // generate acks.
-        // here tdata[15] is allow, and tdata[0 +: 12] are addr
-        // this matches the frame buffer
-        `HOST_NAMED_PORTS_AXI4S_MIN_IF( m_acknack_ , 16 )        
+        // generate ack/nacks.
+        // OK: I have no idea WTF this was doing before.
+        // Now instead this is:
+        // low 32 bits = low 32 bits of s_udpdata (12-bit upper addr + frag offset or all 1s)
+        // bits 32 +: 11 = number of fragment qwords (bytes to transfer if not full nack)
+        // bits 45:43 = reserved
+        // bit  46 = full event nack
+        // bit  47 = allow
+        `HOST_NAMED_PORTS_AXI4S_MIN_IF( m_acknack_ , 48 )       
     );
     
     // kill bit 62, always ignored (used for OPEN)
     localparam OPEN_BIT = 62;
     localparam [63:0] MY_CHECK_BITS =
         { CHECK_BITS[63:OPEN_BIT+1],1'b0,CHECK_BITS[OPEN_BIT-1:0] };
+
+    reg full_event_nack = 0;
+    reg event_was_open = 0;
+    reg [10:0] nack_fragment_count = {11{1'b0}};
         
     reg [31:0] this_ip = {32{1'b0}};
     reg [15:0] this_port = {32{1'b0}};
@@ -58,6 +69,16 @@ module turf_acknack_port #(
     always @(posedge aclk) begin    
         if (!aresetn || !event_open_i) last_valid <= 0;
         else if (state == WRITE_DATA && s_udpdata_tvalid && s_udpdata_tready) last_valid <= 1;
+    
+        if ((state == CHECK_DATA_0 || state == READ_DATA_N) && s_udpdata_tvalid) begin
+            // do full event nack check
+            full_event_nack <= (s_udpdata_tdata[19:0] == {20{1'b1}});
+        end
+    
+        event_was_open <= event_open_i;
+        if (event_open_i && !event_was_open) begin
+            nack_fragment_count <= nfragment_count_i + 1;
+        end
     
         if (state == WRITE_DATA && s_udpdata_tvalid && s_udpdata_tready) begin
             last_store <= s_udpdata_tdata & MY_CHECK_BITS;
@@ -138,6 +159,12 @@ module turf_acknack_port #(
 
     // m_acknack_ handling
     assign m_acknack_tvalid = (state == WRITE_DATA);            
-    assign m_acknack_tdata = m_udpdata_tdata & MY_CHECK_BITS;
+    // acknack structure:
+    assign m_acknack_tdata = {
+        m_udpdata_tdata[63],        // 1
+        full_event_nack,            // 1
+        3'b0000,                    // 3
+        nack_fragment_count,        // 11
+        m_udpdata_tdata[31:0]};     // 32
 
 endmodule
