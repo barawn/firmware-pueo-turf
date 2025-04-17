@@ -68,9 +68,11 @@ module turfio_aurora_wrap
         // Logic indications that the links are up
         output [3:0] aurora_up_o,        
         
-        // Aurora clock output for monitoring
+        // Aurora clock output for monitoring (8 ns)
         output      aurora_clk_o,
 
+        // user clock (6.4 ns)
+        output aclk_o,
         // array of MGT interfaces
         output [32*NUM_MGT-1:0] m_aurora_tdata,
         output [NUM_MGT-1:0]    m_aurora_tvalid,
@@ -550,6 +552,8 @@ module turfio_aurora_wrap
     assign aurora_up_o[2] = link_status[2][0] && link_status[2][1];
     assign aurora_up_o[1] = link_status[1][0] && link_status[1][1];
     assign aurora_up_o[0] = link_status[0][0] && link_status[0][1];
+                            
+    assign aclk_o = user_clk;                            
                             
 //    (* ASYNC_REG = "TRUE" *)
 //    reg [15:0] vio_status_0 = {16{1'b0}};
