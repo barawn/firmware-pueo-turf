@@ -387,7 +387,9 @@ module pueo_turf6 #(parameter IDENT="TURF",
     `DEFINE_AXI4S_MIN_IF( aur1_, 32 );
     `DEFINE_AXI4S_MIN_IF( aur2_, 32 );    
     `DEFINE_AXI4S_MIN_IF( aur3_, 32 );    
-    turfio_aurora_wrap u_aurora(.wb_clk_i(ps_clk),
+    turfio_aurora_wrap #(.WBCLKTYPE("PSCLK"),
+                         .ACLKTYPE("USERCLK"))
+                       u_aurora(.wb_clk_i(ps_clk),
                                 .wb_rst_i(1'b0),
                                 `CONNECT_WBS_IFM(wb_ , aurora_ ),
                                 `CONNECT_AXI4S_MIN_IF( s_cmd_ , aurora_cmd_ ),

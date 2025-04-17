@@ -42,7 +42,8 @@ module turfio_aurora_wrap
     #(  parameter TX_CLOCK_SEL = 0,
         parameter NUM_MGT = 4,
         parameter USE_DEBUG = 4'b0001,
-        parameter WBCLKTYPE = "NONE" )
+        parameter WBCLKTYPE = "NONE",
+        parameter ACLKTYPE = "NONE" )
     (
         // this is the LOCAL aurora WISHBONE interface
         // it is NOT the interface for talking to the
@@ -154,6 +155,7 @@ module turfio_aurora_wrap
     reg [NUM_MGT-1:0] datapath_reset = 1'b0;
     reg global_datapath_reset = 1'b0;
     reg [NUM_MGT-1:0] eyescan_reset = {NUM_MGT{1'b0}};
+    (* CUSTOM_CC_SRC = WBCLKTYPE *)
     reg [NUM_MGT-1:0] gt_powerdown = {NUM_MGT{1'b0}};
     reg [2:0] gt_loopback[NUM_MGT-1:0];
     reg [3:0] txdiffctrl[NUM_MGT-1:0];
@@ -172,7 +174,7 @@ module turfio_aurora_wrap
     assign     cmd_userclk_tuser = cmd_userclk_tvalid && (cmd_userclk_tlast ^ !second_xfer);
     (* CUSTOM_CC_SRC = WBCLKTYPE *)
     reg        wb_user_areset = 0;
-    (* CUSTOM_CC_DST = "USERCLK", ASYNC_REG = "TRUE" *)
+    (* CUSTOM_CC_DST = ACLKTYPE, ASYNC_REG = "TRUE" *)
     reg        [1:0] user_areset = 2'b00;;
     wire       user_aresetn = !user_areset[1];
     
@@ -251,7 +253,9 @@ module turfio_aurora_wrap
     // assert reset, 128 user-clks later assert gt_reset, wait 26-bit counter or 1 sec,
     // deassert gt_reset, deassert reset.
     // We handle that sequence in software so here it just looks like we can go nutso.
-    turfio_aurora_reset_v2 u_reset( .reset_i(reset_in),
+    turfio_aurora_reset_v2 #(.INITCLKTYPE(WBCLKTYPE),
+                             .USERCLKTYPE(ACLKTYPE))
+                        u_reset( .reset_i(reset_in),
                                  .gt_reset_i(gt_reset_in),
                                  .user_clk_i(user_clk),
                                  .init_clk_i(wb_clk_i),
@@ -288,7 +292,7 @@ module turfio_aurora_wrap
             wire frame_err;
             wire [2:0] loopback;
             wire [15:0] dmonitor;
-            (* CUSTOM_CC = "TO_USERCLK", ASYNC_REG = "TRUE" *)
+            (* CUSTOM_CC_DST = ACLKTYPE, ASYNC_REG = "TRUE" *)
             reg [1:0] powerdown = {2{1'b0}};            
             wire this_powerdown = powerdown[1];
             
