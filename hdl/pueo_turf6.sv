@@ -233,8 +233,11 @@ module pueo_turf6 #(parameter IDENT="TURF",
     // DDR clocks (300 MHz)
     wire [1:0] ddr_clk;
 
-    // Aurora clock
+    // Aurora *reference* clock (125 MHz)
     wire aurora_clk;
+    
+    // Aurora *user* clock (156.25 MHz)
+    wire aclk;
 
 //    // this needs to get pushed into the 10GbE core                  
 //    IBUFDS_GTE4 #(.REFCLK_HROW_CK_SEL(2'b00))
@@ -363,7 +366,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
 
     turf_id_ctrl #(.IDENT(IDENT),
                    .DATEVERSION(DATEVERSION),
-                   .NUM_CLK_MON(7))
+                   .NUM_CLK_MON(8))
         u_idctrl( .wb_clk_i(ps_clk),
                   .wb_rst_i(1'b0),
                   `CONNECT_WBS_IFM(wb_ , turf_idctl_ ),
@@ -373,7 +376,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                   .bridge_timeout_i(bridge_timeout),
                   .bridge_invalid_i(bridge_invalid_access),
 
-                  .clk_mon_i( { sfp_txclk, sfp_rxclk, aurora_clk, ddr_clk[1], ddr_clk[0], gbe_sysclk, sys_clk } ));
+                  .clk_mon_i( { aclk, sfp_txclk, sfp_rxclk, aurora_clk, ddr_clk[1], ddr_clk[0], gbe_sysclk, sys_clk } ));
 
     // Aurora
     // indicates auroras are up
@@ -395,6 +398,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                                 .aurora_up_o(aurora_up),
                                 .aurora_clk_o(aurora_clk),
                                 
+                                .aclk_o( aclk ),
                                 .m_aurora_tdata( { aur3_tdata, aur2_tdata, aur1_tdata, aur0_tdata } ),
                                 .m_aurora_tvalid({ aur3_tvalid, aur2_tvalid, aur1_tvalid, aur0_tvalid } ),
                                 .m_aurora_tready({ aur3_tready, aur2_tready, aur1_tready, aur0_tready } ),
@@ -552,6 +556,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                              // UI clock output
                              .ddr4_clk_o(ddr_clk[0]),
                              `CONNECT_PHY_IF( c0_ddr4_ , C0_DDR4_ ),
+                             .aclk( aclk ),                             
                              `CONNECT_AXI4S_MIN_IF( s_aurora0_ , aur0_ ),
                              .s_aurora0_tlast(aur0_tlast),
                              `CONNECT_AXI4S_MIN_IF( s_aurora1_ , aur1_ ),
@@ -560,6 +565,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                              .s_aurora2_tlast(aur2_tlast),
                              `CONNECT_AXI4S_MIN_IF( s_aurora3_ , aur3_ ),
                              .s_aurora3_tlast(aur3_tlast),
+                             .ethclk(gbe_sysclk),
                              `CONNECT_AXI4S_MIN_IF( s_ack_ , ack_ ),
                              `CONNECT_AXI4S_MIN_IF( s_nack_ , nack_ ),
                              `CONNECT_AXI4S_MIN_IF( m_ev_data_ , ev_data_ ),
