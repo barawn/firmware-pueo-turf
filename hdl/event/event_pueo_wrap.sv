@@ -203,7 +203,31 @@ module event_pueo_wrap(
     endgenerate        
     
     // turf headers, just look for a last on any of the other headers to generate it.
-    wire turf_start_event = hdr_tlast[0] && hdr_tvalid[0] && hdr_tready[0];
+    // sigh, this is awkward for testing!!!
+    reg turf_start_event = 0;
+    // need to pipeline this!
+    reg [3:0] turfio_last_header = {4{1'b0}};
+    // JOY PRIORITY ENCODING
+    always @(posedge aclk) begin
+        // We can't use the unary operators since the tvalid/readies are
+        // actually wire hdr_tvalid[3:0] not wire [3:0] hdr_tvalid.
+        // Could do it in the generate loop but bc this is temporary screw it.
+        turfio_last_header[0] <= hdr_tlast[0] && hdr_tvalid[0] && hdr_tready[0];
+        turfio_last_header[1] <= hdr_tlast[1] && hdr_tvalid[1] && hdr_tready[1];
+        turfio_last_header[2] <= hdr_tlast[2] && hdr_tvalid[2] && hdr_tready[2];
+        turfio_last_header[3] <= hdr_tlast[3] && hdr_tvalid[3] && hdr_tready[3];
+
+        if (!tio_mask_aclk[0])
+            turf_start_event <= turfio_last_header[0];
+        else if (!tio_mask_aclk[1])
+            turf_start_event <= turfio_last_header[1];
+        else if (!tio_mask_aclk[2])
+            turf_start_event <= turfio_last_header[2];
+        else if (!tio_mask_aclk[3])
+            turf_start_event <= turfio_last_header[3];            
+        else
+            turf_start_event <= 0;
+    end
     wire turf_start_event_memclk;
     flag_sync u_startsync(.in_clkA(turf_start_event),.out_clkB(turf_start_event_memclk),
                           .clkA(aclk),.clkB(memclk));
