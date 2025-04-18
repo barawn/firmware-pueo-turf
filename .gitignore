@@ -1,4 +1,6 @@
 vivado_project/
 example_designs/
+build/
+hw/
 *~
 hs_err*
