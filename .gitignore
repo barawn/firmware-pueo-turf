@@ -1,5 +1,6 @@
 vivado_project/
 example_designs/
+.Xil/
 build/
 hw/
 *~
