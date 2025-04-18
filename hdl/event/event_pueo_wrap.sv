@@ -234,7 +234,7 @@ module event_pueo_wrap(
                           
     turf_header_generator_v1 u_thdr( .memclk(memclk),
                                      .memresetn(memresetn),
-                                     .event_i(turf_start_event),
+                                     .event_i(turf_start_event_memclk),
                                      `CONNECT_AXI4S_MIN_IF( m_thdr_ , thdr_ ),
                                      .m_thdr_tlast( thdr_tlast ));  
     
