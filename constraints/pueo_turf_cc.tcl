@@ -208,8 +208,19 @@ set_max_delay -datapath_only -from $ber_regs -to $stat_regs 10.0
 #set_max_delay -datapath_only -from $psclk -to $userclk 10.0
 #set_max_delay -datapath_only -from $userclk -to $psclk 10.0
 
-set_cc_paths $psclk $userclk $clktypelist
-set_cc_paths $userclk $psclk $clktypelist
+# guard on userclk/ddrclk0 due to generated crap
+if {[info exists userclk]} {
+    set_cc_paths $psclk $userclk $clktypelist
+    set_cc_paths $userclk $psclk $clktypelist
+}
+
+if {[info exists ddrclk0]} {
+    set_cc_paths $psclk $ddrclk0 $clktypelist
+    # now ddr -> ethernet
+    set_cc_paths $ddrclk0 $gbeclk $clktypelist
+    # only have a flag going this direction, leave it alone for now
+    #set_cc_paths $gbeclk $ddrclk0 $clktypelist
+}
 
 set_cc_paths $psclk $ifclk67 $clktypelist
 set_cc_paths $ifclk67 $psclk $clktypelist
@@ -217,15 +228,8 @@ set_cc_paths $ifclk67 $psclk $clktypelist
 set_cc_paths $psclk $ifclk68 $clktypelist
 set_cc_paths $ifclk68 $psclk $clktypelist
 
-set_cc_paths $psclk $ddrclk0 $clktypelist
 
 set_cc_paths $psclk $sys_clk $clktypelist
 
 set_cc_paths $psclk $gbeclk $clktypelist
 set_cc_paths $gbeclk $psclk $clktypelist
-
-# now ddr -> ethernet
-set_cc_paths $ddrclk0 $gbeclk $clktypelist
-# only have a flag going this direction, leave it alone for now
-#set_cc_paths $gbeclk $ddrclk0 $clktypelist
-
