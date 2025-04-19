@@ -10,21 +10,22 @@ module turf_fragment_gen(
         input aclk,
         input aresetn,
         // Payload uint64_ts in a fragment.
-        input [9:0] nfragment_count_i,        
+        input [9:0] nfragment_count_i,   
         // Mask of source port
         input [15:0] fragsrc_mask_i,
+        // event is open, need to use this at some point
+        input event_open_i,
+        // destination IP
+        input [31:0] event_ip_i,
+        // destination port
+        input [15:0] event_port_i,
         // control interface
         `TARGET_NAMED_PORTS_AXI4S_MIN_IF( s_ctrl_ , 32 ),
         // data interface
-        `TARGET_NAMED_PORTS_AXI4S_MIN_IF( s_data_ , 64 ),
-        input [7:0] s_data_tkeep,
-        input       s_data_tlast,
+        `TARGET_NAMED_PORTS_AXI4S_IF( s_data_ , 64 ),
         
-        // UDP header interface, without the global statics
-        // (dscp/ecn/ttl/source port/dest ip/dest port)
-        // Checksum is pointless, Ethernet does a CRC, so it's static
-        // So tdata here is just length
-        `HOST_NAMED_PORTS_AXI4S_MIN_IF( m_hdr_ , 16),
+        // make everyone the same, sigh
+        `HOST_NAMED_PORTS_AXI4S_MIN_IF( m_hdr_ , 64),
         // source port.
         output [15:0] m_hdr_tuser,
         // UDP payload interface, I don't know what tuser does
@@ -126,7 +127,8 @@ module turf_fragment_gen(
     assign m_payload_tvalid = (state == TAG || (state == STREAM && s_data_tvalid));
     assign s_data_tready = (state == STREAM && m_payload_tready);
     assign s_ctrl_tready = (state == IDLE);
-    assign m_hdr_tdata = fragment_length;
+    // the header data should be dest_ip, dest_port, length
+    assign m_hdr_tdata = { event_ip_i, event_port_i, fragment_length };
     assign m_hdr_tuser = (BASE_PORT & ~fragsrc_mask_i) | (fragment_number & fragsrc_mask_i);
     assign m_payload_tdata = (state == TAG) ? tag : s_data_tdata;
     assign m_payload_tlast = (state == STREAM && s_data_tlast);

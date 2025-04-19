@@ -1,0 +1,815 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="turfio_event_accumulator_tb_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="arch_package" />
+            <top_module name="glbl" />
+            <top_module name="lib_pkg" />
+            <top_module name="proj_package" />
+            <top_module name="turfio_event_accumulator_tb" />
+            <top_module name="vcomponents" />
+            <top_module name="vpkg" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="175.981110 us"></ZoomStartTime>
+      <ZoomEndTime time="279.820951 us"></ZoomEndTime>
+      <Cursor1Time time="262.514310 us"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="165"></NameColumnWidth>
+      <ValueColumnWidth column_width="92"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="183" />
+   <wvobject fp_name="/turfio_event_accumulator_tb/aclk" type="logic">
+      <obj_property name="ElementShortName">aclk</obj_property>
+      <obj_property name="ObjectShortName">aclk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/ddr4_clk_p" type="logic">
+      <obj_property name="ElementShortName">ddr4_clk_p</obj_property>
+      <obj_property name="ObjectShortName">ddr4_clk_p</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/ddr4_clk_n" type="logic">
+      <obj_property name="ElementShortName">ddr4_clk_n</obj_property>
+      <obj_property name="ObjectShortName">ddr4_clk_n</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/start" type="logic">
+      <obj_property name="ElementShortName">start</obj_property>
+      <obj_property name="ObjectShortName">start</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/run_indata" type="logic">
+      <obj_property name="ElementShortName">run_indata</obj_property>
+      <obj_property name="ObjectShortName">run_indata</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/indata_counter" type="array">
+      <obj_property name="ElementShortName">indata_counter[15:0]</obj_property>
+      <obj_property name="ObjectShortName">indata_counter[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/indata" type="array">
+      <obj_property name="ElementShortName">indata[31:0]</obj_property>
+      <obj_property name="ObjectShortName">indata[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/indata_valid" type="logic">
+      <obj_property name="ElementShortName">indata_valid</obj_property>
+      <obj_property name="ObjectShortName">indata_valid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/indata_tdata" type="array">
+      <obj_property name="ElementShortName">indata_tdata[31:0]</obj_property>
+      <obj_property name="ObjectShortName">indata_tdata[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/indata_tvalid" type="logic">
+      <obj_property name="ElementShortName">indata_tvalid</obj_property>
+      <obj_property name="ObjectShortName">indata_tvalid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/indata_tlast" type="logic">
+      <obj_property name="ElementShortName">indata_tlast</obj_property>
+      <obj_property name="ObjectShortName">indata_tlast</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/indata_tready" type="logic">
+      <obj_property name="ElementShortName">indata_tready</obj_property>
+      <obj_property name="ObjectShortName">indata_tready</obj_property>
+   </wvobject>
+   <wvobject fp_name="group2978" type="group">
+      <obj_property name="label">dmaxi reads</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject fp_name="/turfio_event_accumulator_tb/dmaxi_arready" type="array">
+         <obj_property name="ElementShortName">dmaxi_arready[4:0]</obj_property>
+         <obj_property name="ObjectShortName">dmaxi_arready[4:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/turfio_event_accumulator_tb/dmaxi_araddr" type="array">
+         <obj_property name="ElementShortName">dmaxi_araddr[159:0]</obj_property>
+         <obj_property name="ObjectShortName">dmaxi_araddr[159:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/turfio_event_accumulator_tb/dmaxi_arburst" type="array">
+         <obj_property name="ElementShortName">dmaxi_arburst[9:0]</obj_property>
+         <obj_property name="ObjectShortName">dmaxi_arburst[9:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/turfio_event_accumulator_tb/dmaxi_arcache" type="array">
+         <obj_property name="ElementShortName">dmaxi_arcache[19:0]</obj_property>
+         <obj_property name="ObjectShortName">dmaxi_arcache[19:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/turfio_event_accumulator_tb/dmaxi_arlen" type="array">
+         <obj_property name="ElementShortName">dmaxi_arlen[39:0]</obj_property>
+         <obj_property name="ObjectShortName">dmaxi_arlen[39:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/turfio_event_accumulator_tb/dmaxi_arprot" type="array">
+         <obj_property name="ElementShortName">dmaxi_arprot[14:0]</obj_property>
+         <obj_property name="ObjectShortName">dmaxi_arprot[14:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/turfio_event_accumulator_tb/dmaxi_arsize" type="array">
+         <obj_property name="ElementShortName">dmaxi_arsize[14:0]</obj_property>
+         <obj_property name="ObjectShortName">dmaxi_arsize[14:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/turfio_event_accumulator_tb/dmaxi_arvalid" type="array">
+         <obj_property name="ElementShortName">dmaxi_arvalid[4:0]</obj_property>
+         <obj_property name="ObjectShortName">dmaxi_arvalid[4:0]</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/dmaxi_awready" type="array">
+      <obj_property name="ElementShortName">dmaxi_awready[4:0]</obj_property>
+      <obj_property name="ObjectShortName">dmaxi_awready[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/dmaxi_awaddr" type="array">
+      <obj_property name="ElementShortName">dmaxi_awaddr[159:0]</obj_property>
+      <obj_property name="ObjectShortName">dmaxi_awaddr[159:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/dmaxi_awburst" type="array">
+      <obj_property name="ElementShortName">dmaxi_awburst[9:0]</obj_property>
+      <obj_property name="ObjectShortName">dmaxi_awburst[9:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/dmaxi_awcache" type="array">
+      <obj_property name="ElementShortName">dmaxi_awcache[19:0]</obj_property>
+      <obj_property name="ObjectShortName">dmaxi_awcache[19:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/dmaxi_awlen" type="array">
+      <obj_property name="ElementShortName">dmaxi_awlen[39:0]</obj_property>
+      <obj_property name="ObjectShortName">dmaxi_awlen[39:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/dmaxi_awprot" type="array">
+      <obj_property name="ElementShortName">dmaxi_awprot[14:0]</obj_property>
+      <obj_property name="ObjectShortName">dmaxi_awprot[14:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/dmaxi_awsize" type="array">
+      <obj_property name="ElementShortName">dmaxi_awsize[14:0]</obj_property>
+      <obj_property name="ObjectShortName">dmaxi_awsize[14:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/dmaxi_awvalid" type="array">
+      <obj_property name="ElementShortName">dmaxi_awvalid[4:0]</obj_property>
+      <obj_property name="ObjectShortName">dmaxi_awvalid[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/dmaxi_bready" type="array">
+      <obj_property name="ElementShortName">dmaxi_bready[4:0]</obj_property>
+      <obj_property name="ObjectShortName">dmaxi_bready[4:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/dmaxi_bresp" type="array">
+      <obj_property name="ElementShortName">dmaxi_bresp[9:0]</obj_property>
+      <obj_property name="ObjectShortName">dmaxi_bresp[9:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/dmaxi_bvalid" type="array">
+      <obj_property name="ElementShortName">dmaxi_bvalid[4:0]</obj_property>
+      <obj_property name="ObjectShortName">dmaxi_bvalid[4:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject fp_name="group2979" type="group">
+      <obj_property name="label">dmaxi read resp</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject fp_name="/turfio_event_accumulator_tb/dmaxi_rready" type="array">
+         <obj_property name="ElementShortName">dmaxi_rready[4:0]</obj_property>
+         <obj_property name="ObjectShortName">dmaxi_rready[4:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/turfio_event_accumulator_tb/dmaxi_rdata" type="array">
+         <obj_property name="ElementShortName">dmaxi_rdata[2559:0]</obj_property>
+         <obj_property name="ObjectShortName">dmaxi_rdata[2559:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/turfio_event_accumulator_tb/dmaxi_rresp" type="array">
+         <obj_property name="ElementShortName">dmaxi_rresp[9:0]</obj_property>
+         <obj_property name="ObjectShortName">dmaxi_rresp[9:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/turfio_event_accumulator_tb/dmaxi_rlast" type="array">
+         <obj_property name="ElementShortName">dmaxi_rlast[4:0]</obj_property>
+         <obj_property name="ObjectShortName">dmaxi_rlast[4:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/turfio_event_accumulator_tb/dmaxi_rvalid" type="array">
+         <obj_property name="ElementShortName">dmaxi_rvalid[4:0]</obj_property>
+         <obj_property name="ObjectShortName">dmaxi_rvalid[4:0]</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/dmaxi_wready" type="array">
+      <obj_property name="ElementShortName">dmaxi_wready[4:0]</obj_property>
+      <obj_property name="ObjectShortName">dmaxi_wready[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/dmaxi_wdata" type="array">
+      <obj_property name="ElementShortName">dmaxi_wdata[2559:0]</obj_property>
+      <obj_property name="ObjectShortName">dmaxi_wdata[2559:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/dmaxi_wlast" type="array">
+      <obj_property name="ElementShortName">dmaxi_wlast[4:0]</obj_property>
+      <obj_property name="ObjectShortName">dmaxi_wlast[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/dmaxi_wstrb" type="array">
+      <obj_property name="ElementShortName">dmaxi_wstrb[319:0]</obj_property>
+      <obj_property name="ObjectShortName">dmaxi_wstrb[319:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/dmaxi_wvalid" type="array">
+      <obj_property name="ElementShortName">dmaxi_wvalid[4:0]</obj_property>
+      <obj_property name="ObjectShortName">dmaxi_wvalid[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outaxi_arready" type="logic">
+      <obj_property name="ElementShortName">outaxi_arready</obj_property>
+      <obj_property name="ObjectShortName">outaxi_arready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outaxi_araddr" type="array">
+      <obj_property name="ElementShortName">outaxi_araddr[31:0]</obj_property>
+      <obj_property name="ObjectShortName">outaxi_araddr[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outaxi_arburst" type="array">
+      <obj_property name="ElementShortName">outaxi_arburst[1:0]</obj_property>
+      <obj_property name="ObjectShortName">outaxi_arburst[1:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outaxi_arcache" type="array">
+      <obj_property name="ElementShortName">outaxi_arcache[3:0]</obj_property>
+      <obj_property name="ObjectShortName">outaxi_arcache[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outaxi_arlen" type="array">
+      <obj_property name="ElementShortName">outaxi_arlen[7:0]</obj_property>
+      <obj_property name="ObjectShortName">outaxi_arlen[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outaxi_arprot" type="array">
+      <obj_property name="ElementShortName">outaxi_arprot[2:0]</obj_property>
+      <obj_property name="ObjectShortName">outaxi_arprot[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outaxi_arsize" type="array">
+      <obj_property name="ElementShortName">outaxi_arsize[2:0]</obj_property>
+      <obj_property name="ObjectShortName">outaxi_arsize[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outaxi_arvalid" type="logic">
+      <obj_property name="ElementShortName">outaxi_arvalid</obj_property>
+      <obj_property name="ObjectShortName">outaxi_arvalid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outaxi_awready" type="logic">
+      <obj_property name="ElementShortName">outaxi_awready</obj_property>
+      <obj_property name="ObjectShortName">outaxi_awready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outaxi_awaddr" type="array">
+      <obj_property name="ElementShortName">outaxi_awaddr[31:0]</obj_property>
+      <obj_property name="ObjectShortName">outaxi_awaddr[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outaxi_awburst" type="array">
+      <obj_property name="ElementShortName">outaxi_awburst[1:0]</obj_property>
+      <obj_property name="ObjectShortName">outaxi_awburst[1:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outaxi_awcache" type="array">
+      <obj_property name="ElementShortName">outaxi_awcache[3:0]</obj_property>
+      <obj_property name="ObjectShortName">outaxi_awcache[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outaxi_awlen" type="array">
+      <obj_property name="ElementShortName">outaxi_awlen[7:0]</obj_property>
+      <obj_property name="ObjectShortName">outaxi_awlen[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outaxi_awprot" type="array">
+      <obj_property name="ElementShortName">outaxi_awprot[2:0]</obj_property>
+      <obj_property name="ObjectShortName">outaxi_awprot[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outaxi_awsize" type="array">
+      <obj_property name="ElementShortName">outaxi_awsize[2:0]</obj_property>
+      <obj_property name="ObjectShortName">outaxi_awsize[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outaxi_awvalid" type="logic">
+      <obj_property name="ElementShortName">outaxi_awvalid</obj_property>
+      <obj_property name="ObjectShortName">outaxi_awvalid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outaxi_bready" type="logic">
+      <obj_property name="ElementShortName">outaxi_bready</obj_property>
+      <obj_property name="ObjectShortName">outaxi_bready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outaxi_bresp" type="array">
+      <obj_property name="ElementShortName">outaxi_bresp[1:0]</obj_property>
+      <obj_property name="ObjectShortName">outaxi_bresp[1:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outaxi_bvalid" type="logic">
+      <obj_property name="ElementShortName">outaxi_bvalid</obj_property>
+      <obj_property name="ObjectShortName">outaxi_bvalid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outaxi_rready" type="logic">
+      <obj_property name="ElementShortName">outaxi_rready</obj_property>
+      <obj_property name="ObjectShortName">outaxi_rready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outaxi_rdata" type="array">
+      <obj_property name="ElementShortName">outaxi_rdata[511:0]</obj_property>
+      <obj_property name="ObjectShortName">outaxi_rdata[511:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outaxi_rresp" type="array">
+      <obj_property name="ElementShortName">outaxi_rresp[1:0]</obj_property>
+      <obj_property name="ObjectShortName">outaxi_rresp[1:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outaxi_rlast" type="logic">
+      <obj_property name="ElementShortName">outaxi_rlast</obj_property>
+      <obj_property name="ObjectShortName">outaxi_rlast</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outaxi_rvalid" type="logic">
+      <obj_property name="ElementShortName">outaxi_rvalid</obj_property>
+      <obj_property name="ObjectShortName">outaxi_rvalid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outaxi_wready" type="logic">
+      <obj_property name="ElementShortName">outaxi_wready</obj_property>
+      <obj_property name="ObjectShortName">outaxi_wready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outaxi_wdata" type="array">
+      <obj_property name="ElementShortName">outaxi_wdata[511:0]</obj_property>
+      <obj_property name="ObjectShortName">outaxi_wdata[511:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outaxi_wlast" type="logic">
+      <obj_property name="ElementShortName">outaxi_wlast</obj_property>
+      <obj_property name="ObjectShortName">outaxi_wlast</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outaxi_wstrb" type="array">
+      <obj_property name="ElementShortName">outaxi_wstrb[63:0]</obj_property>
+      <obj_property name="ObjectShortName">outaxi_wstrb[63:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outaxi_wvalid" type="logic">
+      <obj_property name="ElementShortName">outaxi_wvalid</obj_property>
+      <obj_property name="ObjectShortName">outaxi_wvalid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_arready" type="logic">
+      <obj_property name="ElementShortName">memaxi_arready</obj_property>
+      <obj_property name="ObjectShortName">memaxi_arready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_araddr" type="array">
+      <obj_property name="ElementShortName">memaxi_araddr[31:0]</obj_property>
+      <obj_property name="ObjectShortName">memaxi_araddr[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_arburst" type="array">
+      <obj_property name="ElementShortName">memaxi_arburst[1:0]</obj_property>
+      <obj_property name="ObjectShortName">memaxi_arburst[1:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_arcache" type="array">
+      <obj_property name="ElementShortName">memaxi_arcache[3:0]</obj_property>
+      <obj_property name="ObjectShortName">memaxi_arcache[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_arlen" type="array">
+      <obj_property name="ElementShortName">memaxi_arlen[7:0]</obj_property>
+      <obj_property name="ObjectShortName">memaxi_arlen[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_arprot" type="array">
+      <obj_property name="ElementShortName">memaxi_arprot[2:0]</obj_property>
+      <obj_property name="ObjectShortName">memaxi_arprot[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_arsize" type="array">
+      <obj_property name="ElementShortName">memaxi_arsize[2:0]</obj_property>
+      <obj_property name="ObjectShortName">memaxi_arsize[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_arvalid" type="logic">
+      <obj_property name="ElementShortName">memaxi_arvalid</obj_property>
+      <obj_property name="ObjectShortName">memaxi_arvalid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_awready" type="logic">
+      <obj_property name="ElementShortName">memaxi_awready</obj_property>
+      <obj_property name="ObjectShortName">memaxi_awready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_awaddr" type="array">
+      <obj_property name="ElementShortName">memaxi_awaddr[31:0]</obj_property>
+      <obj_property name="ObjectShortName">memaxi_awaddr[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_awburst" type="array">
+      <obj_property name="ElementShortName">memaxi_awburst[1:0]</obj_property>
+      <obj_property name="ObjectShortName">memaxi_awburst[1:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_awcache" type="array">
+      <obj_property name="ElementShortName">memaxi_awcache[3:0]</obj_property>
+      <obj_property name="ObjectShortName">memaxi_awcache[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_awlen" type="array">
+      <obj_property name="ElementShortName">memaxi_awlen[7:0]</obj_property>
+      <obj_property name="ObjectShortName">memaxi_awlen[7:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_awprot" type="array">
+      <obj_property name="ElementShortName">memaxi_awprot[2:0]</obj_property>
+      <obj_property name="ObjectShortName">memaxi_awprot[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_awsize" type="array">
+      <obj_property name="ElementShortName">memaxi_awsize[2:0]</obj_property>
+      <obj_property name="ObjectShortName">memaxi_awsize[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_awvalid" type="logic">
+      <obj_property name="ElementShortName">memaxi_awvalid</obj_property>
+      <obj_property name="ObjectShortName">memaxi_awvalid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_bready" type="logic">
+      <obj_property name="ElementShortName">memaxi_bready</obj_property>
+      <obj_property name="ObjectShortName">memaxi_bready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_bresp" type="array">
+      <obj_property name="ElementShortName">memaxi_bresp[1:0]</obj_property>
+      <obj_property name="ObjectShortName">memaxi_bresp[1:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_bvalid" type="logic">
+      <obj_property name="ElementShortName">memaxi_bvalid</obj_property>
+      <obj_property name="ObjectShortName">memaxi_bvalid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_rready" type="logic">
+      <obj_property name="ElementShortName">memaxi_rready</obj_property>
+      <obj_property name="ObjectShortName">memaxi_rready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_rdata" type="array">
+      <obj_property name="ElementShortName">memaxi_rdata[511:0]</obj_property>
+      <obj_property name="ObjectShortName">memaxi_rdata[511:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_rresp" type="array">
+      <obj_property name="ElementShortName">memaxi_rresp[1:0]</obj_property>
+      <obj_property name="ObjectShortName">memaxi_rresp[1:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_rlast" type="logic">
+      <obj_property name="ElementShortName">memaxi_rlast</obj_property>
+      <obj_property name="ObjectShortName">memaxi_rlast</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_rvalid" type="logic">
+      <obj_property name="ElementShortName">memaxi_rvalid</obj_property>
+      <obj_property name="ObjectShortName">memaxi_rvalid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_wready" type="logic">
+      <obj_property name="ElementShortName">memaxi_wready</obj_property>
+      <obj_property name="ObjectShortName">memaxi_wready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_wdata" type="array">
+      <obj_property name="ElementShortName">memaxi_wdata[511:0]</obj_property>
+      <obj_property name="ObjectShortName">memaxi_wdata[511:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_wlast" type="logic">
+      <obj_property name="ElementShortName">memaxi_wlast</obj_property>
+      <obj_property name="ObjectShortName">memaxi_wlast</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_wstrb" type="array">
+      <obj_property name="ElementShortName">memaxi_wstrb[63:0]</obj_property>
+      <obj_property name="ObjectShortName">memaxi_wstrb[63:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_wvalid" type="logic">
+      <obj_property name="ElementShortName">memaxi_wvalid</obj_property>
+      <obj_property name="ObjectShortName">memaxi_wvalid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_arqos" type="array">
+      <obj_property name="ElementShortName">memaxi_arqos[3:0]</obj_property>
+      <obj_property name="ObjectShortName">memaxi_arqos[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_awqos" type="array">
+      <obj_property name="ElementShortName">memaxi_awqos[3:0]</obj_property>
+      <obj_property name="ObjectShortName">memaxi_awqos[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_arlock" type="logic">
+      <obj_property name="ElementShortName">memaxi_arlock</obj_property>
+      <obj_property name="ObjectShortName">memaxi_arlock</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_awlock" type="logic">
+      <obj_property name="ElementShortName">memaxi_awlock</obj_property>
+      <obj_property name="ObjectShortName">memaxi_awlock</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/reset_reqgen" type="logic">
+      <obj_property name="ElementShortName">reset_reqgen</obj_property>
+      <obj_property name="ObjectShortName">reset_reqgen</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/run_doneaddr" type="logic">
+      <obj_property name="ElementShortName">run_doneaddr</obj_property>
+      <obj_property name="ObjectShortName">run_doneaddr</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[0].outdata " type="array">
+      <obj_property name="ElementShortName">\TFIO[0].outdata [63:0]</obj_property>
+      <obj_property name="ObjectShortName">\TFIO[0].outdata [63:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[0].outdata_valid " type="logic">
+      <obj_property name="ElementShortName">\TFIO[0].outdata_valid </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[0].outdata_valid </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[0].outdata_last " type="logic">
+      <obj_property name="ElementShortName">\TFIO[0].outdata_last </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[0].outdata_last </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[0].outdata_ident " type="array">
+      <obj_property name="ElementShortName">\TFIO[0].outdata_ident [4:0]</obj_property>
+      <obj_property name="ObjectShortName">\TFIO[0].outdata_ident [4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[0].outdata_has_space " type="logic">
+      <obj_property name="ElementShortName">\TFIO[0].outdata_has_space </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[0].outdata_has_space </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[0].hdrdata " type="array">
+      <obj_property name="ElementShortName">\TFIO[0].hdrdata [63:0]</obj_property>
+      <obj_property name="ObjectShortName">\TFIO[0].hdrdata [63:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[0].hdrvalid " type="logic">
+      <obj_property name="ElementShortName">\TFIO[0].hdrvalid </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[0].hdrvalid </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[0].hdrready " type="logic">
+      <obj_property name="ElementShortName">\TFIO[0].hdrready </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[0].hdrready </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[0].hdrtlast " type="logic">
+      <obj_property name="ElementShortName">\TFIO[0].hdrtlast </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[0].hdrtlast </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[0].done_tdata " type="array">
+      <obj_property name="ElementShortName">\TFIO[0].done_tdata [15:0]</obj_property>
+      <obj_property name="ObjectShortName">\TFIO[0].done_tdata [15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[0].done_tvalid " type="logic">
+      <obj_property name="ElementShortName">\TFIO[0].done_tvalid </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[0].done_tvalid </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[0].done_tready " type="logic">
+      <obj_property name="ElementShortName">\TFIO[0].done_tready </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[0].done_tready </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[0].cmpl_tdata " type="array">
+      <obj_property name="ElementShortName">\TFIO[0].cmpl_tdata [63:0]</obj_property>
+      <obj_property name="ObjectShortName">\TFIO[0].cmpl_tdata [63:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[0].cmpl_tvalid " type="logic">
+      <obj_property name="ElementShortName">\TFIO[0].cmpl_tvalid </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[0].cmpl_tvalid </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[0].cmpl_tready " type="logic">
+      <obj_property name="ElementShortName">\TFIO[0].cmpl_tready </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[0].cmpl_tready </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[1].outdata " type="array">
+      <obj_property name="ElementShortName">\TFIO[1].outdata [63:0]</obj_property>
+      <obj_property name="ObjectShortName">\TFIO[1].outdata [63:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[1].outdata_valid " type="logic">
+      <obj_property name="ElementShortName">\TFIO[1].outdata_valid </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[1].outdata_valid </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[1].outdata_last " type="logic">
+      <obj_property name="ElementShortName">\TFIO[1].outdata_last </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[1].outdata_last </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[1].outdata_ident " type="array">
+      <obj_property name="ElementShortName">\TFIO[1].outdata_ident [4:0]</obj_property>
+      <obj_property name="ObjectShortName">\TFIO[1].outdata_ident [4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[1].outdata_has_space " type="logic">
+      <obj_property name="ElementShortName">\TFIO[1].outdata_has_space </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[1].outdata_has_space </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[1].hdrdata " type="array">
+      <obj_property name="ElementShortName">\TFIO[1].hdrdata [63:0]</obj_property>
+      <obj_property name="ObjectShortName">\TFIO[1].hdrdata [63:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[1].hdrvalid " type="logic">
+      <obj_property name="ElementShortName">\TFIO[1].hdrvalid </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[1].hdrvalid </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[1].hdrready " type="logic">
+      <obj_property name="ElementShortName">\TFIO[1].hdrready </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[1].hdrready </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[1].hdrtlast " type="logic">
+      <obj_property name="ElementShortName">\TFIO[1].hdrtlast </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[1].hdrtlast </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[1].done_tdata " type="array">
+      <obj_property name="ElementShortName">\TFIO[1].done_tdata [15:0]</obj_property>
+      <obj_property name="ObjectShortName">\TFIO[1].done_tdata [15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[1].done_tvalid " type="logic">
+      <obj_property name="ElementShortName">\TFIO[1].done_tvalid </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[1].done_tvalid </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[1].done_tready " type="logic">
+      <obj_property name="ElementShortName">\TFIO[1].done_tready </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[1].done_tready </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[1].cmpl_tdata " type="array">
+      <obj_property name="ElementShortName">\TFIO[1].cmpl_tdata [63:0]</obj_property>
+      <obj_property name="ObjectShortName">\TFIO[1].cmpl_tdata [63:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[1].cmpl_tvalid " type="logic">
+      <obj_property name="ElementShortName">\TFIO[1].cmpl_tvalid </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[1].cmpl_tvalid </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[1].cmpl_tready " type="logic">
+      <obj_property name="ElementShortName">\TFIO[1].cmpl_tready </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[1].cmpl_tready </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[2].outdata " type="array">
+      <obj_property name="ElementShortName">\TFIO[2].outdata [63:0]</obj_property>
+      <obj_property name="ObjectShortName">\TFIO[2].outdata [63:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[2].outdata_valid " type="logic">
+      <obj_property name="ElementShortName">\TFIO[2].outdata_valid </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[2].outdata_valid </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[2].outdata_last " type="logic">
+      <obj_property name="ElementShortName">\TFIO[2].outdata_last </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[2].outdata_last </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[2].outdata_ident " type="array">
+      <obj_property name="ElementShortName">\TFIO[2].outdata_ident [4:0]</obj_property>
+      <obj_property name="ObjectShortName">\TFIO[2].outdata_ident [4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[2].outdata_has_space " type="logic">
+      <obj_property name="ElementShortName">\TFIO[2].outdata_has_space </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[2].outdata_has_space </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[2].hdrdata " type="array">
+      <obj_property name="ElementShortName">\TFIO[2].hdrdata [63:0]</obj_property>
+      <obj_property name="ObjectShortName">\TFIO[2].hdrdata [63:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[2].hdrvalid " type="logic">
+      <obj_property name="ElementShortName">\TFIO[2].hdrvalid </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[2].hdrvalid </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[2].hdrready " type="logic">
+      <obj_property name="ElementShortName">\TFIO[2].hdrready </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[2].hdrready </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[2].hdrtlast " type="logic">
+      <obj_property name="ElementShortName">\TFIO[2].hdrtlast </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[2].hdrtlast </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[2].done_tdata " type="array">
+      <obj_property name="ElementShortName">\TFIO[2].done_tdata [15:0]</obj_property>
+      <obj_property name="ObjectShortName">\TFIO[2].done_tdata [15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[2].done_tvalid " type="logic">
+      <obj_property name="ElementShortName">\TFIO[2].done_tvalid </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[2].done_tvalid </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[2].done_tready " type="logic">
+      <obj_property name="ElementShortName">\TFIO[2].done_tready </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[2].done_tready </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[2].cmpl_tdata " type="array">
+      <obj_property name="ElementShortName">\TFIO[2].cmpl_tdata [63:0]</obj_property>
+      <obj_property name="ObjectShortName">\TFIO[2].cmpl_tdata [63:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[2].cmpl_tvalid " type="logic">
+      <obj_property name="ElementShortName">\TFIO[2].cmpl_tvalid </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[2].cmpl_tvalid </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[2].cmpl_tready " type="logic">
+      <obj_property name="ElementShortName">\TFIO[2].cmpl_tready </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[2].cmpl_tready </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[3].outdata " type="array">
+      <obj_property name="ElementShortName">\TFIO[3].outdata [63:0]</obj_property>
+      <obj_property name="ObjectShortName">\TFIO[3].outdata [63:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[3].outdata_valid " type="logic">
+      <obj_property name="ElementShortName">\TFIO[3].outdata_valid </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[3].outdata_valid </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[3].outdata_last " type="logic">
+      <obj_property name="ElementShortName">\TFIO[3].outdata_last </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[3].outdata_last </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[3].outdata_ident " type="array">
+      <obj_property name="ElementShortName">\TFIO[3].outdata_ident [4:0]</obj_property>
+      <obj_property name="ObjectShortName">\TFIO[3].outdata_ident [4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[3].outdata_has_space " type="logic">
+      <obj_property name="ElementShortName">\TFIO[3].outdata_has_space </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[3].outdata_has_space </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[3].hdrdata " type="array">
+      <obj_property name="ElementShortName">\TFIO[3].hdrdata [63:0]</obj_property>
+      <obj_property name="ObjectShortName">\TFIO[3].hdrdata [63:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[3].hdrvalid " type="logic">
+      <obj_property name="ElementShortName">\TFIO[3].hdrvalid </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[3].hdrvalid </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[3].hdrready " type="logic">
+      <obj_property name="ElementShortName">\TFIO[3].hdrready </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[3].hdrready </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[3].hdrtlast " type="logic">
+      <obj_property name="ElementShortName">\TFIO[3].hdrtlast </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[3].hdrtlast </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[3].done_tdata " type="array">
+      <obj_property name="ElementShortName">\TFIO[3].done_tdata [15:0]</obj_property>
+      <obj_property name="ObjectShortName">\TFIO[3].done_tdata [15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[3].done_tvalid " type="logic">
+      <obj_property name="ElementShortName">\TFIO[3].done_tvalid </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[3].done_tvalid </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[3].done_tready " type="logic">
+      <obj_property name="ElementShortName">\TFIO[3].done_tready </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[3].done_tready </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[3].cmpl_tdata " type="array">
+      <obj_property name="ElementShortName">\TFIO[3].cmpl_tdata [63:0]</obj_property>
+      <obj_property name="ObjectShortName">\TFIO[3].cmpl_tdata [63:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[3].cmpl_tvalid " type="logic">
+      <obj_property name="ElementShortName">\TFIO[3].cmpl_tvalid </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[3].cmpl_tvalid </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[3].cmpl_tready " type="logic">
+      <obj_property name="ElementShortName">\TFIO[3].cmpl_tready </obj_property>
+      <obj_property name="ObjectShortName">\TFIO[3].cmpl_tready </obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/DDR4_ACT_N" type="logic">
+      <obj_property name="ElementShortName">DDR4_ACT_N</obj_property>
+      <obj_property name="ObjectShortName">DDR4_ACT_N</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/DDR4_A" type="array">
+      <obj_property name="ElementShortName">DDR4_A[16:0]</obj_property>
+      <obj_property name="ObjectShortName">DDR4_A[16:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/DDR4_BA" type="array">
+      <obj_property name="ElementShortName">DDR4_BA[1:0]</obj_property>
+      <obj_property name="ObjectShortName">DDR4_BA[1:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/DDR4_BG" type="array">
+      <obj_property name="ElementShortName">DDR4_BG[0:0]</obj_property>
+      <obj_property name="ObjectShortName">DDR4_BG[0:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/DDR4_CKE" type="array">
+      <obj_property name="ElementShortName">DDR4_CKE[0:0]</obj_property>
+      <obj_property name="ObjectShortName">DDR4_CKE[0:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/DDR4_ODT" type="array">
+      <obj_property name="ElementShortName">DDR4_ODT[0:0]</obj_property>
+      <obj_property name="ObjectShortName">DDR4_ODT[0:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/DDR4_CS_N" type="array">
+      <obj_property name="ElementShortName">DDR4_CS_N[0:0]</obj_property>
+      <obj_property name="ObjectShortName">DDR4_CS_N[0:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/DDR4_CK_T" type="array">
+      <obj_property name="ElementShortName">DDR4_CK_T[0:0]</obj_property>
+      <obj_property name="ObjectShortName">DDR4_CK_T[0:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/DDR4_CK_C" type="array">
+      <obj_property name="ElementShortName">DDR4_CK_C[0:0]</obj_property>
+      <obj_property name="ObjectShortName">DDR4_CK_C[0:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/DDR4_RESET_N" type="logic">
+      <obj_property name="ElementShortName">DDR4_RESET_N</obj_property>
+      <obj_property name="ObjectShortName">DDR4_RESET_N</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/DDR4_DM_DBI_N" type="array">
+      <obj_property name="ElementShortName">DDR4_DM_DBI_N[7:0]</obj_property>
+      <obj_property name="ObjectShortName">DDR4_DM_DBI_N[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/DDR4_DQ" type="array">
+      <obj_property name="ElementShortName">DDR4_DQ[63:0]</obj_property>
+      <obj_property name="ObjectShortName">DDR4_DQ[63:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/DDR4_DQS_T" type="array">
+      <obj_property name="ElementShortName">DDR4_DQS_T[7:0]</obj_property>
+      <obj_property name="ObjectShortName">DDR4_DQS_T[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/DDR4_DQS_C" type="array">
+      <obj_property name="ElementShortName">DDR4_DQS_C[7:0]</obj_property>
+      <obj_property name="ObjectShortName">DDR4_DQS_C[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/ddr4_ready" type="logic">
+      <obj_property name="ElementShortName">ddr4_ready</obj_property>
+      <obj_property name="ObjectShortName">ddr4_ready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/ddr4_reset" type="logic">
+      <obj_property name="ElementShortName">ddr4_reset</obj_property>
+      <obj_property name="ObjectShortName">ddr4_reset</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outaxi_awlock" type="logic">
+      <obj_property name="ElementShortName">outaxi_awlock</obj_property>
+      <obj_property name="ObjectShortName">outaxi_awlock</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outaxi_awqos" type="logic">
+      <obj_property name="ElementShortName">outaxi_awqos</obj_property>
+      <obj_property name="ObjectShortName">outaxi_awqos</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outaxi_arlock" type="logic">
+      <obj_property name="ElementShortName">outaxi_arlock</obj_property>
+      <obj_property name="ObjectShortName">outaxi_arlock</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outaxi_arqos" type="logic">
+      <obj_property name="ElementShortName">outaxi_arqos</obj_property>
+      <obj_property name="ObjectShortName">outaxi_arqos</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memclk" type="logic">
+      <obj_property name="ElementShortName">memclk</obj_property>
+      <obj_property name="ObjectShortName">memclk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[0].u_reqgen /state" type="array">
+      <obj_property name="ElementShortName">state[2:0]</obj_property>
+      <obj_property name="ObjectShortName">state[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[0].u_reqgen /dm_cmd_tdata" type="array">
+      <obj_property name="ElementShortName">dm_cmd_tdata[71:0]</obj_property>
+      <obj_property name="ObjectShortName">dm_cmd_tdata[71:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[0].u_reqgen /dm_cmd_tvalid" type="logic">
+      <obj_property name="ElementShortName">dm_cmd_tvalid</obj_property>
+      <obj_property name="ObjectShortName">dm_cmd_tvalid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/\TFIO[0].u_reqgen /dm_cmd_tready" type="logic">
+      <obj_property name="ElementShortName">dm_cmd_tready</obj_property>
+      <obj_property name="ObjectShortName">dm_cmd_tready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_arid" type="array">
+      <obj_property name="ElementShortName">memaxi_arid[2:0]</obj_property>
+      <obj_property name="ObjectShortName">memaxi_arid[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_awid" type="array">
+      <obj_property name="ElementShortName">memaxi_awid[2:0]</obj_property>
+      <obj_property name="ObjectShortName">memaxi_awid[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_bid" type="array">
+      <obj_property name="ElementShortName">memaxi_bid[2:0]</obj_property>
+      <obj_property name="ObjectShortName">memaxi_bid[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memaxi_rid" type="array">
+      <obj_property name="ElementShortName">memaxi_rid[2:0]</obj_property>
+      <obj_property name="ObjectShortName">memaxi_rid[2:0]</obj_property>
+   </wvobject>
+</wave_config>

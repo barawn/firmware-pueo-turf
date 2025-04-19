@@ -85,6 +85,10 @@ proc set_ignore_paths { srcClk dstClk ctlist } {
 
 ######## CLOCK DEFINITIONS
 
+if {[info exists clktypes]} {
+    unset clktypes
+}
+
 #### PIN CLOCKS
 set mgt_clk [create_clock -period 7.999 -name mgt_clock [get_ports -filter { NAME =~ "MGTCLK_N" && DIRECTION == "IN" }]]
 set clktypes($mgt_clk) MGTCLK
@@ -92,14 +96,35 @@ set clktypes($mgt_clk) MGTCLK
 set sys_clk [create_clock -period 8.000 -name sys_clock [get_ports -filter { NAME =~ "SYSCLK_N" && DIRECTION == "IN" }]]
 set clktypes($sys_clk) SYSCLK
 
-set gbe_clk [create_clock -period 6.400 -name gbe_clock [get_ports -filter { NAME =~ "GBE_CLK_P" && DIRECTION == "IN" }]]
-set clktypes($gbe_clk) GBECLK
+set gbeclk [create_clock -period 6.400 -name gbe_clock [get_ports -filter { NAME =~ "GBE_CLK_P" && DIRECTION == "IN" }]]
+set clktypes($gbeclk) GBECLK
 
-set ddr_clk0 [create_clock -period 3.333 -name ddr_clk0 [get_ports -filter { NAME =~ "DDR_CLK_P[0]" && DIRECTION == "IN" }]]
-set clktypes($ddr_clk0) DDRCLK0
+#set ddr_clk0 [create_clock -period 3.333 -name ddr_clk0 [get_ports -filter { NAME =~ "DDR_CLK_P[0]" && DIRECTION == "IN" }]]
+#set clktypes($ddr_clk0) DDRCLK0
+set ddr_genclk [get_clocks -of_objects [get_cells u_tioctl/u_idelayctrl67] ]
+puts "DDR clock was named ${ddr_genclk} - renaming to ddr_clk0"
+set isgenclk [get_property -quiet IS_GENERATED $ddr_genclk]
+set isusergenclk [get_property -quiet IS_USER_GENERATED $ddr_genclk]
+if {[llength $isgenclk] && [expr $isgenclk == 1] && [llength $isusergenclk] && [expr $isusergenclk == 0]} {
+    puts "DDR clk was generated: checking to see if we need to rename it"
+    if {[get_property IS_RENAMED $ddr_genclk ]} {
+        puts "Already renamed, skipping."
+        set userclk $user_genclk
+    } else {
+        puts "Renaming $ddr_genclk to ddrclk0."
+        set ddr_genclkpin [get_property SOURCE_PINS $ddr_genclk]
+        create_generated_clock -name ddr_clk0 [get_pins $ddr_genclkpin]
+        set ddrclk0 [get_clocks ddr_clk0]
+    }
+} else {
+    puts "Cannot rename $ddr_genclk!"
+}
+if {[info exists ddrclk0]} {
+    set clktypes($ddrclk0) DDRCLK0
+}
 
-set ddr_clk1 [create_clock -period 3.334 -name ddr_clk1 [get_ports -filter { NAME =~ "DDR_CLK_P[1]" && DIRECTION == "IN" }]]
-set clktypes($ddr_clk1) DDRCLK1
+set ddrclk1 [create_clock -period 3.334 -name ddr_clk1 [get_ports -filter { NAME =~ "DDR_CLK_P[1]" && DIRECTION == "IN" }]]
+set clktypes($ddrclk1) DDRCLK1
 
 #### INTERNAL CLOCKS
 set ifclk67 [get_clocks -of_objects [get_cells -hier -filter { NAME =~ "u_tioctl/u_clocks/u_ifclk67_buf" }]]
@@ -130,15 +155,18 @@ if { [info exists userbuf] } {
         } else {
             puts "Renaming $user_genclk to userclk."
             set userclkpin [get_property SOURCE_PINS $user_genclk]
-            set userclk [create_generated_clock -name user_clock [get_pins $userclkpin]]
+            create_generated_clock -name user_clock [get_pins $userclkpin]
+            set userclk [get_clocks user_clock]
         }
     } else {
-        puts "Cannot rename $user_genclk, just saving it."
-        set userclk $user_genclk
+        puts "Cannot rename $user_genclk!"
     }
-    set clktypes($userclk) USERCLK    
 } else {
     puts "Cannot find userclk buffer, skipping!"
+}
+
+if {[info exists userclk]} {
+    set clktypes($userclk) USERCLK
 }
 
 # create the clktypelist variable to save
@@ -177,19 +205,31 @@ set_max_delay -datapath_only -from $lock_regs -to $stat_regs 10.0
 set_max_delay -datapath_only -from $ber_regs -to $stat_regs 10.0
 
 # just.... blanket for now
-set_max_delay -datapath_only -from $psclk -to $userclk 10.0
-set_max_delay -datapath_only -from $userclk -to $psclk 10.0
+#set_max_delay -datapath_only -from $psclk -to $userclk 10.0
+#set_max_delay -datapath_only -from $userclk -to $psclk 10.0
 
-# OK, now use the *proper* functions. Let's see what happens!
+# guard on userclk/ddrclk0 due to generated crap
+if {[info exists userclk]} {
+    set_cc_paths $psclk $userclk $clktypelist
+    set_cc_paths $userclk $psclk $clktypelist
+}
+
+if {[info exists ddrclk0]} {
+    set_cc_paths $psclk $ddrclk0 $clktypelist
+    # now ddr -> ethernet
+    set_cc_paths $ddrclk0 $gbeclk $clktypelist
+    # only have a flag going this direction, leave it alone for now
+    #set_cc_paths $gbeclk $ddrclk0 $clktypelist
+}
+
 set_cc_paths $psclk $ifclk67 $clktypelist
 set_cc_paths $ifclk67 $psclk $clktypelist
 
 set_cc_paths $psclk $ifclk68 $clktypelist
 set_cc_paths $ifclk68 $psclk $clktypelist
 
-set_cc_paths $psclk $ddr_clk0 $clktypelist
 
 set_cc_paths $psclk $sys_clk $clktypelist
 
-set_cc_path $psclk $gbe_clk $clktypelist
-set_cc_path $gbe_clk $psclk $clktypelist
+set_cc_paths $psclk $gbeclk $clktypelist
+set_cc_paths $gbeclk $psclk $clktypelist

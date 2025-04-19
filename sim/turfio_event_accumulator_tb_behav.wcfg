@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="turfio_event_accumulator_tb_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="glbl" />
+            <top_module name="turfio_event_accumulator_tb" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="64,217.894 ns"></ZoomStartTime>
+      <ZoomEndTime time="66,737.895 ns"></ZoomEndTime>
+      <Cursor1Time time="74,752.894 ns"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="208"></NameColumnWidth>
+      <ValueColumnWidth column_width="100"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="24" />
+   <wvobject fp_name="/turfio_event_accumulator_tb/aclk" type="logic">
+      <obj_property name="ElementShortName">aclk</obj_property>
+      <obj_property name="ObjectShortName">aclk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/memclk" type="logic">
+      <obj_property name="ElementShortName">memclk</obj_property>
+      <obj_property name="ObjectShortName">memclk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/start" type="logic">
+      <obj_property name="ElementShortName">start</obj_property>
+      <obj_property name="ObjectShortName">start</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/run_indata" type="logic">
+      <obj_property name="ElementShortName">run_indata</obj_property>
+      <obj_property name="ObjectShortName">run_indata</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/indata_counter" type="array">
+      <obj_property name="ElementShortName">indata_counter[15:0]</obj_property>
+      <obj_property name="ObjectShortName">indata_counter[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/indata" type="array">
+      <obj_property name="ElementShortName">indata[31:0]</obj_property>
+      <obj_property name="ObjectShortName">indata[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/uut/state" type="array">
+      <obj_property name="ElementShortName">state[3:0]</obj_property>
+      <obj_property name="ObjectShortName">state[3:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/uut/all_valid" type="logic">
+      <obj_property name="ElementShortName">all_valid</obj_property>
+      <obj_property name="ObjectShortName">all_valid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/uut/all_next_valid" type="logic">
+      <obj_property name="ElementShortName">all_next_valid</obj_property>
+      <obj_property name="ObjectShortName">all_next_valid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/uut/surf_tdata" type="array">
+      <obj_property name="ElementShortName">surf_tdata[7:0][63:0]</obj_property>
+      <obj_property name="ObjectShortName">surf_tdata[7:0][63:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/uut/surf_tvalid" type="array">
+      <obj_property name="ElementShortName">surf_tvalid[7:0]</obj_property>
+      <obj_property name="ObjectShortName">surf_tvalid[7:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/uut/surf_tready" type="array">
+      <obj_property name="ElementShortName">surf_tready[7:0]</obj_property>
+      <obj_property name="ObjectShortName">surf_tready[7:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/uut/surf_fifo_almost_empty" type="array">
+      <obj_property name="ElementShortName">surf_fifo_almost_empty[7:0]</obj_property>
+      <obj_property name="ObjectShortName">surf_fifo_almost_empty[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/indata_valid" type="logic">
+      <obj_property name="ElementShortName">indata_valid</obj_property>
+      <obj_property name="ObjectShortName">indata_valid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/indata_tlast" type="logic">
+      <obj_property name="ElementShortName">indata_tlast</obj_property>
+      <obj_property name="ObjectShortName">indata_tlast</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outdata" type="array">
+      <obj_property name="ElementShortName">outdata[63:0]</obj_property>
+      <obj_property name="ObjectShortName">outdata[63:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outdata_valid" type="logic">
+      <obj_property name="ElementShortName">outdata_valid</obj_property>
+      <obj_property name="ObjectShortName">outdata_valid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outdata_ready" type="logic">
+      <obj_property name="ElementShortName">outdata_ready</obj_property>
+      <obj_property name="ObjectShortName">outdata_ready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outdata_tlast" type="logic">
+      <obj_property name="ElementShortName">outdata_tlast</obj_property>
+      <obj_property name="ObjectShortName">outdata_tlast</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/outdata_tuser" type="array">
+      <obj_property name="ElementShortName">outdata_tuser[4:0]</obj_property>
+      <obj_property name="ObjectShortName">outdata_tuser[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/hdrdata" type="array">
+      <obj_property name="ElementShortName">hdrdata[63:0]</obj_property>
+      <obj_property name="ObjectShortName">hdrdata[63:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/hdrvalid" type="logic">
+      <obj_property name="ElementShortName">hdrvalid</obj_property>
+      <obj_property name="ObjectShortName">hdrvalid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/hdrready" type="logic">
+      <obj_property name="ElementShortName">hdrready</obj_property>
+      <obj_property name="ObjectShortName">hdrready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/turfio_event_accumulator_tb/hdrtlast" type="logic">
+      <obj_property name="ElementShortName">hdrtlast</obj_property>
+      <obj_property name="ObjectShortName">hdrtlast</obj_property>
+   </wvobject>
+</wave_config>
