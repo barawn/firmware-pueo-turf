@@ -5,11 +5,15 @@
 // crap.                                   //
 /////////////////////////////////////////////
 `define USE_GBE
+`define USE_DDR_0
+
+`include "interfaces.vh"
+`include "mem_axi.vh"
 module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="A",
                     parameter [3:0] VER_MAJOR=4'd0,
-                    parameter [3:0] VER_MINOR=4'd3,
-                    parameter [7:0] VER_REV=8'd11,
+                    parameter [3:0] VER_MINOR=4'd4,
+                    parameter [7:0] VER_REV=8'd0,
                     parameter [15:0] FIRMWARE_DATE = {16{1'b0}})                    
                     (
 
@@ -67,6 +71,38 @@ module pueo_turf6 #(parameter IDENT="TURF",
         input [1:0] GBE_RX_N,
         output [1:0] GBE_TX_P,
         output [1:0] GBE_TX_N,
+`endif
+`ifdef USE_DDR_0        
+        output [0:0]    C0_DDR4_ck_t,
+        output [0:0]    C0_DDR4_ck_c,
+        inout [7:0]     C0_DDR4_dqs_t,
+        inout [7:0]     C0_DDR4_dqs_c,
+        inout [7:0]     C0_DDR4_dm_dbi_n,
+        inout [63:0]    C0_DDR4_dq,
+        output [1:0]    C0_DDR4_ba,
+        output [0:0]    C0_DDR4_cke,
+        output          C0_DDR4_act_n,
+        output [0:0]    C0_DDR4_odt,
+        output [16:0]   C0_DDR4_adr,
+        output          C0_DDR4_reset_n,
+        output [0:0]    C0_DDR4_bg,
+        output [0:0]    C0_DDR4_cs_n,
+`endif
+`ifdef USE_DDR_1
+        output [0:0]    C1_DDR4_ck_t,
+        output [0:0]    C1_DDR4_ck_c,
+        inout [7:0]     C1_DDR4_dqs_t,
+        inout [7:0]     C1_DDR4_dqs_c,
+        inout [7:0]     C1_DDR4_dm_n,
+        inout [63:0]    C1_DDR4_dq,
+        output [1:0]    C1_DDR4_ba,
+        output [0:0]    C1_DDR4_cke,
+        output          C1_DDR4_actn,
+        output [0:0]    C1_DDR4_odt,
+        output [16:0]   C1_DDR4_adr,
+        output          C1_DDR4_reset_n,
+        output [0:0]    C1_DDR4_bg,
+        output [0:0]    C1_DDR4_cs_n,
 `endif
         // TURFIO INTERFACES
         output [3:0] TXCLK_P,
@@ -220,8 +256,11 @@ module pueo_turf6 #(parameter IDENT="TURF",
     // DDR clocks (300 MHz)
     wire [1:0] ddr_clk;
 
-    // Aurora clock
+    // Aurora *reference* clock (125 MHz)
     wire aurora_clk;
+    
+    // Aurora *user* clock (156.25 MHz)
+    wire aclk;
 
 //    // this needs to get pushed into the 10GbE core                  
 //    IBUFDS_GTE4 #(.REFCLK_HROW_CK_SEL(2'b00))
@@ -237,7 +276,6 @@ module pueo_turf6 #(parameter IDENT="TURF",
 
     // this needs to get pushed into the DDR core. Might go through
     // an MMCM. Not sure.
-    IBUFDS u_ddrclk0_ibuf(.I(DDR_CLK_P[0]),.IB(DDR_CLK_N[0]),.O(ddr_clk[0]));
     IBUFDS u_ddrclk1_ibuf(.I(DDR_CLK_P[1]),.IB(DDR_CLK_N[1]),.O(ddr_clk[1]));
 
     localparam INV_MMCM = (PROTOTYPE=="TRUE") ? "TRUE" : "FALSE";
@@ -351,7 +389,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
 
     turf_id_ctrl #(.IDENT(IDENT),
                    .DATEVERSION(DATEVERSION),
-                   .NUM_CLK_MON(7))
+                   .NUM_CLK_MON(8))
         u_idctrl( .wb_clk_i(ps_clk),
                   .wb_rst_i(1'b0),
                   `CONNECT_WBS_IFM(wb_ , turf_idctl_ ),
@@ -361,14 +399,20 @@ module pueo_turf6 #(parameter IDENT="TURF",
                   .bridge_timeout_i(bridge_timeout),
                   .bridge_invalid_i(bridge_invalid_access),
 
-                  .clk_mon_i( { sfp_txclk, sfp_rxclk, aurora_clk, ddr_clk[1], ddr_clk[0], gbe_sysclk, sys_clk } ));
+                  .clk_mon_i( { aclk, sfp_txclk, sfp_rxclk, aurora_clk, ddr_clk[1], ddr_clk[0], gbe_sysclk, sys_clk } ));
 
     // Aurora
     // indicates auroras are up
     wire [3:0] aurora_up;
 
     // wrapper for Aurora paths
-    turfio_aurora_wrap u_aurora(.wb_clk_i(ps_clk),
+    `DEFINE_AXI4S_MIN_IF( aur0_, 32 );
+    `DEFINE_AXI4S_MIN_IF( aur1_, 32 );
+    `DEFINE_AXI4S_MIN_IF( aur2_, 32 );    
+    `DEFINE_AXI4S_MIN_IF( aur3_, 32 );    
+    turfio_aurora_wrap #(.WBCLKTYPE("PSCLK"),
+                         .ACLKTYPE("USERCLK"))
+                       u_aurora(.wb_clk_i(ps_clk),
                                 .wb_rst_i(1'b0),
                                 `CONNECT_WBS_IFM(wb_ , aurora_ ),
                                 `CONNECT_AXI4S_MIN_IF( s_cmd_ , aurora_cmd_ ),
@@ -378,6 +422,13 @@ module pueo_turf6 #(parameter IDENT="TURF",
                                 .m_resp_tuser(aurora_resp_tuser),                                
                                 .aurora_up_o(aurora_up),
                                 .aurora_clk_o(aurora_clk),
+                                
+                                .aclk_o( aclk ),
+                                .m_aurora_tdata( { aur3_tdata, aur2_tdata, aur1_tdata, aur0_tdata } ),
+                                .m_aurora_tvalid({ aur3_tvalid, aur2_tvalid, aur1_tvalid, aur0_tvalid } ),
+                                .m_aurora_tready({ aur3_tready, aur2_tready, aur1_tready, aur0_tready } ),
+                                .m_aurora_tlast( { aur3_tlast, aur2_tlast, aur1_tlast, aur0_tlast } ),
+                                
                                 .MGTCLK_P(MGTCLK_P),
                                 .MGTCLK_N(MGTCLK_N),
                                 .MGTRX_P(MGTRX_P),
@@ -423,6 +474,8 @@ module pueo_turf6 #(parameter IDENT="TURF",
                  .INV_CINC(INV_CINC),
                  .INV_CIND(INV_CIND),
                  .INV_TXCLK(INV_TXCLK),
+                 .CLK300_CLKTYPE("DDRCLK0"),
+                 .WBCLKTYPE("PSCLK"),
                  .CIN_CLKTYPE(CIN_CLKTYPE),
                  .COUT_CLKTYPE(COUT_CLKTYPE))
         u_tioctl( .clk_i(ps_clk),
@@ -460,20 +513,20 @@ module pueo_turf6 #(parameter IDENT="TURF",
                   .CIND_N(CIND_N));
 
     // ETHERNET STREAMS AND CONTROLS
-    `DEFINE_AXI4S_MIN_IF( ack_ , 16);
-    `DEFINE_AXI4S_MIN_IF( nack_ , 16);
+    `DEFINE_AXI4S_MIN_IF( ack_ , 48);
+    `DEFINE_AXI4S_MIN_IF( nack_ , 48);
     wire event_open;
     `DEFINE_AXI4S_MIN_IF( ev_ctrl_ , 32);
     `DEFINE_AXI4S_MIN_IF( ev_data_ , 64);
     wire [7:0] ev_data_tkeep;
     wire       ev_data_tlast;
     // kill the streams for now
-    assign ack_tready = 1'b1;
-    assign nack_tready = 1'b1;
-    assign ev_ctrl_tvalid = 1'b0;
-    assign ev_ctrl_tdata = {32{1'b0}};
-    assign ev_data_tvalid = 1'b0;
-    assign ev_data_tdata = {64{1'b0}};
+//    assign ack_tready = 1'b1;
+//    assign nack_tready = 1'b1;
+//    assign ev_ctrl_tvalid = 1'b0;
+//    assign ev_ctrl_tdata = {32{1'b0}};
+//    assign ev_data_tvalid = 1'b0;
+//    assign ev_data_tdata = {64{1'b0}};
 
     // WHEEEEE
     // The UDP wrap contains hookups for the full SFP, but
@@ -512,11 +565,36 @@ module pueo_turf6 #(parameter IDENT="TURF",
             `CONNECT_WBS_IFM( gtp_ , gbe_ ),
             `CONNECT_WBM_IFM( wb_ , wb_eth_ )          
           );
+    
                            
     // Dummy evctl
-    wbs_dummy #(.ADDRESS_WIDTH(15),.DATA_WIDTH(32)) u_evctl(`CONNECT_WBS_IFM(wb_ , evctl_ ));    
+    //wbs_dummy #(.ADDRESS_WIDTH(15),.DATA_WIDTH(32)) u_evctl(`CONNECT_WBS_IFM(wb_ , evctl_ ));    
 
-    
+    event_pueo_wrap #(.WBCLKTYPE("PSCLK"),
+                      .ETHCLKTYPE("GBECLK"),
+                      .ACLKTYPE("USERCLK"),
+                      .MEMCLKTYPE("DDRCLK0"))
+                    u_event( .wb_clk_i(ps_clk),
+                             `CONNECT_WBS_IFM( wb_ , evctl_ ),                    
+                             .DDR_CLK_P(DDR_CLK_P[0]),
+                             .DDR_CLK_N(DDR_CLK_N[0]),
+                             // UI clock output
+                             .ddr4_clk_o(ddr_clk[0]),
+                             `CONNECT_PHY_IF( c0_ddr4_ , C0_DDR4_ ),
+                             .aclk( aclk ),                             
+                             `CONNECT_AXI4S_MIN_IF( s_aurora0_ , aur0_ ),
+                             .s_aurora0_tlast(aur0_tlast),
+                             `CONNECT_AXI4S_MIN_IF( s_aurora1_ , aur1_ ),
+                             .s_aurora1_tlast(aur1_tlast),
+                             `CONNECT_AXI4S_MIN_IF( s_aurora2_ , aur2_ ),
+                             .s_aurora2_tlast(aur2_tlast),
+                             `CONNECT_AXI4S_MIN_IF( s_aurora3_ , aur3_ ),
+                             .s_aurora3_tlast(aur3_tlast),
+                             .ethclk(gbe_sysclk),
+                             `CONNECT_AXI4S_MIN_IF( s_ack_ , ack_ ),
+                             `CONNECT_AXI4S_MIN_IF( s_nack_ , nack_ ),
+                             `CONNECT_AXI4S_MIN_IF( m_ev_data_ , ev_data_ ),
+                             `CONNECT_AXI4S_MIN_IF( m_ev_ctrl_ , ev_ctrl_ ));
     
 
     generate

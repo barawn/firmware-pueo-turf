@@ -41,8 +41,9 @@
 module turfio_aurora_wrap
     #(  parameter TX_CLOCK_SEL = 0,
         parameter NUM_MGT = 4,
-        parameter USE_DEBUG = 4'b0011,
-        parameter WBCLKTYPE = "NONE" )
+        parameter USE_DEBUG = 4'b0001,
+        parameter WBCLKTYPE = "NONE",
+        parameter ACLKTYPE = "NONE" )
     (
         // this is the LOCAL aurora WISHBONE interface
         // it is NOT the interface for talking to the
@@ -68,12 +69,18 @@ module turfio_aurora_wrap
         // Logic indications that the links are up
         output [3:0] aurora_up_o,        
         
-        // Aurora clock output for monitoring
+        // Aurora clock output for monitoring (8 ns)
         output      aurora_clk_o,
 
-        // blah, no interface for now
-        // COMING SOON (heh)
-    
+        // user clock (6.4 ns)
+        output aclk_o,
+        // array of MGT interfaces
+        output [32*NUM_MGT-1:0] m_aurora_tdata,
+        output [NUM_MGT-1:0]    m_aurora_tvalid,
+        output [NUM_MGT-1:0]    m_aurora_tlast,
+        // ignored
+        input  [NUM_MGT-1:0]    m_aurora_tready,
+            
         input MGTCLK_P,
         input MGTCLK_N,
         
@@ -95,6 +102,10 @@ module turfio_aurora_wrap
     // create the interfaces. 
     `DEFINE_AXI4S_IFV( aurora_tx_ , 32, [NUM_MGT-1:0] );
     `DEFINE_AXI4S_IFV( aurora_rx_ , 32, [NUM_MGT-1:0] );
+    // and devec-ify for the output (ignoring tkeep)
+    assign m_aurora_tdata = { aurora_rx_tdata[3], aurora_rx_tdata[2], aurora_rx_tdata[1], aurora_rx_tdata[0] };
+    assign m_aurora_tvalid ={ aurora_rx_tvalid[3], aurora_rx_tvalid[2], aurora_rx_tvalid[1], aurora_rx_tvalid[0] };
+    assign m_aurora_tlast = { aurora_rx_tlast[3], aurora_rx_tvalid[2], aurora_rx_tvalid[1], aurora_rx_tvalid[0] };
 
     // The UFC interfaces are spliced into the normal ones:
     // their AXI4-Stream data indicates the *length*. The data
@@ -144,6 +155,7 @@ module turfio_aurora_wrap
     reg [NUM_MGT-1:0] datapath_reset = 1'b0;
     reg global_datapath_reset = 1'b0;
     reg [NUM_MGT-1:0] eyescan_reset = {NUM_MGT{1'b0}};
+    (* CUSTOM_CC_SRC = WBCLKTYPE *)
     reg [NUM_MGT-1:0] gt_powerdown = {NUM_MGT{1'b0}};
     reg [2:0] gt_loopback[NUM_MGT-1:0];
     reg [3:0] txdiffctrl[NUM_MGT-1:0];
@@ -162,7 +174,7 @@ module turfio_aurora_wrap
     assign     cmd_userclk_tuser = cmd_userclk_tvalid && (cmd_userclk_tlast ^ !second_xfer);
     (* CUSTOM_CC_SRC = WBCLKTYPE *)
     reg        wb_user_areset = 0;
-    (* CUSTOM_CC_DST = "USERCLK", ASYNC_REG = "TRUE" *)
+    (* CUSTOM_CC_DST = ACLKTYPE, CUSTOM_CC_SRC = ACLKTYPE, ASYNC_REG = "TRUE" *)
     reg        [1:0] user_areset = 2'b00;;
     wire       user_aresetn = !user_areset[1];
     
@@ -241,7 +253,9 @@ module turfio_aurora_wrap
     // assert reset, 128 user-clks later assert gt_reset, wait 26-bit counter or 1 sec,
     // deassert gt_reset, deassert reset.
     // We handle that sequence in software so here it just looks like we can go nutso.
-    turfio_aurora_reset_v2 u_reset( .reset_i(reset_in),
+    turfio_aurora_reset_v2 #(.INITCLKTYPE(WBCLKTYPE),
+                             .USERCLKTYPE(ACLKTYPE))
+                        u_reset( .reset_i(reset_in),
                                  .gt_reset_i(gt_reset_in),
                                  .user_clk_i(user_clk),
                                  .init_clk_i(wb_clk_i),
@@ -278,7 +292,7 @@ module turfio_aurora_wrap
             wire frame_err;
             wire [2:0] loopback;
             wire [15:0] dmonitor;
-            (* CUSTOM_CC = "TO_USERCLK", ASYNC_REG = "TRUE" *)
+            (* CUSTOM_CC_DST = ACLKTYPE, ASYNC_REG = "TRUE" *)
             reg [1:0] powerdown = {2{1'b0}};            
             wire this_powerdown = powerdown[1];
             
@@ -303,19 +317,65 @@ module turfio_aurora_wrap
                 powerdown <= {powerdown[0],link_control[i][3]};
             end
             
-            // LAAAAZY
-            assign link_status[i][0] = lane_up;
-            assign link_status[i][1] = channel_up;
+            // we need to resync these so we can use CC tools
+            (* CUSTOM_CC_SRC = ACLKTYPE *)
+            reg lane_up_rereg = 0;
+            (* CUSTOM_CC_SRC = ACLKTYPE *)
+            reg channel_up_rereg = 0;
+// this is async
+//            (* CUSTOM_CC_SRC = ACLKTYPE *)
+//            reg gt_powergood_rereg = 0;
+
+// this goddamn thing is apparently initclk already
+//            (* CUSTOM_CC_SRC = ACLKTYPE *)
+//            reg tx_lock_rereg = 0;
+            // this is async
+            (* CUSTOM_CC_SRC = ACLKTYPE *)
+            reg tx_resetdone_rereg = 0;
+            (* CUSTOM_CC_SRC = ACLKTYPE *)
+            reg rx_resetdone_rereg = 0;
+            // this is initclk already
+//            (* CUSTOM_CC_SRC = ACLKTYPE *)
+//            reg link_reset_rereg = 0;
+            (* CUSTOM_CC_SRC = ACLKTYPE *)
+            reg sys_reset_rereg = 0;
+            (* CUSTOM_CC_SRC = ACLKTYPE *)
+            reg hard_err_rereg = 0;
+            (* CUSTOM_CC_SRC = ACLKTYPE *)
+            reg soft_err_rereg = 0;
+            (* CUSTOM_CC_SRC = ACLKTYPE *)
+            reg frame_err_rereg = 0;
+            (* CUSTOM_CC_SRC = ACLKTYPE *)
+            reg bufg_gt_clr_rereg = 0;
+            always @(posedge user_clk) begin : ST
+                lane_up_rereg <= lane_up;
+                channel_up_rereg <= channel_up;
+                //gt_powergood_rereg <= gt_powergood;
+                //tx_lock_rereg <= tx_lock[i];
+                tx_resetdone_rereg <= tx_resetdone_out;
+                rx_resetdone_rereg <= rx_resetdone_out;
+                //link_reset_rereg <= link_reset_out;
+                sys_reset_rereg <= sys_reset_out;
+                hard_err_rereg <= hard_err;
+                soft_err_rereg <= soft_err;
+                frame_err_rereg <= frame_err;
+                bufg_gt_clr_rereg <= bufg_gt_clr[i];
+            end
+            assign link_status[i][0] = lane_up_rereg;
+            assign link_status[i][1] = channel_up_rereg;
+            // async
             assign link_status[i][2] = gt_powergood;
             assign link_status[i][3] = tx_lock[i];
-            assign link_status[i][4] = tx_resetdone_out;
-            assign link_status[i][5] = rx_resetdone_out;
+            // this SHOULD be async but apparently IS NOT
+            assign link_status[i][4] = tx_resetdone_rereg;
+            assign link_status[i][5] = rx_resetdone_rereg;
+            // already initclk
             assign link_status[i][6] = link_reset_out;
-            assign link_status[i][7] = sys_reset_out;
-            assign link_status[i][8] = hard_err;
-            assign link_status[i][9] = soft_err;
-            assign link_status[i][10] = frame_err;
-            assign link_status[i][11] = bufg_gt_clr[i];
+            assign link_status[i][7] = sys_reset_rereg;
+            assign link_status[i][8] = hard_err_rereg;
+            assign link_status[i][9] = soft_err_rereg;
+            assign link_status[i][10] = frame_err_rereg;
+            assign link_status[i][11] = bufg_gt_clr_rereg;
             assign link_status[i][31:12] = {20{1'b0}};
             // also laazy
             assign link_control[i][0] = reset_in;
@@ -492,7 +552,7 @@ module turfio_aurora_wrap
                              user_areset,
                              {6{1'b0}},
                              gt_reset_in , reset_in };
-    
+    (* CUSTOM_CC_DST = WBCLKTYPE *)
     reg [31:0] dat_out = {32{1'b0}};
     always @(posedge wb_clk_i) begin
         if (wb_rst_i) state <= IDLE;
@@ -542,6 +602,8 @@ module turfio_aurora_wrap
     assign aurora_up_o[2] = link_status[2][0] && link_status[2][1];
     assign aurora_up_o[1] = link_status[1][0] && link_status[1][1];
     assign aurora_up_o[0] = link_status[0][0] && link_status[0][1];
+                            
+    assign aclk_o = user_clk;                            
                             
 //    (* ASYNC_REG = "TRUE" *)
 //    reg [15:0] vio_status_0 = {16{1'b0}};

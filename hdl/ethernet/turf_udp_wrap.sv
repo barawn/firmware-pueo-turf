@@ -29,9 +29,9 @@ module turf_udp_wrap #( parameter NSFP=2,
         // THESE STREAMS ARE ALL ETHCLK
         output aclk,
         // acking path
-        `HOST_NAMED_PORTS_AXI4S_MIN_IF( m_ack_ , 16),
+        `HOST_NAMED_PORTS_AXI4S_MIN_IF( m_ack_ , 48),
         // nacking path
-        `HOST_NAMED_PORTS_AXI4S_MIN_IF( m_nack_ , 16),
+        `HOST_NAMED_PORTS_AXI4S_MIN_IF( m_nack_ , 48),
         // event open interface
         output event_open_o,        
         // event control input
@@ -483,6 +483,7 @@ module turf_udp_wrap #( parameter NSFP=2,
         u_ackport( .aclk(clk156), .aresetn(!clk156_rst),
                     `CONNECT_UDP_INOUT( s_udphdr_ , s_udpdata_ , m_udphdr_ , m_udpdata_ , TA_PORT),
                     .event_open_i(event_is_open),
+                    .nfragment_count_i( num_fragment_qwords ),
                     `CONNECT_AXI4S_MIN_IF( m_acknack_ , m_ack_ ));
     // Nack port module always responds to its own port
     assign hdrout_tuser[16*TN_PORT +: 16] = OUTBOUND[16*TN_PORT +: 16];
@@ -490,6 +491,7 @@ module turf_udp_wrap #( parameter NSFP=2,
         u_nackport( .aclk(clk156),.aresetn(!clk156_rst),
                     `CONNECT_UDP_INOUT( s_udphdr_ , s_udpdata_ , m_udphdr_ , m_udpdata_ , TN_PORT),
                     .event_open_i(event_is_open),
+                    .nfragment_count_i( num_fragment_qwords ),
                     `CONNECT_AXI4S_MIN_IF( m_acknack_ , m_nack_ ));
     // Fragment module is a pure output. It does NOT always
     // transmit at a fixed port, so need to hook up tuser here.
@@ -497,6 +499,9 @@ module turf_udp_wrap #( parameter NSFP=2,
     turf_fragment_gen u_fraggen(.aclk(clk156),.aresetn(!clk156_rst),
                                 .nfragment_count_i(num_fragment_qwords),
                                 .fragsrc_mask_i(fragsrc_mask),
+                                .event_open_i( event_is_open ),
+                                .event_ip_i( event_ip ),
+                                .event_port_i( event_port ),
                                 `CONNECT_UDP_OUT( m_hdr_ , m_payload_ , T0_PORT ),
                                 .m_hdr_tuser( hdrout_tuser[16*T0_PORT +: 16] ),
                                 `CONNECT_AXI4S_MIN_IF( s_ctrl_ , s_ev_ctrl_ ),
@@ -562,13 +567,16 @@ module turf_udp_wrap #( parameter NSFP=2,
                                         .probe_in2( event_is_open ));
         end
         if (DEBUG_ACKNACK == "TRUE") begin : ACKNACKILA
+            // we need to extract off the data. don't
+            // really want to expand things.
+            // just pull the constant
             acknack_ila u_ila(.clk(clk156),
                               .probe0( m_ack_tvalid ),
                               .probe1( m_ack_tready ),
-                              .probe2( m_ack_tdata ),
+                              .probe2( m_ack_tdata[31:16] ),
                               .probe3( m_nack_tvalid ),
                               .probe4( m_nack_tready ),
-                              .probe5( m_nack_tdata ));
+                              .probe5( m_nack_tdata[31:16] ));
         end
     endgenerate
     // interface conversion/clock cross

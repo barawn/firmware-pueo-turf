@@ -14,6 +14,8 @@ module turfio_aurora_reset_v2(
         output system_reset_o,
         output gt_reset_o
     );
+    parameter INITCLKTYPE = "NONE";
+    parameter USERCLKTYPE = "NONE";
     parameter SIM_SPEEDUP = "FALSE";
     parameter DEBUG = "TRUE";
     
@@ -26,10 +28,10 @@ module turfio_aurora_reset_v2(
     // reset_i is an input in the init_clk domain and starts the entire process.
 
     // system reset in init clk
-    (* CUSTOM_CC_SRC = "INITCLK" *)
+    (* CUSTOM_CC_SRC = INITCLKTYPE *)
     reg system_reset_initclk = 1'b1;
     // resynced in user_clk
-    (* ASYNC_REG = "TRUE", CUSTOM_CC_SRC="USERCLK", CUSTOM_CC_DST="USERCLK" *)
+    (* ASYNC_REG = "TRUE", CUSTOM_CC_SRC=USERCLKTYPE, CUSTOM_CC_DST=USERCLKTYPE *)
     reg [1:0] system_reset = 2'b11;
     
     // GT reset, sync to init clk
@@ -38,7 +40,7 @@ module turfio_aurora_reset_v2(
     reg enable_hotplug_delay = 1'b0;
 
     // system reset, resynchronized back to init_clk
-    (* ASYNC_REG = "TRUE", CUSTOM_CC_DST="INITCLK" *)
+    (* ASYNC_REG = "TRUE", CUSTOM_CC_DST=INITCLKTYPE *)
     reg [2:0] system_reset_resync = {3{1'b1}};    
     // Hotplug delay reached
     wire hotplug_delay_reached;

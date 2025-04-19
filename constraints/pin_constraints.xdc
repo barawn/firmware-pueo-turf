@@ -366,18 +366,15 @@ set_property -dict {PACKAGE_PIN AR1} [get_ports {GBE_RX_N[0]}]
 ##set_property -dict { PACKAGE_PIN AG10 } [get_ports { NC_GCLK_P }]
 ##set_property -dict { PACKAGE_PIN AG9 }  [get_ports { NC_GCLK_N }]
 
-set_property IOSTANDARD LVDS [get_ports {DDR_CLK_N[0]}]
-set_property DIFF_TERM_ADV TERM_100 [get_ports {DDR_CLK_N[0]}]
-set_property PACKAGE_PIN AT22 [get_ports {DDR_CLK_P[0]}]
-set_property PACKAGE_PIN AT21 [get_ports {DDR_CLK_N[0]}]
-set_property IOSTANDARD LVDS [get_ports {DDR_CLK_P[0]}]
-set_property DIFF_TERM_ADV TERM_100 [get_ports {DDR_CLK_P[0]}]
-set_property IOSTANDARD LVDS [get_ports {DDR_CLK_N[1]}]
-set_property DIFF_TERM_ADV TERM_100 [get_ports {DDR_CLK_N[1]}]
-set_property PACKAGE_PIN E32 [get_ports {DDR_CLK_P[1]}]
-set_property PACKAGE_PIN D32 [get_ports {DDR_CLK_N[1]}]
-set_property IOSTANDARD LVDS [get_ports {DDR_CLK_P[1]}]
-set_property DIFF_TERM_ADV TERM_100 [get_ports {DDR_CLK_P[1]}]
+# You CANNOT use the DIFF_TERMs here, but I think they put them on the board
+# This is following the FPGA guide, not the user's guide! Need to check!! Dunno if it matters!
+# But I *think* it's right because this is in the same bank as the "C0_DDR4_" as opposed to
+# "C0_DDR4_1".
+set_property -dict { PACKAGE_PIN E32 IOSTANDARD LVDS } [ get_ports { DDR_CLK_P[0] } ]
+set_property -dict { PACKAGE_PIN D32 IOSTANDARD LVDS } [ get_ports { DDR_CLK_N[0] } ]
+
+set_property -dict { PACKAGE_PIN AT22 IOSTANDARD LVDS } [ get_ports { DDR_CLK_P[1] } ]
+set_property -dict { PACKAGE_PIN AT21 IOSTANDARD LVDS } [ get_ports { DDR_CLK_N[1] } ]
 
 #set_property -dict {PACKAGE_PIN B6 IOSTANDARD LVCMOS25} [get_ports {LGPIO[0]}]
 #set_property -dict {PACKAGE_PIN B5 IOSTANDARD LVCMOS25} [get_ports {LGPIO[1]}]
