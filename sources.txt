@@ -1,4 +1,3 @@
-hdl/hsk_uart_brg.v
 bd/ddr_intercon/ddr_intercon.bd
 bd/ddr_intercon_nodebug/ddr_intercon_nodebug.bd
 bd/zynq_bd/zynq_bd.bd
@@ -23,7 +22,6 @@ hdl/ethernet/turf_fragment_gen.v
 hdl/ethernet/turf_udp_core.v
 hdl/ethernet/turf_udp_rdwr_v2.v
 hdl/turfio/turfio_if.v
-verilog-library-barawn/hdl/wbs_dummy.v
 verilog-library-barawn/hdl/wishbone_arbiter.v
 hdl/zynq_bd_wrapper.v
 hdl/event/ack_done_generator.sv
@@ -40,6 +38,7 @@ verilog-library-barawn/hdl/simple_clock_mon.sv
 hdl/clock/system_clock_v2.sv
 hdl/ethernet/turf_acknack_port.sv
 hdl/ethernet/turf_event_ctrl_port.sv
+ip/event/turf_header_generator_v1.sv
 hdl/turf_id_ctrl.sv
 hdl/turf_intercon.sv
 hdl/ethernet/turf_udp_hsk.sv
@@ -60,6 +59,8 @@ hdl/ethernet/udp_port_mux.sv
 hdl/ethernet/udp_port_switch.sv
 hdl/ethernet/wb_to_drpx2.sv
 hdl/pueo_turf6.sv
+hdl/hsk_uart_brg.v
 hdl/ethernet/turf_udp_rdwr.v
+verilog-library-barawn/hdl/wbs_dummy.v
 hdl/aurora/turfio_aurora_reset.sv
 hdl/ethernet/wb_if_cc.sv
