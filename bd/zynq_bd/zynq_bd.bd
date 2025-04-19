@@ -1791,32 +1791,32 @@
       },
       "axi_uartlite2_0": {
         "vlnv": "xilinx.com:ip:axi_uartlite2:2.1",
-        "xci_name": "zynq_bd_axi_uartlite2_0_0",
-        "xci_path": "ip\\zynq_bd_axi_uartlite2_0_0\\zynq_bd_axi_uartlite2_0_0.xci",
+        "xci_name": "zynq_bd_axi_uartlite2_0_1",
+        "xci_path": "ip\\zynq_bd_axi_uartlite2_0_1\\zynq_bd_axi_uartlite2_0_1.xci",
         "inst_hier_path": "axi_uartlite2_0"
       },
       "axi_uartlite2_1": {
         "vlnv": "xilinx.com:ip:axi_uartlite2:2.1",
-        "xci_name": "zynq_bd_axi_uartlite2_1_0",
-        "xci_path": "ip\\zynq_bd_axi_uartlite2_1_0\\zynq_bd_axi_uartlite2_1_0.xci",
+        "xci_name": "zynq_bd_axi_uartlite2_0_2",
+        "xci_path": "ip\\zynq_bd_axi_uartlite2_0_2\\zynq_bd_axi_uartlite2_0_2.xci",
         "inst_hier_path": "axi_uartlite2_1"
       },
       "axi_uartlite2_2": {
         "vlnv": "xilinx.com:ip:axi_uartlite2:2.1",
-        "xci_name": "zynq_bd_axi_uartlite2_2_0",
-        "xci_path": "ip\\zynq_bd_axi_uartlite2_2_0\\zynq_bd_axi_uartlite2_2_0.xci",
+        "xci_name": "zynq_bd_axi_uartlite2_1_1",
+        "xci_path": "ip\\zynq_bd_axi_uartlite2_1_1\\zynq_bd_axi_uartlite2_1_1.xci",
         "inst_hier_path": "axi_uartlite2_2"
       },
       "axi_uartlite2_3": {
         "vlnv": "xilinx.com:ip:axi_uartlite2:2.1",
-        "xci_name": "zynq_bd_axi_uartlite2_3_0",
-        "xci_path": "ip\\zynq_bd_axi_uartlite2_3_0\\zynq_bd_axi_uartlite2_3_0.xci",
+        "xci_name": "zynq_bd_axi_uartlite2_2_1",
+        "xci_path": "ip\\zynq_bd_axi_uartlite2_2_1\\zynq_bd_axi_uartlite2_2_1.xci",
         "inst_hier_path": "axi_uartlite2_3"
       },
       "axilite_bridge_0": {
         "vlnv": "ohio-state.edu:user:axilite_bridge:1.2",
-        "xci_name": "zynq_bd_axilite_bridge_0_0",
-        "xci_path": "ip\\zynq_bd_axilite_bridge_0_0\\zynq_bd_axilite_bridge_0_0.xci",
+        "xci_name": "zynq_bd_axilite_bridge_0_1",
+        "xci_path": "ip\\zynq_bd_axilite_bridge_0_1\\zynq_bd_axilite_bridge_0_1.xci",
         "inst_hier_path": "axilite_bridge_0",
         "parameters": {
           "C_AXI_ADDR_WIDTH": {
@@ -2076,19 +2076,6 @@
               "SEG_axilite_bridge_0_reg0": {
                 "address_block": "/axilite_bridge_0/s_axi/reg0",
                 "offset": "0x0090000000",
-                "range": "256M"
-              }
-            }
-          }
-        }
-      },
-      "/axilite_bridge_0": {
-        "address_spaces": {
-          "m_axi": {
-            "segments": {
-              "SEG_M_AXI_Reg": {
-                "address_block": "/M_AXI/Reg",
-                "offset": "0x0000000",
                 "range": "256M"
               }
             }
