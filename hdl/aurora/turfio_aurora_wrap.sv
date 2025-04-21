@@ -150,6 +150,7 @@ module turfio_aurora_wrap
     // these are both wb_clk_i-land
     reg reset_in = 1'b0;
     reg gt_reset_in = 1'b0;
+    (* CUSTOM_CC_SRC = WBCLKTYPE *)
     reg [NUM_MGT-1:0] linkerr_reset = 1'b0;
     reg global_linkerr_reset = 1'b0;
     reg [NUM_MGT-1:0] datapath_reset = 1'b0;
@@ -270,6 +271,8 @@ module turfio_aurora_wrap
     wire [1:0] wb_gt_ctrl_sel = (wb_adr_i[12:11]);
     wire [10:0] wb_gt_ctrl_adr = {wb_adr_i[10:2], 2'b00};
     wire [15:0] wb_drp_outdata = gt_drpdo[wb_drp];    
+    
+    reg [3:0] drp_reset_seen = {4{1'b0}};
     generate
         genvar i;
         for (i=0;i<NUM_MGT;i=i+1) begin : ALN
@@ -279,6 +282,7 @@ module turfio_aurora_wrap
                 txprecursor[i] <= 5'h00;
                 txpostcursor[i] <= 5'h00;
             end
+            
         
             wire channel_up;
             wire lane_up;
@@ -318,6 +322,8 @@ module turfio_aurora_wrap
             end
             
             // we need to resync these so we can use CC tools
+            (* CUSTOM_CC_DST = ACLKTYPE, ASYNC_REG = "TRUE" *)
+            reg [1:0] linkerr_reset_aclk = {2{1'b0}};
             (* CUSTOM_CC_SRC = ACLKTYPE *)
             reg lane_up_rereg = 0;
             (* CUSTOM_CC_SRC = ACLKTYPE *)
@@ -348,6 +354,7 @@ module turfio_aurora_wrap
             (* CUSTOM_CC_SRC = ACLKTYPE *)
             reg bufg_gt_clr_rereg = 0;
             always @(posedge user_clk) begin : ST
+                linkerr_reset_aclk <= { linkerr_reset_aclk[0], linkerr_reset[i] };
                 lane_up_rereg <= lane_up;
                 channel_up_rereg <= channel_up;
                 //gt_powergood_rereg <= gt_powergood;
@@ -356,9 +363,15 @@ module turfio_aurora_wrap
                 rx_resetdone_rereg <= rx_resetdone_out;
                 //link_reset_rereg <= link_reset_out;
                 sys_reset_rereg <= sys_reset_out;
-                hard_err_rereg <= hard_err;
-                soft_err_rereg <= soft_err;
-                frame_err_rereg <= frame_err;
+                if (linkerr_reset_aclk[1]) begin
+                    hard_err_rereg <= 1'b0;
+                    soft_err_rereg <= 1'b0;
+                    frame_err_rereg <= 1'b0;
+                end else begin
+                    if (hard_err) hard_err_rereg <= 1;
+                    if (soft_err) soft_err_rereg <= 1;
+                    if (frame_err) frame_err_rereg <= 1;
+                end               
                 bufg_gt_clr_rereg <= bufg_gt_clr[i];
             end
             assign link_status[i][0] = lane_up_rereg;
@@ -376,7 +389,9 @@ module turfio_aurora_wrap
             assign link_status[i][9] = soft_err_rereg;
             assign link_status[i][10] = frame_err_rereg;
             assign link_status[i][11] = bufg_gt_clr_rereg;
-            assign link_status[i][31:12] = {20{1'b0}};
+            assign link_status[i][15:12] = {4{1'b0}};
+            assign link_status[i][16] = drp_reset_seen[i];
+            assign link_status[i][31:17] = {15{1'b0}};
             // also laazy
             assign link_control[i][0] = reset_in;
             assign link_control[i][1] = gt_reset_in;
@@ -400,6 +415,13 @@ module turfio_aurora_wrap
             assign link_dmonitor[i] = { {16{1'b0}}, dmonitor };
             // OK, handle per lane controls/eyescans here:
             always @(posedge wb_clk_i) begin : PLC
+                if (global_linkerr_reset)
+                    linkerr_reset[i] <= 1;
+                else if (wb_cyc_i && wb_stb_i && wb_ack_o && wb_we_i && wb_gt_ctrl_en && wb_gt_ctrl_sel == i) begin
+                    if (wb_gt_ctrl_adr == 11'h000 && wb_sel_i[3])
+                        linkerr_reset[i] <= wb_dat_i[31];
+                end                        
+            
                 if (wb_cyc_i && wb_stb_i && wb_ack_o && wb_we_i && wb_gt_ctrl_en && wb_gt_ctrl_sel == i) begin
                     if (wb_gt_ctrl_adr == 11'h000) begin
                         // control register
@@ -410,7 +432,6 @@ module turfio_aurora_wrap
                         end
                         if (wb_sel_i[3]) begin
                             datapath_reset[i] <= wb_dat_i[30];
-                            linkerr_reset[i] <= wb_dat_i[31];
                         end
                     end
                     if (wb_gt_ctrl_adr == 11'h008) begin
@@ -534,17 +555,24 @@ module turfio_aurora_wrap
     localparam [FSM_BITS-1:0] IDLE = 0;
     localparam [FSM_BITS-1:0] ACK = 1;
     localparam [FSM_BITS-1:0] DRP_WAIT = 2;
+    localparam [FSM_BITS-1:0] DRP_RESET = 3;
     reg [FSM_BITS-1:0] state = IDLE;
     
     assign wb_drp_access = (state == IDLE && wb_cyc_i && wb_stb_i && wb_adr_i[14]);
-
+    (* KEEP = "TRUE" *)
+    reg [3:0] drp_reset = {4{1'b0}};
+    wire      drp_reset_complete;
+    wire      drp_in_reset = (state == DRP_RESET);
+    SRL16E u_drprstdly( .D(drp_in_reset),.A0(1'b1),.A1(1'b1),.A2(1'b1),.A3(1'b1),
+                        .CE(1'b1),.CLK(wb_clk_i),.Q(drp_reset_complete));
+            
     // individual controlstat registers. Only 4 right now. Expand only to powers of 2.
     wire [31:0] ind_ctrlstat[3:0];
     assign ind_ctrlstat[0] = link_control[wb_gt_ctrl_sel];
     assign ind_ctrlstat[1] = link_status[wb_gt_ctrl_sel];
     assign ind_ctrlstat[2] = link_eyescan[wb_gt_ctrl_sel];
     assign ind_ctrlstat[3] = link_dmonitor[wb_gt_ctrl_sel];
-    
+        
     // only one right now
     wire [31:0] glob_ctrlstat;
     assign glob_ctrlstat = { global_linkerr_reset, global_datapath_reset,
@@ -554,7 +582,41 @@ module turfio_aurora_wrap
                              gt_reset_in , reset_in };
     (* CUSTOM_CC_DST = WBCLKTYPE *)
     reg [31:0] dat_out = {32{1'b0}};
+    // DEBUGGING DEBUGGING DEBUGGING
+    reg [7:0] drp_wait_counter = {8{1'b0}};
+    // probe 0 = drprdy
+    // probe 1 = drpen
+    // probe 2 = drpwe
+    // probe 3 = addr
+    // probe 4 = drp_wait_counter
+    // probe 5 = state
+    
+    drp_ila u_ila(.clk(wb_clk_i),
+                  .probe0( { gt_drprdy[3], gt_drprdy[2], gt_drprdy[1], gt_drprdy[0] } ),
+                  .probe1( { gt_drpen[3], gt_drpen[2], gt_drpen[1], gt_drpen[0] } ),
+                  .probe2( wb_we_i ),
+                  .probe3( wb_adr_i[2 +: 10] ),
+                  .probe4(drp_wait_counter),
+                  .probe5(state));
+    
     always @(posedge wb_clk_i) begin
+        drp_reset[0] <= (state == DRP_RESET) && wb_drp == 2'd0;
+        drp_reset[1] <= (state == DRP_RESET) && wb_drp == 2'd1;
+        drp_reset[2] <= (state == DRP_RESET) && wb_drp == 2'd2;
+        drp_reset[3] <= (state == DRP_RESET) && wb_drp == 2'd3;
+    
+        if (reset_in) begin
+            drp_reset_seen <= {4{1'b0}};
+        end else begin
+            if (drp_reset[0]) drp_reset_seen[0] <= 1'b1;
+            if (drp_reset[1]) drp_reset_seen[1] <= 1'b1;
+            if (drp_reset[2]) drp_reset_seen[2] <= 1'b1;
+            if (drp_reset[3]) drp_reset_seen[3] <= 1'b1;
+        end            
+        
+        if (state == DRP_WAIT) drp_wait_counter <= drp_wait_counter[6:0] + 1;
+        else drp_wait_counter <= {8{1'b0}};
+        
         if (wb_rst_i) state <= IDLE;
         else begin
             case (state)
@@ -563,7 +625,11 @@ module turfio_aurora_wrap
                     else state <= ACK;
                 end
                 ACK: state <= IDLE;
-                DRP_WAIT: if (gt_drprdy[wb_drp]) state <= ACK;
+                // add a timeout: let's just make it 128, even
+                // though it says 500. will check.
+                DRP_WAIT: if (drp_wait_counter[7]) state <= DRP_RESET;
+                          else if (gt_drprdy[wb_drp]) state <= ACK;
+                DRP_RESET: if (drp_reset_complete) state <= ACK;  
             endcase
         end
         
