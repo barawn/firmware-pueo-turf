@@ -78,7 +78,7 @@ module event_pueo_wrap(
     reg update_tio_mask = 0;
     wire update_tio_mask_aclk;
     reg ack = 0;
-    assign wb_ack_o = ack && !wb_cyc_i;
+    assign wb_ack_o = ack && wb_cyc_i;
     wire [3:0] reg_addr = wb_adr_i[2 +: 4];
     reg [31:0] dat_reg = {32{1'b0}};
     assign wb_dat_o = dat_reg;
