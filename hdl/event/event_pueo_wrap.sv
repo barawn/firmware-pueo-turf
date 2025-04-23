@@ -27,6 +27,7 @@ module event_pueo_wrap(
         input s_aurora3_tlast,
         
         input ethclk,
+        input event_open_i,
         // acking path
         `TARGET_NAMED_PORTS_AXI4S_MIN_IF( s_ack_ , 48),
         // nacking path
@@ -47,7 +48,8 @@ module event_pueo_wrap(
     parameter ACLKTYPE = "NONE";
     parameter MEMCLKTYPE = "NONE";
     parameter ETHCLKTYPE = "NONE";
-
+    parameter DEBUG = "TRUE";
+    
     wire init_calib_complete;
     wire memclk;
     
@@ -77,8 +79,59 @@ module event_pueo_wrap(
     wire update_tio_mask_aclk;
     reg ack = 0;
     assign wb_ack_o = ack && !wb_cyc_i;
-    assign wb_dat_o = { {31{1'b0}}, event_reset };
+    wire [3:0] reg_addr = wb_adr_i[2 +: 4];
+    reg [31:0] dat_reg = {32{1'b0}};
+    assign wb_dat_o = dat_reg;
+    // OK OK OK - LET'S EXPAND THIS A BIT
+    // In order to add event statistics, we have to jump
+    // clock domains. Instead of our previously-horrible
+    // methods, the __smart__ method is to collect the number of dwords
+    // valid say, every 8 clock cycles and flag the other side when
+    // that happens. Then the other side can just add those whenever
+    // it gets it. This requires 6 registers per aclk side, plus the
+    // sync registers. Which is still slower than a full temp 32-bit
+    // holding register.
+    // 8 clocks @ 156.25 MHz is a little over 5 clocks at 100 MHz,
+    // so it should be fine.
+    wire [31:0] glob_event_reg = { {31{1'b0}}, event_reset };    
+    wire [31:0] event_dwords[3:0];
+    wire [31:0] event_regs[15:0];
+    assign event_regs[0] = glob_event_reg;
+    assign event_regs[1] = glob_event_reg;        
+    assign event_regs[2] = glob_event_reg;
+    assign event_regs[3] = glob_event_reg;
+    assign event_regs[4] = event_dwords[0];
+    assign event_regs[5] = event_dwords[1];
+    assign event_regs[6] = event_dwords[2];
+    assign event_regs[7] = event_dwords[3];
+    // fully shadow the top bit decode
+    assign event_regs[8] = event_regs[0];
+    assign event_regs[9] = event_regs[1];
+    assign event_regs[10] = event_regs[2];
+    assign event_regs[11] = event_regs[3];
+    assign event_regs[12] = event_regs[4];
+    assign event_regs[13] = event_regs[5];
+    assign event_regs[14] = event_regs[6];
+    assign event_regs[15] = event_regs[7];
+
+    wire [3:0] event_tx_valid;
+    assign event_tx_valid[0] = s_aurora0_tvalid;
+    assign event_tx_valid[1] = s_aurora1_tvalid;
+    assign event_tx_valid[2] = s_aurora2_tvalid;
+    assign event_tx_valid[3] = s_aurora3_tvalid;
+    event_cc_stat_counter u_statistics(.aclk(aclk),
+                                       .tx_valid_i(event_tx_valid),
+                                       .wb_clk_i(wb_clk_i),
+                                       .rst_i(event_reset),
+                                       .tx0_count_o(event_dwords[0]),
+                                       .tx1_count_o(event_dwords[1]),
+                                       .tx2_count_o(event_dwords[2]),
+                                       .tx3_count_o(event_dwords[3]));
+
     always @(posedge wb_clk_i) begin
+        if (wb_cyc_i && wb_stb_i && !wb_we_i && !ack) begin
+            dat_reg <= event_regs[reg_addr];
+        end            
         ack <= wb_cyc_i && wb_stb_i;
         if (wb_cyc_i && wb_stb_i && wb_ack_o && wb_we_i) begin
             // just grab all the addresses
@@ -107,14 +160,41 @@ module event_pueo_wrap(
     `DEFINE_AXI4S_MIN_IF( hdrcmpl_ , 24 ); // header completion
     `DEFINE_AXI4S_MIN_IF( thdr_ , 64 ); // TURF headers. Dumb for now since just testing.
 
-    // vectorize the aurora links
+    // transfer event open over to aclk
+    (* CUSTOM_CC_SRC = ETHCLKTYPE *)
+    reg event_open_ethclk = 0;
+    (* CUSTOM_CC_DST = ACLKTYPE, ASYNC_REG = "TRUE" *)
+    reg [1:0] event_open_aclk_sync = {2{1'b0}};
+    wire event_open_aclk = event_open_aclk_sync[1];
+    
+    // Vectorize the Aurora links. This also integrates trashing
+    // events when the interface isn't open. Just force tready high
+    // and 
     `DEFINE_AXI4S_MIN_IFV( aur_ , 32, [3:0] );
     wire [3:0] aur_tlast;
     `define HOOK_AURORA( to , tosuffix, from ) \
         assign to``tdata``tosuffix = from``tdata;    \
-        assign to``tvalid``tosuffix = from``tvalid;  \
-        assign from``tready = to``tready``tosuffix;  \
+        assign to``tvalid``tosuffix = from``tvalid && event_open_aclk;  \
+        assign from``tready = to``tready``tosuffix || !event_open_aclk; \
         assign to``tlast``tosuffix = from``tlast
+
+    generate
+        if (DEBUG == "TRUE") begin
+            raw_event_ila u_ila(.clk(aclk),
+                                .probe0( s_aurora0_tdata ),
+                                .probe1( s_aurora0_tvalid ),
+                                .probe2( s_aurora0_tready ),
+                                .probe3( s_aurora1_tdata ),
+                                .probe4( s_aurora1_tvalid ),
+                                .probe5( s_aurora1_tready ),
+                                .probe6( s_aurora2_tdata ),
+                                .probe7( s_aurora2_tvalid ),
+                                .probe8( s_aurora2_tready ),
+                                .probe9( s_aurora3_tdata ),
+                                .probe10( s_aurora3_tvalid ),
+                                .probe11( s_aurora3_tready ));
+        end
+    endgenerate
     
     `HOOK_AURORA( aur_ , [0] , s_aurora0_ );
     `HOOK_AURORA( aur_ , [1] , s_aurora1_ );
@@ -207,8 +287,11 @@ module event_pueo_wrap(
     reg turf_start_event = 0;
     // need to pipeline this!
     reg [3:0] turfio_last_header = {4{1'b0}};
-    // JOY PRIORITY ENCODING
+    always @(posedge ethclk) begin
+        event_open_ethclk <= event_open_i;
+    end
     always @(posedge aclk) begin
+        event_open_aclk_sync <= { event_open_aclk_sync[0], event_open_ethclk };
         // We can't use the unary operators since the tvalid/readies are
         // actually wire hdr_tvalid[3:0] not wire [3:0] hdr_tvalid.
         // Could do it in the generate loop but bc this is temporary screw it.
