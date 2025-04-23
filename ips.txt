@@ -15,6 +15,7 @@ ip/fifo/ccfifo65/ccfifo65.xci
 ip/fifo/ccfifo69/ccfifo69.xci
 ip/ddr/ddr4_mig/ddr4_mig.xci
 ip/event/doneaddr_broadcast/doneaddr_broadcast.xci
+ip/debug/drp_ila/drp_ila.xci
 ip/eth/eth_10gkr/eth_10gkr.xci
 ip/eth/eth_mac_10g_fifo_core/eth_mac_10g_fifo_core.xci
 ip/eth/eth_phy_10g_core/eth_phy_10g_core.xci
@@ -38,6 +39,7 @@ ip/debug/i2c_merge_ila/i2c_merge_ila.xci
 ip/debug/i2c_merge_vio/i2c_merge_vio.xci
 ip/debug/intercon_ila/intercon_ila.xci
 ip/event/nack_ccfifo/nack_ccfifo.xci
+ip/debug/raw_event_ila/raw_event_ila.xci
 ip/debug/register_bridge_ila/register_bridge_ila.xci
 ip/event/surf_fifo/surf_fifo.xci
 ip/aurora/turfio_aurora/turfio_aurora.xci
