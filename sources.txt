@@ -1,6 +1,6 @@
 hdl/hsk_uart_brg.v
-bd/ddr_intercon/ddr_intercon.bd
 bd/ddr_intercon_nodebug/ddr_intercon_nodebug.bd
+bd/ddr_intercon/ddr_intercon.bd
 bd/zynq_bd/zynq_bd.bd
 verilog-ethernet/lib/axis/rtl/arbiter.v
 verilog-library-barawn/hdl/async_register.v
