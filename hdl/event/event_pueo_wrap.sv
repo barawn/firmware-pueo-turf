@@ -181,20 +181,24 @@ module event_pueo_wrap(
         assign to``tlast``tosuffix = from``tlast
 
     generate
-        if (DEBUG == "TRUE") begin
+        if (DEBUG == "TRUE") begin : ILA
             raw_event_ila u_ila(.clk(aclk),
                                 .probe0( s_aurora0_tdata ),
                                 .probe1( s_aurora0_tvalid ),
                                 .probe2( s_aurora0_tready ),
-                                .probe3( s_aurora1_tdata ),
-                                .probe4( s_aurora1_tvalid ),
-                                .probe5( s_aurora1_tready ),
-                                .probe6( s_aurora2_tdata ),
-                                .probe7( s_aurora2_tvalid ),
-                                .probe8( s_aurora2_tready ),
-                                .probe9( s_aurora3_tdata ),
-                                .probe10( s_aurora3_tvalid ),
-                                .probe11( s_aurora3_tready ));
+                                .probe3( s_aurora0_tlast ),
+                                .probe4( s_aurora1_tdata ),
+                                .probe5( s_aurora1_tvalid ),
+                                .probe6( s_aurora1_tready ),
+                                .probe7( s_aurora1_tlast ),
+                                .probe8( s_aurora2_tdata ),
+                                .probe9( s_aurora2_tvalid ),
+                                .probe10( s_aurora2_tready ),
+                                .probe11( s_aurora2_tlast ),
+                                .probe12( s_aurora3_tdata ),
+                                .probe13( s_aurora3_tvalid ),
+                                .probe14( s_aurora3_tready ),
+                                .probe15( s_aurora3_tlast ));
         end
     endgenerate
     
@@ -366,7 +370,8 @@ module event_pueo_wrap(
                    .any_err_o( readout_err ));
     
     // and now the interconnect
-    ddr_intercon_wrapper #(.DEBUG("FALSE"))
+    // NOW WITH TOTAL INSANITY
+    ddr_intercon_wrapper #(.DEBUG("TRUE"))
         u_intercon( .aclk(memclk),
                     .aresetn(memresetn),
                     `CONNECT_AXIM_DW( s_axi_hdr_ , hdraxi_ , 64 ),
