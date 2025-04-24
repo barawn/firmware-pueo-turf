@@ -1,4 +1,5 @@
 `timescale 1ns / 1ps
+`include "dsp_macros.vh"
 // Include all 4 in one block, it's just easier.
 // When transferring scaler counters across clock domains, it's usually easier
 // to have a small counter in the source domain and the larger counter
@@ -26,7 +27,8 @@ module event_cc_stat_counter(
         output [31:0] tx2_count_o,
         output [31:0] tx3_count_o
     );
-    
+    parameter WBCLKTYPE = "NONE";
+    parameter ACLKTYPE = "NONE";
     // the way flag crossings work is that you level change, sync the change, and generate
     // a flag on the other. so it's
     // 1 clock on source side
@@ -46,10 +48,37 @@ module event_cc_stat_counter(
         genvar i;
         for (i=0;i<4;i=i+1) begin : TIO
             reg [3:0] active_count = {4{1'b0}};
+            (* CUSTOM_CC_SRC = ACLKTYPE *)
             reg [3:0] hold_count = {4{1'b0}};
-            // screw it
-            (* USE_DSP = "TRUE" *)
-            reg [31:0] wbclk_count = {32{1'b0}};
+            // YOU BASTARD WE NEED TO INSTANTIATE THE DAMN DSP OURSELVES
+            // OTHERWISE THE ATTRIBUTES GET LOST WHEN IT GETS TRANSFORMED
+            wire [47:0] dsp_C = { {44{1'b0}}, hold_count };
+            wire [8:0] dsp_OPMODE = { 2'b00, `Z_OPMODE_P, `Y_OPMODE_C, `X_OPMODE_0 };
+            wire [3:0] dsp_ALUMODE = `ALUMODE_SUM_ZXYCIN;
+            wire [2:0] dsp_CARRYINSEL = `CARRYINSEL_CARRYIN;
+            
+            wire [47:0] dsp_P;
+            assign tx_count[i] = dsp_P[0 +: 32];            
+            (* CUSTOM_CC_DST = WBCLKTYPE *)
+            DSP48E2 #( `A_UNUSED_ATTRS,
+                       `B_UNUSED_ATTRS,
+                       `DE2_UNUSED_ATTRS,
+                       `CONSTANT_MODE_ATTRS,
+                       `NO_MULT_ATTRS,
+                       .CREG(1'b0),
+                       .PREG(1'b1))
+                       u_dsp( .CLK(wb_clk_i),
+                              `A_UNUSED_PORTS,
+                              `B_UNUSED_PORTS,
+                              `D_UNUSED_PORTS,                              
+                              .C(dsp_C),
+                              .OPMODE(dsp_OPMODE),
+                              .ALUMODE(dsp_ALUMODE),
+                              .CARRYINSEL(dsp_CARRYINSEL),
+                              .CARRYIN(1'b0),
+                              .CEP(count_done_wbclk),
+                              .RSTP(rst_i),
+                              .P(dsp_P));                       
             always @(posedge aclk) begin : ACL
                 // clk  count_done  valid   active_count    hold_count  count_done_wbclk wbclk_count
                 // 0    0           0       0               0
@@ -67,12 +96,7 @@ module event_cc_stat_counter(
                 else active_count <= active_count + tx_valid_i[i];
                 
                 if (count_done) hold_count <= active_count;
-            end
-            always @(posedge wb_clk_i) begin : WBL
-                if (rst_i) wbclk_count <= {32{1'b0}};
-                else if (count_done_wbclk) wbclk_count <= wbclk_count + hold_count;
-            end
-            assign tx_count[i] = wbclk_count;            
+            end  
         end
     endgenerate    
     
