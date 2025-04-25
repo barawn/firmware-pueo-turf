@@ -1,0 +1,4 @@
+#!/bin/bash
+
+tar -cvf pueo_turf6_${1}.tar pueo_turf6_${1}.bit pueo_turf6_${1}.dtbo
+xz -9 pueo_turf6_${1}.tar
