@@ -57,10 +57,14 @@ module turf_event_ctrl_port #(
     localparam PR_CMD = 3;
     localparam PW_CMD = 4;
 
+    // break up into command and payload
+    wire [15:0] command = s_udpdata_tdata[15:0];
+    wire [47:0] payload = s_udpdata_tdata[16 +: 48];
+
     generate
         genvar i;
         for (i=0;i<NUM_CMDS;i=i+1) begin : MATCHGEN
-            assign cmd_match[i] = (s_udpdata_tdata[15:0] == CMD_TABLE[16*i +: 16]);
+            assign cmd_match[i] = (command == CMD_TABLE[16*i +: 16]);
         end
     endgenerate
     
@@ -103,6 +107,7 @@ module turf_event_ctrl_port #(
     reg [FSM_BITS-1:0] state = IDLE;
             
     always @(posedge aclk) begin
+        // grabbing the top generates garbage for most responses but it eases decode
         if (state == UPDATE_RESPONSE) begin
             if (cmd_match[OP_CMD] || cmd_match[CL_CMD])
                 response <= s_udpdata_tdata;
@@ -111,20 +116,20 @@ module turf_event_ctrl_port #(
             else if (cmd_match[PR_CMD])
                 response <= { s_udpdata_tdata[48 +: 16], MAX_FRAGMENT_LEN_BITS, MAX_ADDR_BITS, MAX_FRAGSRCMASK_BITS };
             else if (cmd_match[PW_CMD])
-                response <= { s_udpdata_tdata[48 +: 16], nfragment_as_bytes, MAX_ADDR, fragsrc_mask_o };
+                response <= { s_udpdata_tdata[48 +: 16], nfragment_as_bytes, MAX_ADDR_BITS, fragsrc_mask_o };
         end
         
         if (state == PARSE_COMMAND) begin
             if (cmd_match[OP_CMD]) begin
                 event_is_open <= 1'b1;
-                event_ip <= s_udpdata_tdata[16 +: 32];
-                event_port <= s_udpdata_tdata[0 +: 16];
+                event_ip <= payload[16 +: 32];
+                event_port <= payload[0 +: 16];
             end else if (cmd_match[CL_CMD])
                 event_is_open <= 1'b0;
             
             if (cmd_match[PW_CMD] && !event_is_open) begin
-                if (s_udpdata_tdata[32 +: 16] <= MAX_FRAGMENT_LEN) nfragment <= s_udpdata_tdata[ 3+: 10];
-                fragsrc_mask <= s_udpdata_tdata[0 +: MAX_FRAGSRCMASK];
+                if (payload[32 +: 16] <= MAX_FRAGMENT_LEN) nfragment <= payload[ 35 +: 10];
+                fragsrc_mask <= payload[0 +: MAX_FRAGSRCMASK];
             end
         end
     
