@@ -51,7 +51,7 @@ module ack_done_generator(
     `DEFINE_AXI4S_MIN_IF( ackfifo_ , 16 );    
     wire [11:0] ack_din = s_ack_tdata[20 +: 12];
     wire        ack_full;
-    assign      m_ack_tready = !ack_full;
+    assign      s_ack_tready = !ack_full;
     wire [11:0] ack_dout;
     assign      ackfifo_tdata = { {4{1'b0}}, ack_dout };    
 
