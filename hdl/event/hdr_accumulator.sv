@@ -260,7 +260,7 @@ module hdr_accumulator(
     
     // FIFO inputs
     wire [8:0] addrfifo_in = s_done_tdata[4 +: 9];
-    assign     addrfifo_write = (cmd_tvalid && cmd_tready);
+    wire       addrfifo_write = (cmd_tvalid && cmd_tready);
     wire       addrfifo_overflow;
     // this feeds into the completion output along with stat.
     `DEFINE_AXI4S_MIN_IF( addrfifo_ , 9 );
