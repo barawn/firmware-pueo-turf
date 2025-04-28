@@ -72,8 +72,11 @@ module event_pueo_wrap(
     reg [3:0] tio_mask = {4{1'b0}};
     (* CUSTOM_CC_DST = ACLKTYPE *)
     reg [3:0] tio_mask_aclk = {4{1'b0}};
+    (* CUSTOM_CC_DST = MEMCLKTYPE *)
+    reg [3:0] tio_mask_memclk = {4{1'b0}};    
     reg update_tio_mask = 0;
     wire update_tio_mask_aclk;
+    wire update_tio_mask_memclk;
     reg ack = 0;
     assign wb_ack_o = ack && wb_cyc_i;
     wire [3:0] reg_addr = wb_adr_i[2 +: 4];
@@ -144,9 +147,15 @@ module event_pueo_wrap(
     end
     flag_sync u_update_mask(.in_clkA(update_tio_mask),.out_clkB(update_tio_mask_aclk),
                             .clkA(wb_clk_i),.clkB(aclk));
+    flag_sync u_update_mask_mem(.in_clkA(update_tio_mask),.out_clkB(update_tio_mask_memclk),
+                            .clkA(wb_clk_i),.clkB(memclk));                            
     always @(posedge aclk) begin
         if (update_tio_mask_aclk) tio_mask_aclk <= tio_mask;                       
     end
+
+    always @(posedge memclk) begin
+        if (update_tio_mask_memclk) tio_mask_memclk <= tio_mask;
+    end        
         
     always @(posedge aclk) event_reset_aclk <= { event_reset_aclk[0], event_reset };
     always @(posedge ddr4_clk_o) event_reset_memclk <= { event_reset_memclk[0], event_reset };
@@ -353,6 +362,7 @@ module event_pueo_wrap(
         u_readout( .memclk(memclk),
                    .memresetn(memresetn),
                    // completions
+                   .tio_mask_i(tio_mask_memclk),
                    `CONNECT_AXI4S_MIN_IF( s_hdr_ , hdrcmpl_ ),
                    `CONNECT_AXI4S_MIN_IFV( s_t0_ , cmpl_ , [0] ),
                    `CONNECT_AXI4S_MIN_IFV( s_t1_ , cmpl_ , [1] ),
