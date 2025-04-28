@@ -36,6 +36,8 @@ module zynq_bd_wrapper
     // we force I2C
     output IIC_scl_o,
     input IIC_sda_i,
+    // pointless but whatever
+    output IIC_sda_o,
     output IIC_sda_t,
 
     // we force SPI directionality
