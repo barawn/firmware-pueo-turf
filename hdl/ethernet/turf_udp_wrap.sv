@@ -286,6 +286,7 @@ module turf_udp_wrap #( parameter NSFP=2,
     
     // Its clock is clk156, its reset is clk156_rst.
     wire [47:0] my_mac_address;
+    wire [47:0] alt_mac_address;
     wire [15:0] mac_bottom_bytes[1:0];
     
     USR_ACCESSE2 u_macs( .DATA( { mac_bottom_bytes[1], mac_bottom_bytes[0] } ));
