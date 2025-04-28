@@ -23,9 +23,13 @@
 //
 // Nacks either tell us to generate a missing fragment or possibly
 // the whole event.
+//
+// FFS IDIOT THESE NEED TO ACCEPT TIO MASKS
 module event_readout_generator(
         input memclk,
         input memresetn,
+        // THESE ARE COMPLETIONS: WE NEED A TIO MASK TOO
+        input [3:0] tio_mask_i,
         `TARGET_NAMED_PORTS_AXI4S_MIN_IF( s_hdr_ , 24 ),
         `TARGET_NAMED_PORTS_AXI4S_MIN_IF( s_t0_ , 64 ),
         `TARGET_NAMED_PORTS_AXI4S_MIN_IF( s_t1_ , 64 ),
@@ -37,7 +41,6 @@ module event_readout_generator(
         `TARGET_NAMED_PORTS_AXI4S_MIN_IF( s_nack_ , 48 ),
         // FLAG IN MEMCLK
         input allow_i,
-        
         // THIS IS ETHCLK NOT AURORA CLOCK
         input aclk,
         input aresetn,
@@ -74,11 +77,13 @@ module event_readout_generator(
     // this is a nack readout
     reg nack_readout = 0;
 
+    // include the mask here.
+    // this means the errors get blanked because the tvalids are low.
     wire all_valid = (s_hdr_tvalid && 
-                      s_t0_tvalid &&
-                      s_t1_tvalid &&
-                      s_t2_tvalid &&
-                      s_t3_tvalid );
+                      (s_t0_tvalid || tio_mask_i[0]) &&
+                      (s_t1_tvalid || tio_mask_i[1]) &&
+                      (s_t2_tvalid || tio_mask_i[2]) &&
+                      (s_t3_tvalid || tio_mask_i[3]));
     `DEFINE_AXI4S_MIN_IF( cmd_ , 72 );
     
     `DEFINE_AXI4S_MIN_IF( stat_ , 8);
