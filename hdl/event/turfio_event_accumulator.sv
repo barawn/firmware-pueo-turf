@@ -235,6 +235,8 @@ module turfio_event_accumulator(
     reg uram_en_read = 0;
     // out of the FIFO
     wire [1:0] read_chunk_counter_next;
+    // valid from fifo
+    wire read_chunk_counter_valid;
     // stored
     reg [1:0] read_chunk_counter = {2{1'b0}};
     // now this goes straight linear up to 2687.
