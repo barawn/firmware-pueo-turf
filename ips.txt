@@ -1,3 +1,4 @@
+ip/debug/accumulator_ila/accumulator_ila.xci
 ip/event/ack_ccfifo/ack_ccfifo.xci
 ip/debug/acknack_ila/acknack_ila.xci
 ip/aurora/aurora_cmd_ccfifo/aurora_cmd_ccfifo.xci
