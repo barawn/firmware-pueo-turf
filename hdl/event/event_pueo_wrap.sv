@@ -90,7 +90,10 @@ module event_pueo_wrap(
     // holding register.
     // 8 clocks @ 156.25 MHz is a little over 5 clocks at 100 MHz,
     // so it should be fine.
-    wire [31:0] glob_event_reg = { {31{1'b0}}, event_reset };    
+    wire [31:0] glob_event_reg = { {8{1'b0}},
+                                   {8{1'b0}},
+                                   {4{1'b0}}, tio_mask, 
+                                   {7{1'b0}}, event_reset };    
     wire [31:0] event_dwords[3:0];
     wire [31:0] event_regs[15:0];
     assign event_regs[0] = glob_event_reg;
