@@ -294,8 +294,8 @@ module turf_udp_hsk_read(
                           .probe5(rx_read_counter),
                           .probe6(rd_fifo_holding_reg),
                           .probe7(sclk),
-                          .probe8(mosi),
-                          .probe9(rd_fifo_next_sclk),
+                          .probe8(rd_fifo_next_sclk),
+                          .probe9(miso),
                           .probe10(cs_b),
                           .probe11(rx_state)
                           );
