@@ -45,6 +45,8 @@ module hdr_accumulator(
         input memresetn,
         `M_AXIM_PORT_DW( m_axi_ , 1, 64)
     );
+    parameter DEBUG = "TRUE";
+    
     // our low 19 bits are fixed, it's 0x4000 back 256.
     localparam [18:0] BASE_ADDR = 19'h03F00;
     
@@ -170,6 +172,28 @@ module hdr_accumulator(
     localparam [FSM_BITS-1:0] RUN_MUX = 2;
     localparam [FSM_BITS-1:0] ACKNOWLEDGE_ADDR = 3;
     reg [FSM_BITS-1:0] state = IDLE;
+
+    // state = 3
+    // stream_select = 3
+    // stream_last_beat = 5
+    // tiofifo_tvalid = 4
+    // thdr_tvalid = 1
+    generate
+        if (DEBUG == "TRUE") begin : ILA
+            wire [3:0] tiofifo_tvalid_vec = { tiofifo_tvalid[3],
+                                              tiofifo_tvalid[2],
+                                              tiofifo_tvalid[1],
+                                              tiofifo_tvalid[0] };
+            hdr_accum_ila u_ila(.clk(memclk),
+                                .probe0(state),
+                                .probe1(stream_select),
+                                .probe2(stream_last_beat),
+                                .probe3(tiofifo_tvalid_vec),
+                                .probe4(s_thdr_tvalid));
+            
+        end
+    endgenerate    
+    
 
     wire mux_enable = (state == RUN_MUX);
     assign s_done_tready = (state == ACKNOWLEDGE_ADDR);
