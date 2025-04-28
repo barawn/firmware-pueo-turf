@@ -158,7 +158,8 @@ module event_pueo_wrap(
     `DEFINE_AXI4S_MIN_IFV( cmpl_ , 64, [3:0] ); // completions
     `DEFINE_AXI4S_MIN_IF( hdrcmpl_ , 24 ); // header completion
     `DEFINE_AXI4S_MIN_IF( thdr_ , 64 ); // TURF headers. Dumb for now since just testing.
-
+    wire thdr_tlast;
+    
     // transfer event open over to aclk
     (* CUSTOM_CC_SRC = ETHCLKTYPE *)
     reg event_open_ethclk = 0;
