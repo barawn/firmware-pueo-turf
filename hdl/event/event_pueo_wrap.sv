@@ -32,9 +32,6 @@ module event_pueo_wrap(
         `TARGET_NAMED_PORTS_AXI4S_MIN_IF( s_ack_ , 48),
         // nacking path
         `TARGET_NAMED_PORTS_AXI4S_MIN_IF( s_nack_ , 48),
-        // event open interface
-        // uuuhhhh what to do here
-        input event_open_o,        
         // event control input
         `HOST_NAMED_PORTS_AXI4S_MIN_IF( m_ev_ctrl_ , 32),
         // event data input
