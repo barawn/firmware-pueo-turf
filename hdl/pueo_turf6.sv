@@ -13,7 +13,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="A",
                     parameter [3:0] VER_MAJOR=4'd0,
                     parameter [3:0] VER_MINOR=4'd4,
-                    parameter [7:0] VER_REV=8'd8,
+                    parameter [7:0] VER_REV=8'd10,
                     parameter [15:0] FIRMWARE_DATE = {16{1'b0}})                    
                     (
 
@@ -407,9 +407,13 @@ module pueo_turf6 #(parameter IDENT="TURF",
 
     // wrapper for Aurora paths
     `DEFINE_AXI4S_MIN_IF( aur0_, 32 );
+    wire aur0_tlast;    
     `DEFINE_AXI4S_MIN_IF( aur1_, 32 );
+    wire aur1_tlast;
     `DEFINE_AXI4S_MIN_IF( aur2_, 32 );    
+    wire aur2_tlast;
     `DEFINE_AXI4S_MIN_IF( aur3_, 32 );    
+    wire aur3_tlast;
     turfio_aurora_wrap #(.WBCLKTYPE("PSCLK"),
                          .ACLKTYPE("USERCLK"))
                        u_aurora(.wb_clk_i(ps_clk),
