@@ -331,6 +331,7 @@ module pueo_turfio_event_req_gen(
     wire [12:0] doneaddr_fifo_out;
     wire        doneaddr_fifo_read = (dm_stat_tvalid && dm_last_status);
     wire        doneaddr_fifo_underflow;
+    wire        doneaddr_fifo_valid;
     
     // and the outbound completion FIFO, which is 'really' a 32+13 = 45 bit FIFO
     // We ALWAYS just grab from the doneaddr_fifo : it should ALWAYS be valid.
