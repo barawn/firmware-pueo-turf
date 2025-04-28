@@ -69,7 +69,8 @@ module turfio_event_accumulator(
         output [1:0] errdet_aclk_o,
         output [0:0] errdet_memclk_o
     );
-        
+
+    parameter DEBUG = "TRUE";        
     // first expand to 64 bits. This will always work because on the
     // TURFIO side we bounce between S0/S3 and S4/S6+TIO so we ALWAYS
     // have an even set of words. 
@@ -467,6 +468,41 @@ module turfio_event_accumulator(
         if (!uram_en_read && read_chunk_counter_valid)
             read_chunk_counter <= `DLYFF read_chunk_counter_next;
     end     
+
+    // 4 bit state
+    // 7 bit tready
+    // 7 bit tvalid
+    // 2 bit write_chunk_counter
+    // 9 bit write_sample_counter
+    // 2 bit uram_bank_is_full
+    // 2 bit uram_bank_clear
+    wire [6:0] sv_tready = { surf_tready[6],
+                             surf_tready[5],
+                             surf_tready[4],
+                             surf_tready[3],
+                             surf_tready[2],
+                             surf_tready[1],
+                             surf_tready[0] };
+    wire [6:0] sv_tvalid = { surf_tvalid[6],
+                             surf_tvalid[5],
+                             surf_tvalid[4],
+                             surf_tvalid[3],
+                             surf_tvalid[2],
+                             surf_tvalid[1],
+                             surf_tvalid[0] };
+    
+    generate
+        if (DEBUG == "TRUE") begin : ILA
+            accumulator_ila u_ila(.clk(memclk),
+                                  .probe0(state),
+                                  .probe1(sv_tready),
+                                  .probe2(sv_tvalid),
+                                  .probe3(write_chunk_counter),
+                                  .probe4(write_sample_counter),
+                                  .probe5(uram_bank_is_full),
+                                  .probe6(uram_bank_clear));
+        end
+    endgenerate    
     
     event_chunk_fifo u_chkfifo( .clk(memclk),
                                 .srst(!memresetn),

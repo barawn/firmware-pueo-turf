@@ -59,7 +59,7 @@ module ack_done_generator(
                           .srst( !aresetn ),
                           .din( ack_din ),
                           .full( ack_full ),
-                          .wr_en( m_ack_tvalid && m_ack_tready ),
+                          .wr_en( s_ack_tvalid && s_ack_tready ),
                           .rd_clk( memclk ),
                           .dout( ack_dout ),
                           .rd_en( ackfifo_tvalid && ackfifo_tready),

@@ -250,6 +250,24 @@ module pueo_turfio_event_req_gen(
     localparam [FSM_BITS-1:0] WAIT_NEXT_CHUNK = 6;
     reg [FSM_BITS-1:0] state = IDLE;
     
+    // state = 3
+    // payload_valid_i = 1
+    // payload_ident_i = 5
+    // payload_has_space_o = 1
+    // payload_last_i = 1
+    // s_done_tvalid = 1
+    // s_done_tready = 1
+    // 7 probes
+    evreq_ila u_ila(.clk(memclk),
+                    .probe0(state),
+                    .probe1(payload_valid_i),
+                    .probe2(payload_ident_i),
+                    .probe3(payload_has_space_o),
+                    .probe4(payload_last_i),
+                    .probe5(s_done_tvalid),
+                    .probe6(s_done_tready));
+
+    
     reg [3:0] reset_counter = {4{1'b0}};
     
     wire dm_cmd_reset = (reset_counter != {4{1'b0}});
