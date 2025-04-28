@@ -105,7 +105,7 @@ module turfio_aurora_wrap
     // and devec-ify for the output (ignoring tkeep)
     assign m_aurora_tdata = { aurora_rx_tdata[3], aurora_rx_tdata[2], aurora_rx_tdata[1], aurora_rx_tdata[0] };
     assign m_aurora_tvalid ={ aurora_rx_tvalid[3], aurora_rx_tvalid[2], aurora_rx_tvalid[1], aurora_rx_tvalid[0] };
-    assign m_aurora_tlast = { aurora_rx_tlast[3], aurora_rx_tvalid[2], aurora_rx_tvalid[1], aurora_rx_tvalid[0] };
+    assign m_aurora_tlast = { aurora_rx_tlast[3], aurora_rx_tlast[2], aurora_rx_tlast[1], aurora_rx_tlast[0] };
 
     // The UFC interfaces are spliced into the normal ones:
     // their AXI4-Stream data indicates the *length*. The data
