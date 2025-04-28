@@ -344,6 +344,7 @@ module event_pueo_wrap(
                                `CONNECT_AXI4S_MIN_IFV( s_done_ , addr_ , [4] ),
                                `CONNECT_AXI4S_MIN_IF( m_cmpl_ , hdrcmpl_ ),
                                `CONNECT_AXI4S_MIN_IF( s_thdr_ , thdr_ ),
+                               .s_thdr_tlast( thdr_tlast ),
                                `CONNECT_AXI4S_MIN_IFV( s_hdr0_ , hdr_ , [ 0 ] ),
                                .s_hdr0_tlast( hdr_tlast[0] ),
                                `CONNECT_AXI4S_MIN_IFV( s_hdr1_ , hdr_ , [ 1 ] ),
