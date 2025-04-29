@@ -35,10 +35,7 @@ module event_pueo_wrap(
         // event control input
         `HOST_NAMED_PORTS_AXI4S_MIN_IF( m_ev_ctrl_ , 32),
         // event data input
-        `HOST_NAMED_PORTS_AXI4S_MIN_IF( m_ev_data_ , 64),            
-        output [7:0] m_ev_data_tkeep,
-        output m_ev_data_tlast
-        
+        `HOST_NAMED_PORTS_AXI4S_IF( m_ev_data_ , 64)        
     );
     
     parameter WBCLKTYPE = "NONE";
@@ -163,7 +160,7 @@ module event_pueo_wrap(
     
     // OK OK OK HERE WE GO
     `DEFINE_AXI4S_MIN_IF( nack_mem_ , 48 ); // nack path in memclk
-    `DEFINE_AXI4S_MIN_IFV( addr_ , 12, [4:0] ); // done paths in memclk
+    `DEFINE_AXI4S_MIN_IFV( addr_ , 16, [4:0] ); // done paths in memclk
     wire incr_allow;    // increment the allow counter
     `DEFINE_AXI4S_MIN_IFV( hdr_ , 64, [3:0] ); // header path
     wire [3:0] hdr_tlast;
@@ -378,7 +375,7 @@ module event_pueo_wrap(
                    .aclk(ethclk),
                    .aresetn(ethresetn),
                    `CONNECT_AXI4S_MIN_IF( m_ctrl_ , m_ev_ctrl_ ),
-                   `CONNECT_AXI4S_MIN_IF( m_data_ , m_ev_data_ ),
+                   `CONNECT_AXI4S_IF( m_data_ , m_ev_data_ ),
                    .any_err_o( readout_err ));
     
     // and now the interconnect

@@ -64,6 +64,7 @@ module event_readout_generator(
     wire [11:0] nack_upper_addr = s_nack_tdata[20 +: 12];
     // either BTT or nack_btt
     reg [18:0] event_bytes = {19{1'b0}};
+    // this is the event_bytes field filled out to what the DataMover wants
     wire [22:0] cmd_btt = { {4{1'b0}}, event_bytes };
     // either s_hdr_tdata[8 +: 13], {19{1'b0}} + START_OFFSET
     // or     nack_upper_addr, nack_offset[18:0] & {19{!full_event_nack}} + START_OFFSET
@@ -208,7 +209,7 @@ module event_readout_generator(
             nack_readout <= s_nack_tvalid;
             // determine readout length.
             if (full_event)
-                event_bytes <= cmd_btt;
+                event_bytes <= BTT;
             else
                 event_bytes <= nack_btt;
             // determine start address (except top addr)
@@ -268,6 +269,8 @@ module event_readout_generator(
     assign      m_data_tdata = evfifo_dout[63:0];
     assign      m_data_tlast = evfifo_dout[64];
 
+    assign      s_nack_tready = (state == IDLE) && memresetn;
+
     // debug:
     // state (2)
     // tfio_tvalid (4)
@@ -276,6 +279,7 @@ module event_readout_generator(
     // m_ctrl_tready
     // m_data_tvalid
     // m_data_tready
+    wire mm2s_err;
     generate
         if (DEBUG == "TRUE") begin : ILA
             wire [3:0] tfio_tvalid_vec = { s_t3_tvalid,
@@ -289,7 +293,16 @@ module event_readout_generator(
                                     .probe3(m_ctrl_tvalid),
                                     .probe4(m_ctrl_tready),
                                     .probe5(m_data_tvalid),
-                                    .probe6(m_data_tready));
+                                    .probe6(m_data_tready),
+                                    .probe7(stat_tdata),
+                                    .probe8(stat_tvalid),
+                                    .probe9(stat_tready),
+                                    .probe10(upper_addr[11:0]),
+                                    .probe11(full_event),
+                                    .probe12(s_nack_tvalid),
+                                    .probe13(mm2s_err),
+                                    .probe14(evin_tvalid),
+                                    .probe15(evin_tready));
         end
     endgenerate
       
@@ -300,7 +313,8 @@ module event_readout_generator(
                                  `CONNECT_AXI4S_MIN_IF( s_axis_mm2s_cmd_ , cmd_ ),
                                  `CONNECT_AXI4S_MIN_IF( m_axis_mm2s_sts_ , stat_ ),
                                  `CONNECT_AXI4S_IF( m_axis_mm2s_ , evin_ ),
-                                 `CONNECT_AXIM_R( m_axi_mm2s_ , m_axi_ ));
+                                 `CONNECT_AXIM_R( m_axi_mm2s_ , m_axi_ ),
+                                 .mm2s_err(mm2s_err));
 
     `AXIM_NO_WRITES( m_axi_ );
     
