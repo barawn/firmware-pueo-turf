@@ -280,7 +280,7 @@ module event_pueo_wrap(
                          .errdet_aclk_o( tio_errdet_aclk[ ACLK_ERR_SIZE*i +: ACLK_ERR_SIZE ] ),
                          .errdet_memclk_o(tio_errdet_memclk[ MEMCLK_ERR_SIZE*i +: 1 ] ));
             // now the req gen. transfers chunks to memory
-            pueo_turfio_event_req_gen #(.BASE_ADDRESS_4KB(4 + 28*i))
+            pueo_turfio_event_req_gen #(.BASE_ADDRESS_4KB(4 + 28*i),.DEBUG("FALSE"))
                 u_reqgen( .memclk(memclk),
                           .memresetn(memresetn),
                           .payload_i( payload ),
