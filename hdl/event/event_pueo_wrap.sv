@@ -266,7 +266,7 @@ module event_pueo_wrap(
             wire        payload_last;
             wire        payload_has_space;
             // event accumulator. builds up chunks
-            turfio_event_accumulator
+            turfio_event_accumulator #(.DEBUG(i == 0 ? "TRUE" : "FALSE"))
                 u_accum( .aclk( aclk ),
                          .aresetn( aresetn ),
                          `CONNECT_AXI4S_MIN_IFV( s_axis_ , aur_ , [i] ),
