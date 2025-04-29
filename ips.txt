@@ -32,6 +32,7 @@ ip/event/event_done_addrfifo/event_done_addrfifo.xci
 ip/event/event_in_dm_fifo/event_in_dm_fifo.xci
 ip/event/event_in_dm_fifo_noexpand/event_in_dm_fifo_noexpand.xci
 ip/event/event_out_fifo/event_out_fifo.xci
+ip/debug/event_readout_ila/event_readout_ila.xci
 ip/debug/evreq_ila/evreq_ila.xci
 ip/debug/hdr_accum_ila/hdr_accum_ila.xci
 ip/event/hdr_addrfifo/hdr_addrfifo.xci

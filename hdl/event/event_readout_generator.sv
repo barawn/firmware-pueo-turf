@@ -51,6 +51,7 @@ module event_readout_generator(
     
     parameter MEMCLKTYPE = "NONE";
     parameter ACLKTYPE = "NONE";
+    parameter DEBUG = "TRUE";
     
     localparam [18:0] START_OFFSET = 19'h03E00;
     localparam [18:0] BTT = 19'd459008;
@@ -138,8 +139,9 @@ module event_readout_generator(
     reg    control_complete_aclk = 0;
     wire   control_complete_memclk;    
 
-
-    assign m_ctrl_tdata = { upper_addr_aclk[11:0], 1'b0, BTT };
+    // ffs this is NOT static. 12 bits at top, + 1 spare, + 19 bits bottom
+    // 19 bits bottom is event_bytes.
+    assign m_ctrl_tdata = { upper_addr_aclk[11:0], 1'b0, event_bytes };
     assign m_ctrl_tvalid = control_valid_aclk;
     
     reg any_error_seen = 0;
@@ -265,7 +267,32 @@ module event_readout_generator(
     assign      m_data_tkeep = {8{1'b1}};
     assign      m_data_tdata = evfifo_dout[63:0];
     assign      m_data_tlast = evfifo_dout[64];
-    
+
+    // debug:
+    // state (2)
+    // tfio_tvalid (4)
+    // hdr_tvalid (1)
+    // m_ctrl_tvalid
+    // m_ctrl_tready
+    // m_data_tvalid
+    // m_data_tready
+    generate
+        if (DEBUG == "TRUE") begin : ILA
+            wire [3:0] tfio_tvalid_vec = { s_t3_tvalid,
+                                           s_t2_tvalid,
+                                           s_t1_tvalid,
+                                           s_t0_tvalid };                                           
+            event_readout_ila u_ila(.clk(memclk),
+                                    .probe0(state),
+                                    .probe1(tfio_tvalid_vec),
+                                    .probe2(s_hdr_tvalid),
+                                    .probe3(m_ctrl_tvalid),
+                                    .probe4(m_ctrl_tready),
+                                    .probe5(m_data_tvalid),
+                                    .probe6(m_data_tready));
+        end
+    endgenerate
+      
     event_datamover u_datamover( .m_axi_mm2s_aclk( memclk ),
                                  .m_axi_mm2s_aresetn( memresetn ),
                                  .m_axis_mm2s_cmdsts_aclk( memclk ),
