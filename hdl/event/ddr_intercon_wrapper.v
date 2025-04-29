@@ -9,10 +9,10 @@ module ddr_intercon_wrapper(
     `S_AXIM_PORT( s_axi_in_ , 4 ),
     `S_AXIM_PORT( s_axi_out_ , 1 ),
     `M_AXIM_PORT( m_axi_ , 1 ),
-    wire [2:0] m_axi_arid,
-    wire [2:0] m_axi_awid,
-    wire [2:0] m_axi_bid,
-    wire [2:0] m_axi_rid
+    output [2:0] m_axi_arid,
+    output [2:0] m_axi_awid,
+    input [2:0] m_axi_bid,
+    input [2:0] m_axi_rid
     );
 
   parameter DEBUG = "TRUE";
