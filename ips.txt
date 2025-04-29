@@ -45,6 +45,7 @@ ip/event/nack_ccfifo/nack_ccfifo.xci
 ip/debug/raw_event_ila/raw_event_ila.xci
 ip/debug/register_bridge_ila/register_bridge_ila.xci
 ip/event/surf_fifo/surf_fifo.xci
+ip/event/turf_header_fifo/turf_header_fifo.xci
 ip/aurora/turfio_aurora/turfio_aurora.xci
 ip/event/turfio_datamover/turfio_datamover.xci
 ip/event/turfio_hdr_fifo/turfio_hdr_fifo.xci

@@ -68,6 +68,21 @@ module hdr_accumulator(
     `AXIS_VASSIGN( tio_ , [2],  s_hdr2_ );
     `AXIS_VASSIGN( tio_ , [3],  s_hdr3_ );
 
+    // FFS we need a FIFO to store the TURF header bc we use
+    // its tlast to generate fake masked TURFIO data.
+    `DEFINE_AXI4S_MIN_IF( thdrfifo_ , 64 );
+    wire thdrfifo_tlast;
+    wire thdrfifo_full;
+    assign s_thdr_tready = !thdrfifo_full;
+    turf_header_fifo u_turfhdr_fifo(.clk(memclk),
+                                    .srst(!memresetn),
+                                    .din( { s_thdr_tlast, s_thdr_tdata } ),
+                                    .full( thdrfifo_full ),
+                                    .wr_en( s_thdr_tvalid && s_thdr_tready ),
+                                    .dout( { thdrfifo_tlast, thdrfifo_tdata } ),
+                                    .rd_en( thdrfifo_tready && thdrfifo_tvalid ),
+                                    .valid( thdrfifo_tvalid ));
+                                    
     // We need to generate a flag to indicate when the masked TURFIOs
     // need to start, then clock-cross it to aclk.
     wire start_masked_turfio = s_thdr_tlast && s_thdr_tvalid && s_thdr_tready;
@@ -136,7 +151,7 @@ module hdr_accumulator(
                           tiofifo_tvalid[1] &&
                           tiofifo_tvalid[2] &&
                           tiofifo_tvalid[3] &&
-                          s_thdr_tvalid;
+                          thdrfifo_tvalid;
     
     // data buildup:
     localparam [22:0] HDR_SIZE_BTT = 22'd256;
@@ -161,7 +176,7 @@ module hdr_accumulator(
         tiofifo_tvalid[2] && tiofifo_tready[2] && tiofifo_tlast[2],        
         tiofifo_tvalid[1] && tiofifo_tready[1] && tiofifo_tlast[1],        
         tiofifo_tvalid[0] && tiofifo_tready[0] && tiofifo_tlast[0],        
-        s_thdr_tvalid && s_thdr_tready && s_thdr_tlast };
+        thdrfifo_tvalid && thdrfifo_tready && thdrfifo_tlast };
 
     // ok. now the best way to handle this is still an FSM
     // otherwise it just gets too complicated.
@@ -189,7 +204,7 @@ module hdr_accumulator(
                                 .probe1(stream_select),
                                 .probe2(stream_last_beat),
                                 .probe3(tiofifo_tvalid_vec),
-                                .probe4(s_thdr_tvalid));
+                                .probe4(thdrfifo_tvalid));
             
         end
     endgenerate    
@@ -238,22 +253,22 @@ module hdr_accumulator(
                                    tiofifo_tdata[2],
                                    tiofifo_tdata[1],
                                    tiofifo_tdata[0],
-                                   s_thdr_tdata } ),
+                                   thdrfifo_tdata } ),
                   .s_axis_tvalid({  tiofifo_tvalid[3],
                                     tiofifo_tvalid[2],
                                     tiofifo_tvalid[1],
                                     tiofifo_tvalid[0],
-                                    s_thdr_tvalid }),
+                                    thdrfifo_tvalid }),
                   .s_axis_tready({  tiofifo_tready[3],
                                     tiofifo_tready[2],
                                     tiofifo_tready[1],
                                     tiofifo_tready[0],
-                                    s_thdr_tready }),
+                                    thdrfifo_tready }),
                   .s_axis_tlast({   tiofifo_tlast[3],
                                     tiofifo_tlast[2],
                                     tiofifo_tlast[1],
                                     tiofifo_tlast[0],
-                                      s_thdr_tlast }),
+                                    thdrfifo_tlast }),
                    .s_axis_tuser( { 1'b1,
                                     1'b0,
                                     1'b0,
