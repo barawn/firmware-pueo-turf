@@ -199,12 +199,22 @@ module hdr_accumulator(
                                               tiofifo_tvalid[2],
                                               tiofifo_tvalid[1],
                                               tiofifo_tvalid[0] };
+            wire [3:0] tiofifo_tready_vec = { tiofifo_tready[3],
+                                              tiofifo_tready[2],
+                                              tiofifo_tready[1],
+                                              tiofifo_tready[0] };
             hdr_accum_ila u_ila(.clk(memclk),
                                 .probe0(state),
                                 .probe1(stream_select),
-                                .probe2(stream_last_beat),
+                                .probe2(stream_last_beat),                                
                                 .probe3(tiofifo_tvalid_vec),
-                                .probe4(thdrfifo_tvalid));
+                                .probe4(tiofifo_tready_vec),
+                                .probe5(thdrfifo_tvalid),
+                                .probe6(thdrfifo_tready),                                
+                                .probe7(tothdr_tvalid),
+                                .probe8(tothdr_tready),
+                                .probe9(tothdr_tlast)
+                                );
             
         end
     endgenerate    
