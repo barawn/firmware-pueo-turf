@@ -63,7 +63,12 @@ module event_readout_generator(
     wire [18:0] nack_offset = s_nack_tdata[0 +: 19];
     wire [11:0] nack_upper_addr = s_nack_tdata[20 +: 12];
     // either BTT or nack_btt
+    (* CUSTOM_CC_SRC = MEMCLKTYPE *)
     reg [18:0] event_bytes = {19{1'b0}};
+    // in aclk domain
+    (* CUSTOM_CC_DST = ACLKTYPE *)
+    reg [18:0] event_bytes_aclk = {19{1'b0}};
+    
     // this is the event_bytes field filled out to what the DataMover wants
     wire [22:0] cmd_btt = { {4{1'b0}}, event_bytes };
     // either s_hdr_tdata[8 +: 13], {19{1'b0}} + START_OFFSET
@@ -142,7 +147,9 @@ module event_readout_generator(
 
     // ffs this is NOT static. 12 bits at top, + 1 spare, + 19 bits bottom
     // 19 bits bottom is event_bytes.
-    assign m_ctrl_tdata = { upper_addr_aclk[11:0], 1'b0, event_bytes };
+    
+    // DUMBASS THIS IS IN ETHCLK DOMAIN, BOTH NEED TO BE ETHCLK!!!
+    assign m_ctrl_tdata = { upper_addr_aclk[11:0], 1'b0, event_bytes_aclk };
     assign m_ctrl_tvalid = control_valid_aclk;
     
     reg any_error_seen = 0;
@@ -222,7 +229,6 @@ module event_readout_generator(
         if (!memresetn) state <= IDLE;
         else begin
             case(state)
-                // s_nack_tready is just state == IDLE && memresetn anyway
                 IDLE: if (s_nack_tvalid || (all_valid && is_allowed))
                     state <= ISSUE_CMD;
                 ISSUE_CMD: if (cmd_tready) state <= ISSUE_CONTROL;
@@ -233,12 +239,14 @@ module event_readout_generator(
 //        if (state == IDLE && all_valid)
 //            upper_addr <= s_hdr_tdata[8 +: 13];
 
-        control_issued <= issue_control_memclk;
+        // ffs you have to make sure this stays high to generate a flag idiot
+        control_issued <= (state == ISSUE_CONTROL);
     end
     
     always @(posedge aclk) begin
         if (issue_control_aclk) upper_addr_aclk <= upper_addr;
-    
+        if (issue_control_aclk) event_bytes_aclk <= event_bytes;
+        
         if (!aresetn) control_valid_aclk <= 1'b0;
         else begin
             if (issue_control_aclk) control_valid_aclk <= 1;
@@ -269,8 +277,8 @@ module event_readout_generator(
     assign      m_data_tdata = evfifo_dout[63:0];
     assign      m_data_tlast = evfifo_dout[64];
 
-    assign      s_nack_tready = (state == IDLE) && memresetn;
-
+    assign      s_nack_tready = nack_tready;
+    
     // debug:
     // state (2)
     // tfio_tvalid (4)
@@ -290,10 +298,10 @@ module event_readout_generator(
                                     .probe0(state),
                                     .probe1(tfio_tvalid_vec),
                                     .probe2(s_hdr_tvalid),
-                                    .probe3(m_ctrl_tvalid),
-                                    .probe4(m_ctrl_tready),
-                                    .probe5(m_data_tvalid),
-                                    .probe6(m_data_tready),
+                                    .probe3(issue_control_memclk),
+                                    .probe4(control_complete_memclk),
+                                    .probe5(evin_tvalid),
+                                    .probe6(evin_tready),
                                     .probe7(stat_tdata),
                                     .probe8(stat_tvalid),
                                     .probe9(stat_tready),
@@ -301,8 +309,10 @@ module event_readout_generator(
                                     .probe11(full_event),
                                     .probe12(s_nack_tvalid),
                                     .probe13(mm2s_err),
-                                    .probe14(evin_tvalid),
-                                    .probe15(evin_tready));
+                                    .probe14(m_axi_arvalid),
+                                    .probe15(m_axi_arready),
+                                    .probe16(m_axi_rvalid),
+                                    .probe17(m_axi_rready));
         end
     endgenerate
       
