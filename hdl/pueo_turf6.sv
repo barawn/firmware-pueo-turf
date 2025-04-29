@@ -521,9 +521,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
     `DEFINE_AXI4S_MIN_IF( nack_ , 48);
     wire event_open;
     `DEFINE_AXI4S_MIN_IF( ev_ctrl_ , 32);
-    `DEFINE_AXI4S_MIN_IF( ev_data_ , 64);
-    wire [7:0] ev_data_tkeep;
-    wire       ev_data_tlast;
+    `DEFINE_AXI4S_IF( ev_data_ , 64);
     // kill the streams for now
 //    assign ack_tready = 1'b1;
 //    assign nack_tready = 1'b1;
@@ -563,9 +561,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
             `CONNECT_AXI4S_MIN_IF( m_nack_ , nack_ ),
             .event_open_o(event_open),
             `CONNECT_AXI4S_MIN_IF( s_ev_ctrl_ , ev_ctrl_ ),
-            `CONNECT_AXI4S_MIN_IF( s_ev_data_ , ev_data_ ),
-            .s_ev_data_tkeep(ev_data_tkeep),
-            .s_ev_data_tlast(ev_data_tlast),
+            `CONNECT_AXI4S_IF( s_ev_data_ , ev_data_ ),
             .wb_clk_i(ps_clk),
             `CONNECT_WBS_IFM( gtp_ , gbe_ ),
             `CONNECT_WBM_IFM( wb_ , wb_eth_ )          
@@ -599,7 +595,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                              .event_open_i(event_open),
                              `CONNECT_AXI4S_MIN_IF( s_ack_ , ack_ ),
                              `CONNECT_AXI4S_MIN_IF( s_nack_ , nack_ ),
-                             `CONNECT_AXI4S_MIN_IF( m_ev_data_ , ev_data_ ),
+                             `CONNECT_AXI4S_IF( m_ev_data_ , ev_data_ ),
                              `CONNECT_AXI4S_MIN_IF( m_ev_ctrl_ , ev_ctrl_ ));
     
 
