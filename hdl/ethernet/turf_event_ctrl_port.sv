@@ -126,6 +126,8 @@ module turf_event_ctrl_port #(
                 event_is_open <= 1'b0;
             
             if (cmd_match[PW_CMD] && !event_is_open) begin
+                // The PW command explicitly says it's payload[47:32].
+                // I should probably parameterize how many bits to store but whatever
                 if (payload[32 +: 16] <= MAX_FRAGMENT_LEN) nfragment <= payload[ 35 +: 10];
                 fragsrc_mask <= payload[0 +: MAX_FRAGSRCMASK];
             end
