@@ -6,9 +6,9 @@
 // gets ignored.
 module turf_event_ctrl_port #(
         // maximum value for the fragment length
-        parameter MAX_FRAGMENT_LEN=8095,
+        parameter [15:0] MAX_FRAGMENT_LEN=8095,
         // maximum address value
-        parameter MAX_ADDR = 4095,
+        parameter [15:0] MAX_ADDR = 4095,
         parameter MAX_FRAGSRCMASK = 6,
         // holdoff in clock cycles
         parameter [4:0] HOLDOFF_DELAY = 31,
@@ -34,8 +34,6 @@ module turf_event_ctrl_port #(
         output        event_open_o
     );
     localparam [15:0] MAX_FRAGSRCMASK_BITS = { {(16-MAX_FRAGSRCMASK){1'b0}}, {MAX_FRAGSRCMASK{1'b1}} };
-    localparam [15:0] MAX_ADDR_BITS = MAX_ADDR;
-    localparam [15:0] MAX_FRAGMENT_LEN_BITS = MAX_FRAGMENT_LEN;
     localparam NUM_CMDS = 5;
     localparam [16*NUM_CMDS-1:0] CMD_TABLE =
         { "PW",
@@ -114,7 +112,7 @@ module turf_event_ctrl_port #(
             else if (cmd_match[ID_CMD])
                 response <= { s_udpdata_tdata[48 +: 16], my_mac_address };
             else if (cmd_match[PR_CMD])
-                response <= { s_udpdata_tdata[48 +: 16], MAX_FRAGMENT_LEN_BITS, MAX_ADDR_BITS, MAX_FRAGSRCMASK_BITS };
+                response <= { s_udpdata_tdata[48 +: 16], MAX_FRAGMENT_LEN, MAX_ADDR, MAX_FRAGSRCMASK_BITS };
             else if (cmd_match[PW_CMD])
                 response <= { s_udpdata_tdata[48 +: 16], nfragment_as_bytes, MAX_ADDR_BITS, fragsrc_mask_o };
         end
