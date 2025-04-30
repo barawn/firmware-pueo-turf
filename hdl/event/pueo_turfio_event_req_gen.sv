@@ -117,6 +117,8 @@ module pueo_turfio_event_req_gen(
         // bit 3 : doneaddr FIFO underflow (?!?! - no effing clue, logic issue)
         output [3:0] cmd_err_o
     );
+    
+    parameter DEBUG = "TRUE";
     // Our base addresses are either spaced in 4k*4*7 or 3k*4*7 increments.
     // EITHER WAY it's 4k (0x1000) spaced - either 28 (0x1C) or 21 (0x15), and
     // we start at 0x4000 to make sure we page-align.
@@ -258,15 +260,18 @@ module pueo_turfio_event_req_gen(
     // s_done_tvalid = 1
     // s_done_tready = 1
     // 7 probes
-    evreq_ila u_ila(.clk(memclk),
-                    .probe0(state),
-                    .probe1(payload_valid_i),
-                    .probe2(payload_ident_i),
-                    .probe3(payload_has_space_o),
-                    .probe4(payload_last_i),
-                    .probe5(s_done_tvalid),
-                    .probe6(s_done_tready));
-
+    generate
+        if (DEBUG == "TRUE") begin : ILA
+            evreq_ila u_ila(.clk(memclk),
+                            .probe0(state),
+                            .probe1(payload_valid_i),
+                            .probe2(payload_ident_i),
+                            .probe3(payload_has_space_o),
+                            .probe4(payload_last_i),
+                            .probe5(s_done_tvalid),
+                            .probe6(s_done_tready));
+        end
+    endgenerate        
     
     reg [3:0] reset_counter = {4{1'b0}};
     
