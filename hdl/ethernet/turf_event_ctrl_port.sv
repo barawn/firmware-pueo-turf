@@ -114,7 +114,7 @@ module turf_event_ctrl_port #(
             else if (cmd_match[PR_CMD])
                 response <= { s_udpdata_tdata[48 +: 16], MAX_FRAGMENT_LEN, MAX_ADDR, MAX_FRAGSRCMASK_BITS };
             else if (cmd_match[PW_CMD])
-                response <= { s_udpdata_tdata[48 +: 16], nfragment_as_bytes, MAX_ADDR_BITS, fragsrc_mask_o };
+                response <= { s_udpdata_tdata[48 +: 16], nfragment_as_bytes, MAX_ADDR, fragsrc_mask_o };
         end
         
         if (state == PARSE_COMMAND) begin
