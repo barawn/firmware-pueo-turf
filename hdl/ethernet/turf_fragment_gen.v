@@ -190,7 +190,7 @@ module turf_fragment_gen(
             fragment_ila u_ila(.clk(aclk),
                                .probe0(state),              // 2
                                .probe1(fragment_beats),     // 10
-                               .probe2(m_payload_data),     // 64
+                               .probe2(m_payload_tdata),     // 64
                                .probe3(m_payload_tready),   // 1
                                .probe4(m_payload_tvalid),   // 1
                                .probe5(m_payload_tlast),    // 1
