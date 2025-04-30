@@ -245,6 +245,8 @@ module event_pueo_wrap(
                    `CONNECT_AXI4S_MIN_IF( s_nack_ , s_nack_ ),
                    .memclk(memclk),
                    .memresetn(memresetn),
+                   // needs the TIO mask to fake eat the addrs.
+                   .tio_mask_i(tio_mask_memclk),
                    `CONNECT_AXI4S_MIN_IF( m_nack_ , nack_mem_ ),
                    .allow_o( incr_allow ),
                    `CONNECT_AXI4S_MIN_IFV( m_t0addr_ , addr_ , [0] ),

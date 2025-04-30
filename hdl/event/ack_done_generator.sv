@@ -22,6 +22,9 @@ module ack_done_generator(
         input memresetn,
         `HOST_NAMED_PORTS_AXI4S_MIN_IF( m_nack_ , 48 ),
         output allow_o,
+        // Need to accept the TIO mask because if it's masked,
+        // it will autoconsume the addr (and its valid output will be blocked for safety).
+        input [3:0] tio_mask_i,
         // really only 12 bits
         `HOST_NAMED_PORTS_AXI4S_MIN_IF( m_hdraddr_ , 16 ),
         `HOST_NAMED_PORTS_AXI4S_MIN_IF( m_t0addr_ , 16 ),
@@ -55,6 +58,17 @@ module ack_done_generator(
     wire [11:0] ack_dout;
     assign      ackfifo_tdata = { {4{1'b0}}, ack_dout };    
 
+    wire [3:0] tio_addr_tvalid;
+    assign m_t0addr_tvalid = tio_addr_tvalid[0] && !tio_mask_i[0];
+    assign m_t1addr_tvalid = tio_addr_tvalid[1] && !tio_mask_i[1];
+    assign m_t2addr_tvalid = tio_addr_tvalid[2] && !tio_mask_i[2];
+    assign m_t3addr_tvalid = tio_addr_tvalid[3] && !tio_mask_i[3];
+    wire [3:0] tio_addr_tready;
+    assign tio_addr_tready[0] = m_t0addr_tready || tio_mask_i[0];
+    assign tio_addr_tready[1] = m_t1addr_tready || tio_mask_i[1];
+    assign tio_addr_tready[2] = m_t2addr_tready || tio_mask_i[2];
+    assign tio_addr_tready[3] = m_t3addr_tready || tio_mask_i[3];
+
     ack_ccfifo u_ackfifo( .wr_clk( aclk ),
                           .srst( !aresetn ),
                           .din( ack_din ),
@@ -70,20 +84,14 @@ module ack_done_generator(
                                     `CONNECT_AXI4S_MIN_IF( s_axis_ , ackfifo_ ),
                                     // no macros here, it's a vec
                                     .m_axis_tdata( { m_hdraddr_tdata,
-                                                     m_t0addr_tdata,
-                                                     m_t1addr_tdata,
+                                                     m_t3addr_tdata,
                                                      m_t2addr_tdata,
-                                                     m_t3addr_tdata } ),
+                                                     m_t1addr_tdata,
+                                                     m_t0addr_tdata } ),
                                     .m_axis_tvalid({ m_hdraddr_tvalid,
-                                                     m_t0addr_tvalid,
-                                                     m_t1addr_tvalid,
-                                                     m_t2addr_tvalid,
-                                                     m_t3addr_tvalid }),
+                                                     tio_addr_tvalid }),
                                     .m_axis_tready({ m_hdraddr_tready,
-                                                     m_t0addr_tready,
-                                                     m_t1addr_tready,
-                                                     m_t2addr_tready,
-                                                     m_t3addr_tready }));
+                                                     tio_addr_tready }));
                           
     // and we clock-cross the allow bit                              
     flag_sync u_allow_sync(.in_clkA( s_ack_tdata[47] && s_ack_tvalid && s_ack_tready ),
