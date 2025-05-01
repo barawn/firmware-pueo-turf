@@ -48,7 +48,7 @@ module hdr_accumulator(
     parameter DEBUG = "TRUE";
     
     // our low 19 bits are fixed, it's 0x4000 back 256.
-    localparam [18:0] BASE_ADDR = 19'h03F00;
+    parameter [18:0] BASE_ADDR = 19'h03F00;
     
     // each of the TURFIOs needs to go in a FIFO.
     // we also need to have a fake stream generator, which

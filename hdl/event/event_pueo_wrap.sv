@@ -43,6 +43,14 @@ module event_pueo_wrap(
     parameter MEMCLKTYPE = "NONE";
     parameter ETHCLKTYPE = "NONE";
     parameter DEBUG = "TRUE";
+
+    // This is where the headers get written into and where the event readout starts
+    // Put it here so it changes in both the hdr_accumulator and event_readout_generator
+    // whenever it changes.
+    // I should however make this _calculable_ from the TURF and SURF header sizes
+    // so that when the TURF header sizes change everything changes automatically.
+    localparam [18:0] EVENT_BASE_ADDR = 19'h03F00;
+
     
     wire init_calib_complete;
     wire memclk;
@@ -337,7 +345,7 @@ module event_pueo_wrap(
                                      .m_thdr_tlast( thdr_tlast ));  
     
     // now the header accumulator
-    hdr_accumulator u_headers( .aclk(aclk),
+    hdr_accumulator #(.BASE_ADDR(EVENT_BASE_ADDR)) u_headers( .aclk(aclk),
                                .aresetn(aresetn),
                                .tio_mask_i(tio_mask_aclk),
                                `CONNECT_AXI4S_MIN_IFV( s_done_ , addr_ , [4] ),
@@ -358,7 +366,8 @@ module event_pueo_wrap(
     
     // and the readout generator
     event_readout_generator #(.MEMCLKTYPE(MEMCLKTYPE),
-                              .ACLKTYPE(ETHCLKTYPE))
+                              .ACLKTYPE(ETHCLKTYPE),
+                              .START_OFFSET(EVENT_BASE_ADDR))
         u_readout( .memclk(memclk),
                    .memresetn(memresetn),
                    // completions

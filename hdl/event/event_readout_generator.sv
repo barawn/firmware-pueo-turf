@@ -53,8 +53,9 @@ module event_readout_generator(
     parameter ACLKTYPE = "NONE";
     parameter DEBUG = "TRUE";
     
-    localparam [18:0] START_OFFSET = 19'h03E00;
-    localparam [18:0] BTT = 19'd459008;
+    // I seriously need to make these both *calculable*
+    parameter [18:0] START_OFFSET = 19'h03F00;
+    parameter [18:0] BTT = 19'd459008;
     // decode nack structure
     // allow is ignored (bit 47), it comes from the done broadcaster.
     wire full_event = s_nack_tdata[46] || !s_nack_tvalid;
