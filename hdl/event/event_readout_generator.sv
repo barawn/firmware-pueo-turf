@@ -312,7 +312,9 @@ module event_readout_generator(
                                     .probe14(m_axi_arvalid),
                                     .probe15(m_axi_arready),
                                     .probe16(m_axi_rvalid),
-                                    .probe17(m_axi_rready));
+                                    .probe17(m_axi_rready),
+                                    .probe18(allow_counter),
+                                    .probe19(allow_i));
         end
     endgenerate
       
