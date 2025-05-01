@@ -113,7 +113,7 @@ module turf_acknack_port #(
                         // more than 1
                         else state <= READ_DATA_N;
                     end
-                // s_udpdata_tready is always 0 here
+                // s_udpdata_tready is always 0 here    
                 READ_DATA_N:
                     if (s_udpdata_tvalid) begin
                         if (s_udpdata_tkeep != 8'hFF) state <= READ_SKIP;
@@ -157,14 +157,15 @@ module turf_acknack_port #(
     // plug in the open bit, so you'll know why it had no effect.
     assign m_udpdata_tdata = (last_store & MY_CHECK_BITS) | (event_open_i << OPEN_BIT);
 
+    // wtf, why is this effed up???
     // m_acknack_ handling
     assign m_acknack_tvalid = (state == WRITE_DATA);            
     // acknack structure:
     assign m_acknack_tdata = {
-        m_udpdata_tdata[63],        // 1
+        s_udpdata_tdata[63],        // 1
         full_event_nack,            // 1
         3'b0000,                    // 3
         nack_fragment_count,        // 11
-        m_udpdata_tdata[31:0]};     // 32
+        s_udpdata_tdata[31:0]};     // 32
 
 endmodule
