@@ -85,6 +85,15 @@ module turfio_event_accumulator(
     wire indata_width_err = (in64_tkeep[4] != in64_tkeep[0]) && in64_tvalid && in64_tready;
     reg indata_width_err_seen = 0;
 
+    // axi spec is LSB first so this does what we want:
+    // if we have
+    // clk  in  out
+    // 0    AA  XX
+    // 1    BB  BBAA
+    // so that means our output stream can be split up
+    // [7:0] = surf1
+    // [15:8] = surf2
+    // etc. etc. and the top byte [63:56] is unused (TURFIO)
     axis_32to64 u_widener(.aclk(aclk),
                           .aresetn(aresetn),
                           `CONNECT_AXI4S_MIN_IF( s_axis_ , s_axis_ ),
