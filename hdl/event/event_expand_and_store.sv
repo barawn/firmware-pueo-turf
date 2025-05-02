@@ -16,6 +16,28 @@ module event_expand_and_store(
     );
     parameter EXPAND_DATA = "TRUE";
 
+    // this remaps the incoming data so that it stacks correctly
+    //remap [0  +: 12] = [48 +: 4], [56 +: 8] 000
+    //remap [12 +: 12] = [40 +: 8], [52 +: 4] 001
+    //remap [24 +: 12] = [24 +: 4], [32 +: 8] 001
+    //remap [36 +: 12] = [16 +: 8], [28 +: 4] 002
+    //remap [48 +: 12] = [0 +: 4], [8 +: 8] 002
+    //remap [60 +: 4] = [4 +: 4] 3    
+    function [63:0] remap_data;
+        input [63:0] data_in;
+        begin
+            remap_data[0 +: 12]  = {data_in[48 +: 4], data_in[56 +: 8] };
+            remap_data[12 +: 12] = {data_in[40 +: 8], data_in[52 +: 4] };
+            remap_data[24 +: 12] = {data_in[24 +: 4], data_in[32 +: 8] };
+            remap_data[36 +: 12] = {data_in[16 +: 8], data_in[28 +: 4] };
+            remap_data[48 +: 12] = {data_in[00 +: 4], data_in[08 +: 8] };
+            remap_data[60 +: 04] = data_in[4 +: 4];
+        end
+    endfunction
+
+    // yes yes yes this is overloading this name. DEAL WITH IT.
+    wire [63:0] payload = remap_data(payload_i);
+
     // this is the expansion from 12->16. 32 samples, so loop
     function [511:0] expand_data;
         input [383:0] pack_in;
@@ -63,12 +85,12 @@ module event_expand_and_store(
             assign fifo_in_data[84  +:  12] = payload_storage[ 32 +: 12];
             assign fifo_in_data[96  +:  12] = payload_storage[ 20 +: 12];
             assign fifo_in_data[108 +:  12] = payload_storage[ 08 +: 12];
-            assign fifo_in_data[120 +:  12] = {payload_storage[ 0 +: 8], payload_i[60 +: 4] };
-            assign fifo_in_data[132 +:  12] = payload_i[48 +: 12];
-            assign fifo_in_data[144 +:  12] = payload_i[36 +: 12];
-            assign fifo_in_data[156 +:  12] = payload_i[24 +: 12];
-            assign fifo_in_data[168 +:  12] = payload_i[12 +: 12];
-            assign fifo_in_data[180 +:  12] = payload_i[0 +: 12];
+            assign fifo_in_data[120 +:  12] = {payload_storage[ 0 +: 8], payload[60 +: 4] };
+            assign fifo_in_data[132 +:  12] = payload[48 +: 12];
+            assign fifo_in_data[144 +:  12] = payload[36 +: 12];
+            assign fifo_in_data[156 +:  12] = payload[24 +: 12];
+            assign fifo_in_data[168 +:  12] = payload[12 +: 12];
+            assign fifo_in_data[180 +:  12] = payload[0 +: 12];
             // I dunno why I ever thought I needed to qualify this
             assign fifo_in_data[192] = payload_last_i;
             wire         fifo_in_write = feed_control[1];
@@ -93,7 +115,7 @@ module event_expand_and_store(
                     feed_control[1] <= payload_valid_i && (feed_control[1:0] == 2'b01);
                 end
                 if (payload_valid_i)
-                    payload_storage <= { payload_storage[63:0], payload_i };
+                    payload_storage <= { payload_storage[63:0], payload };
             end
             event_in_dm_fifo u_fifo(.clk(clk),
                                     .srst(rst),
