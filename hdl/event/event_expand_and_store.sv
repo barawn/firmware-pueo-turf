@@ -15,6 +15,7 @@ module event_expand_and_store(
         `HOST_NAMED_PORTS_AXI4S_IF( m_axis_ , 512 )
     );
     parameter EXPAND_DATA = "TRUE";
+    parameter DEBUG = "TRUE";
 
     // this remaps the incoming data so that it stacks correctly
     //remap [0  +: 12] = [48 +: 4], [56 +: 8] 000
@@ -70,7 +71,7 @@ module event_expand_and_store(
             
             // FIFO FOR EXPANDING FROM 192->384
             // WE REORDER THINGS HERE SO THAT THE FIRST SAMPLE IS LOWEST ADDRESS
-            wire [192:0] fifo_in_data = { payload_storage, payload };
+            wire [192:0] fifo_in_data = { payload_last_i, payload, payload_storage };
 // This was all wrong from when I thought the data was coming in first sample first
 // We now remap it so that first sample in payload is [11:0] (when it's aligned obviously).
 //            assign fifo_in_data[0   +:  12] = payload_storage[116 +: 12];
@@ -90,7 +91,7 @@ module event_expand_and_store(
 //            assign fifo_in_data[168 +:  12] = payload[12 +: 12];
 //            assign fifo_in_data[180 +:  12] = payload[0 +: 12];
             // I dunno why I ever thought I needed to qualify this
-            assign fifo_in_data[192] = payload_last_i;
+//            assign fifo_in_data[192] = payload_last_i;
             wire         fifo_in_write = feed_control[1];
             wire         fifo_in_full; // pointless but leave for debugging
             wire         fifo_in_prog_full; // if set, don't have space for a chunk readout
@@ -112,8 +113,9 @@ module event_expand_and_store(
                     feed_control[0] <= payload_valid_i && !feed_control[1];
                     feed_control[1] <= payload_valid_i && (feed_control[1:0] == 2'b01);
                 end
+                // We want the newest data at the TOP bits so we need to shift RIGHT
                 if (payload_valid_i)
-                    payload_storage <= { payload_storage[63:0], payload };
+                    payload_storage <= { payload, payload_storage[64 +: 64] };
             end
             event_in_dm_fifo u_fifo(.clk(clk),
                                     .srst(rst),
@@ -124,6 +126,15 @@ module event_expand_and_store(
                                     .dout(fifo_out_data),
                                     .rd_en(fifo_out_read),
                                     .valid(fifo_out_valid));
+                                    
+            if (DEBUG == "TRUE") begin : ILA
+                expander_ila u_ila(.clk(clk),
+                                   .probe0(payload_valid_i),
+                                   .probe1(fifo_out_valid),
+                                   .probe2(payload),
+                                   .probe3(m_axis_tdata),
+                                   .probe4(feed_control));
+            end                                   
             assign m_axis_tdata = expand_data(fifo_out_payload);
             assign m_axis_tvalid = fifo_out_valid;
             assign m_axis_tlast = fifo_out_last[1];

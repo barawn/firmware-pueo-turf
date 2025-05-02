@@ -290,7 +290,7 @@ module event_pueo_wrap(
                          .errdet_aclk_o( tio_errdet_aclk[ ACLK_ERR_SIZE*i +: ACLK_ERR_SIZE ] ),
                          .errdet_memclk_o(tio_errdet_memclk[ MEMCLK_ERR_SIZE*i +: 1 ] ));
             // now the req gen. transfers chunks to memory
-            pueo_turfio_event_req_gen #(.BASE_ADDRESS_4KB(4 + 28*i),.DEBUG("FALSE"))
+            pueo_turfio_event_req_gen #(.BASE_ADDRESS_4KB(4 + 28*i),.DEBUG(i==0 ? "TRUE" : "FALSE"))
                 u_reqgen( .memclk(memclk),
                           .memresetn(memresetn),
                           .payload_i( payload ),
@@ -391,7 +391,7 @@ module event_pueo_wrap(
     
     // and now the interconnect
     // NOW WITH TOTAL INSANITY
-    ddr_intercon_wrapper #(.DEBUG("TRUE"))
+    ddr_intercon_wrapper #(.DEBUG("FALSE"))
         u_intercon( .aclk(memclk),
                     .aresetn(memresetn),
                     `CONNECT_AXIM_DW( s_axi_hdr_ , hdraxi_ , 64 ),

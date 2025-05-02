@@ -445,7 +445,7 @@ module pueo_turfio_event_req_gen(
                                 .valid(cmpl_fifo_valid));
 
     // data FIFO
-    event_expand_and_store #(.EXPAND_DATA("TRUE"))
+    event_expand_and_store #(.EXPAND_DATA("TRUE"),.DEBUG(DEBUG))
         u_fifo( .clk(memclk),
                 .rst(!memresetn),
                 .payload_i(payload_i),
