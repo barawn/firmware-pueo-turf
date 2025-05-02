@@ -52,13 +52,9 @@ module event_expand_and_store(
     generate
         if (EXPAND_DATA == "TRUE") begin : EXP
             reg [127:0] payload_storage = {128{1'b0}};
-            // CRAP WE NEED TO BE CAREFUL HERE ABOUT ORDERING:
-            // OUR DATA BASICALLY COMES IN *BACKWARDS*
-            // AS IN, PAYLOAD_I COMES IN
-            // sample[0], sample[1], sample[2], sample[3], sample[4], sample[5][11:8]
-            // sample[5][7:0], sample[6], sample[7], sample[8], sample[9], sample[10][11:4]
-            // sample[10][3:0], sample[11], sample[12], sample[13], sample[14], sample[15]
-            // THIS IS FINE, B/C WE'RE GOING TO REORDER WHEN WE FEED INTO THE FIFO
+            // Remapping above makes payload equal to:
+            // sample[5][11:8], sample[4], sample[3], sample[2], sample[1], sample[0]
+            // So we can literally just stack them now.
             // (192 bits = 16 samples @ 12 bits)
             // we're trying to feed in 192 bits at a time (every 3 clocks
             // feed control goes
@@ -74,23 +70,25 @@ module event_expand_and_store(
             
             // FIFO FOR EXPANDING FROM 192->384
             // WE REORDER THINGS HERE SO THAT THE FIRST SAMPLE IS LOWEST ADDRESS
-            wire [192:0] fifo_in_data;
-            assign fifo_in_data[0   +:  12] = payload_storage[116 +: 12];
-            assign fifo_in_data[12  +:  12] = payload_storage[104 +: 12];
-            assign fifo_in_data[24  +:  12] = payload_storage[ 92 +: 12];
-            assign fifo_in_data[36  +:  12] = payload_storage[ 80 +: 12];
-            assign fifo_in_data[48  +:  12] = payload_storage[ 68 +: 12];
-            assign fifo_in_data[60  +:  12] = payload_storage[ 56 +: 12];
-            assign fifo_in_data[72  +:  12] = payload_storage[ 44 +: 12];
-            assign fifo_in_data[84  +:  12] = payload_storage[ 32 +: 12];
-            assign fifo_in_data[96  +:  12] = payload_storage[ 20 +: 12];
-            assign fifo_in_data[108 +:  12] = payload_storage[ 08 +: 12];
-            assign fifo_in_data[120 +:  12] = {payload_storage[ 0 +: 8], payload[60 +: 4] };
-            assign fifo_in_data[132 +:  12] = payload[48 +: 12];
-            assign fifo_in_data[144 +:  12] = payload[36 +: 12];
-            assign fifo_in_data[156 +:  12] = payload[24 +: 12];
-            assign fifo_in_data[168 +:  12] = payload[12 +: 12];
-            assign fifo_in_data[180 +:  12] = payload[0 +: 12];
+            wire [192:0] fifo_in_data = { payload_storage, payload };
+// This was all wrong from when I thought the data was coming in first sample first
+// We now remap it so that first sample in payload is [11:0] (when it's aligned obviously).
+//            assign fifo_in_data[0   +:  12] = payload_storage[116 +: 12];
+//            assign fifo_in_data[12  +:  12] = payload_storage[104 +: 12];
+//            assign fifo_in_data[24  +:  12] = payload_storage[ 92 +: 12];
+//            assign fifo_in_data[36  +:  12] = payload_storage[ 80 +: 12];
+//            assign fifo_in_data[48  +:  12] = payload_storage[ 68 +: 12];
+//            assign fifo_in_data[60  +:  12] = payload_storage[ 56 +: 12];
+//            assign fifo_in_data[72  +:  12] = payload_storage[ 44 +: 12];
+//            assign fifo_in_data[84  +:  12] = payload_storage[ 32 +: 12];
+//            assign fifo_in_data[96  +:  12] = payload_storage[ 20 +: 12];
+//            assign fifo_in_data[108 +:  12] = payload_storage[ 08 +: 12];
+//            assign fifo_in_data[120 +:  12] = {payload_storage[ 0 +: 8], payload[60 +: 4] };
+//            assign fifo_in_data[132 +:  12] = payload[48 +: 12];
+//            assign fifo_in_data[144 +:  12] = payload[36 +: 12];
+//            assign fifo_in_data[156 +:  12] = payload[24 +: 12];
+//            assign fifo_in_data[168 +:  12] = payload[12 +: 12];
+//            assign fifo_in_data[180 +:  12] = payload[0 +: 12];
             // I dunno why I ever thought I needed to qualify this
             assign fifo_in_data[192] = payload_last_i;
             wire         fifo_in_write = feed_control[1];
