@@ -14,7 +14,8 @@ module turf_intercon(
         `HOST_NAMED_PORTS_WB_IF( gbe_ , 14, 32),
         `HOST_NAMED_PORTS_WB_IF( aurora_ , 15, 32),
         `HOST_NAMED_PORTS_WB_IF( ctl_ , 15, 32),
-        `HOST_NAMED_PORTS_WB_IF( evctl_ , 15, 32),
+        `HOST_NAMED_PORTS_WB_IF( evctl_ , 14, 32),
+        `HOST_NAMED_PORTS_WB_IF( trig_ , 14, 32),
         // Crate bridge space.
         `HOST_NAMED_PORTS_WB_IF( crate_ , 27, 32)     
     );    
@@ -41,14 +42,16 @@ module turf_intercon(
     localparam [27:0] CTL_BASE          = 28'h0010000;
     localparam [27:0] CTL_MASK          = 28'h7FE7FFF;
     localparam [27:0] EVCTL_BASE       =  28'h0018000;
-    localparam [27:0] EVCTL_MASK       =  28'h7FE7FFF;    
+    localparam [27:0] EVCTL_MASK       =  28'h7FE3FFF;  // bottom **14** bits    
+    localparam [27:0] TRIGCTL_BASE     =  28'h001C000;
+    localparam [27:0] TRIGCTL_MASK     =  28'h7FE3FFF;  // bottom **14** bits
     // NOTE: Crate space will ALWAYS be the last listed
     // Add more as needed *above*
     localparam [27:0] CRATE_BASE        = 28'h8000000;
     localparam [27:0] CRATE_MASK        = 28'h7FFFFFF;
     // START BOILERPLATE INTERCONNECT
     localparam NUM_MASTERS = 2;
-    localparam NUM_SLAVES = 6;    
+    localparam NUM_SLAVES = 7;    
     localparam ADDR_WIDTH = 28;
     localparam DATA_WIDTH = 32;
 	wire [NUM_MASTERS-1:0] requests;
@@ -165,7 +168,7 @@ module turf_intercon(
     `SLAVE_MAP( aurora_ , 2, AURORA_MASK, AURORA_BASE);
     `SLAVE_MAP( ctl_ , 3, CTL_MASK, CTL_BASE);
     `SLAVE_MAP( evctl_ , 4, EVCTL_MASK, EVCTL_BASE );
-
+    `SLAVE_MAP( trig_ , 5, TRIGCTL_MASK, TRIGCTL_BASE );
     `SLAVE_MAP( crate_ , NUM_SLAVES-1 , CRATE_MASK, CRATE_BASE );
 
     generate
