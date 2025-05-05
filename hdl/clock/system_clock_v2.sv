@@ -5,9 +5,11 @@ module system_clock_v2( input SYS_CLK_P,
                         output sysclk_ibuf_o,
                         output sysclk_o,
                         output sysclk_phase_o,
-                        output sysclk_sync_o );
+                        output sysclk_sync_o,
+                        output SYNC );
 
     parameter INVERT_MMCM = "TRUE";
+    parameter GPIO = "TRUE";
     
     (* CLOCK_DEDICATED_ROUTE = "SAME_CMT_COLUMN" *)
     IBUFDS u_inbuf(.I(SYS_CLK_N),
@@ -66,18 +68,34 @@ module system_clock_v2( input SYS_CLK_P,
     BUFG u_clkfb0_buf(.I(clkfb_out),.O(clkfb_out_buf));
     // Buffer sysclk
     BUFG u_sysclk_buf(.I(sys_clk_out),.O(sysclk_o));
+
+    // sysclk = 125 MHz
+    // sync = 7.8125 MHz
+    // this is a divide by 16. But our *commanding* is 500 Mbit/s or
+    // 32 bits every 15.625 MHz, or a divide by *8*.
+    // sysclk_phase_o = 1 if this is the first phase of the 8 clock period
+    // sysclk_sync_o = sync toggle, should match the SURF clock, 7.8125 MHz
+    // SYNC = gpio which should also match the 7.8125 MHz SURF clock
+    // This we generate by just putting an IOB on it and duplicating the logic.
     
     // This is the global SYSCLK phase. Its exact value's basically irrelevant.
     reg [3:0] sysclk_phase = {4{1'b0}};
     // ditto for sysclk sync, it doesn't matter that it's random.
-    // We 
+    // sysclk = 125 MHz
+    // sync = 7.8125 MHz
+    // 
+    (* KEEP = "TRUE" *)
     reg sysclk_sync = 0;
+    (* IOB = "TRUE", KEEP = "TRUE" *)
+    reg sysclk_sync_obuf = 0;
     always @(posedge sysclk_o) begin
         sysclk_phase <= sysclk_phase[2:0] + 1;
         // swap at max so we're in phase 
         if (sysclk_phase[2:0] == 3'b111) sysclk_sync <= ~sysclk_sync;
+        if (sysclk_phase[2:0] == 3'b111) sysclk_sync_obuf <= ~sysclk_sync;
     end
     
     assign sysclk_phase_o = sysclk_phase[3];
     assign sysclk_sync_o = sysclk_sync;
+    assign SYNC = sysclk_sync_obuf;
 endmodule
