@@ -13,7 +13,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="A",
                     parameter [3:0] VER_MAJOR=4'd0,
                     parameter [3:0] VER_MINOR=4'd4,
-                    parameter [7:0] VER_REV=8'd13,
+                    parameter [7:0] VER_REV=8'd14,
                     parameter [15:0] FIRMWARE_DATE = {16{1'b0}})                    
                     (
 
@@ -45,6 +45,14 @@ module pueo_turf6 #(parameter IDENT="TURF",
         
         output CAL_SCL,
         inout CAL_SDA,
+        // these are the HSK gpios
+        inout [2:0] GPIO,
+        input [1:0] TIN,
+        output TOUT,
+        
+        // these are the silly PL GPIOs
+        // B5 = 0 B6 = 1
+        output [1:0] PLGPIO,
         
         output UART_SCLK,
         output UART_MOSI,
@@ -188,7 +196,9 @@ module pueo_turf6 #(parameter IDENT="TURF",
     // Control (CIN/COUT stuff) space
     `DEFINE_WB_IF( ctl_ , 15, 32);
     // This USED to be called hski2c_, it's now evctl_.
-    `DEFINE_WB_IF( evctl_ , 15, 32);
+    `DEFINE_WB_IF( evctl_ , 14, 32);
+    // Trigger control space. Also contains the sync/runctl stuff
+    `DEFINE_WB_IF( trigctl_ , 14, 32);
     // Crate space, accessed through the bridge.
     `DEFINE_WB_IF( crate_ , 27, 32);    
 
@@ -286,8 +296,9 @@ module pueo_turf6 #(parameter IDENT="TURF",
                  .sysclk_o(sys_clk),
                  .sysclk_ibuf_o(sys_clk_ibuf),
                  .sysclk_phase_o(sys_clk_phase),
-                 .sysclk_sync_o(sys_clk_sync));
-
+                 .sysclk_sync_o(sys_clk_sync),
+                 .SYNC(PLGPIO[0]));
+    assign PLGPIO[1] = 1'b0;
 
     // NOTE: we might add in the optional TURFIO I2C controls
     // at some point. If we do that, we need to disconnect the
@@ -466,8 +477,8 @@ module pueo_turf6 #(parameter IDENT="TURF",
     // commands don't exist... yet.
     // need to rewire the command encoder. it's waay simpler
     // now though because it's JUST the trigger stuff.
-    wire [31:0] turfio_if_command67 = {32{1'b0}};
-    wire [31:0] turfio_if_command68 = {32{1'b0}};
+    wire [31:0] turfio_if_command67;
+    wire [31:0] turfio_if_command68;
     
     turfio_if #( .INV_SYSCLK(INV_MMCM),
                  .TRAIN_VALUE(TRAIN_VALUE),
@@ -598,6 +609,16 @@ module pueo_turf6 #(parameter IDENT="TURF",
                              `CONNECT_AXI4S_IF( m_ev_data_ , ev_data_ ),
                              `CONNECT_AXI4S_MIN_IF( m_ev_ctrl_ , ev_ctrl_ ));
     
+    
+    trig_pueo_wrap u_trig( .wb_clk_i(wb_clk),
+                           .wb_rst_i(wb_rst),
+                           `CONNECT_WBS_IFM( wb_ , trig_ ),
+                           .sysclk_i(sys_clk),
+                           .sysclk_phase_i(sys_clk_phase),
+                           .sysclk_sync_i(sys_clk_sync),
+                           .pps_i(1'b0),
+                           .command67_o(turfio_if_command67),
+                           .command68_o(turfio_if_command68));
 
     generate
         if (UART_DEBUG == "TRUE") begin : SERDBG
