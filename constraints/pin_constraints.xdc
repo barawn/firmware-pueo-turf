@@ -81,6 +81,16 @@ set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN D8} [get_ports CLK_SDA]
 
 # TRIG_OUT -> TOUT0 B2B-1 29  H8
 
+set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN C9} [get_ports {GPIO[0]}]
+set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN E6} [get_ports {GPIO[1]}]
+set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN G8} [get_ports {GPIO[2]}]
+set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN F8} [get_ports {TIN[0]}]
+set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN D9} [get_ports {TIN[1]}]
+set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN H8} [get_ports {TOUT}]
+
+set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN B5} [get_ports {PLGPIO[0]}]
+set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN B6} [get_ports {PLGPIO[1]}]
+
 set_property IOSTANDARD LVCMOS25 [get_ports CAL_SCL]
 set_property PACKAGE_PIN D7 [get_ports CAL_SCL]
 set_property PULLUP true [get_ports CAL_SCL]
