@@ -17,13 +17,17 @@ module trig_pueo_wrap(
         output [31:0] command67_o,
         output [31:0] command68_o
     );
+    parameter WBCLKTYPE = "NONE";
+    parameter SYSCLKTYPE = "NONE";
     
     // probably add more here or something, or maybe split off
     `DEFINE_AXI4S_MIN_IF( trig_ , 16 );
     assign trig_tvalid = 1'b0;
     assign trig_tdata = {16{1'b0}};
     
-    trig_pueo_command u_command( .wb_clk_i(wb_clk_i),
+    trig_pueo_command #(.WBCLKTYPE(WBCLKTYPE),
+                        .SYSCLKTYPE(SYSCLKTYPE))
+                      u_command( .wb_clk_i(wb_clk_i),
                                  .wb_rst_i(wb_rst_i),
                                  `CONNECT_WBS_IFS( wb_ , wb_ ),
                                  .sysclk_i(sysclk_i),
