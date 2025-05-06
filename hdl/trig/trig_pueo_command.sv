@@ -22,6 +22,9 @@ module trig_pueo_command(
         output [31:0] command68_o
     );
     
+    parameter WBCLKTYPE = "NONE";
+    parameter SYSCLKTYPE = "NONE";
+    
     // Commands are captured BEFORE sysclk_phase_i so we can
     // change *in* sysclk_phase_i.
     // In order to match sysclk_sync_i we try sending when
@@ -36,21 +39,27 @@ module trig_pueo_command(
     reg [31:0] command = {32{1'b0}};
     
     wire send_runcmd_wbclk;
-    wire send_runcmd_sysclk;
-    wire runcmd_complete_sysclk;
+    wire send_runcmd;
+    wire runcmd_complete;
     wire runcmd_complete_wbclk;
     reg runcmd_pending = 0;
+    (* CUSTOM_CC_DST = SYSCLKTYPE *)
     reg [1:0] runcmd_data = {2{1'b0}};
     
     wire send_fwu_wbclk;
-    wire send_fwu_sysclk;
-    wire fwu_complete_sysclk;
+    wire send_fwu;
+    wire fwu_complete;
     wire fwu_complete_wbclk;
     reg fwu_pending = 0;
+    (* CUSTOM_CC_DST = SYSCLKTYPE *)
     reg fwu_mark = 0;
+    (* CUSTOM_CC_DST = SYSCLKTYPE *)
     reg [7:0] fwu_data = {8{1'b0}};
-    
+
+    // source registers for the clock cross    
+    (* CUSTOM_CC_SRC = WBCLKTYPE *)
     reg [7:0] dat_hold_wbclk = {8{1'b0}};
+    (* CUSTOM_CC_SRC = WBCLKTYPE *)
     reg mark_hold_wbclk = 0;
 
     // this resolves to a NOOP if no mark is pending
@@ -96,15 +105,15 @@ module trig_pueo_command(
     always @(posedge sysclk_i) begin
         // the request ALWAYS has priority.
         // if we're currently IN the phase we're going to send,
-        if (send_runcmd_sysclk) runcmd_pending <= 1;
+        if (send_runcmd) runcmd_pending <= 1;
         else if (sysclk_phase_i && sysclk_sync_i) runcmd_pending <= 0;
 
-        if (send_runcmd_sysclk) runcmd_data <= dat_hold_wbclk[1:0];
+        if (send_runcmd) runcmd_data <= dat_hold_wbclk[1:0];
 
-        if (send_fwu_sysclk) fwu_pending <= 1;
+        if (send_fwu) fwu_pending <= 1;
         else if (sysclk_phase_i) fwu_pending <= 0;
         
-        if (send_fwu_sysclk) begin
+        if (send_fwu) begin
             fwu_mark <= mark_hold_wbclk;
             fwu_data <= dat_hold_wbclk;
         end
@@ -129,17 +138,25 @@ module trig_pueo_command(
     // this makes it so that 0x0 sends a runcmd, 0x4 sends fwu (mark OR data)
     assign send_runcmd_wbclk = (state == ISSUE_CMD && !wb_adr_i[2]);
     assign send_fwu_wbclk = (state == ISSUE_CMD && wb_adr_i[2]);
+    assign fwu_complete = (fwu_pending && sysclk_phase_i);
+    assign runcmd_complete = (runcmd_pending && sysclk_phase_i);
+    
     // flag syncs
     flag_sync u_send_runcmd_sync(.in_clkA(send_runcmd_wbclk),.out_clkB(send_runcmd),
-                                 .clkA(wb_clk_i),.clkB(sys_clk_i));
+                                 .clkA(wb_clk_i),.clkB(sysclk_i));
     flag_sync u_send_fwu_sync(.in_clkA(send_fwu_wbclk),.out_clkB(send_fwu),
-                              .clkA(wb_clk_i),.clkB(sys_clk_i));    
-
+                              .clkA(wb_clk_i),.clkB(sysclk_i));    
+    flag_sync u_runcmd_complete_sync(.in_clkA(runcmd_complete),.out_clkB(runcmd_complete_wbclk),
+                                     .clkA(sysclk_i),.clkB(wb_clk_i));
+    flag_sync u_fwu_complete_sync(.in_clkA(fwu_complete),.out_clkB(fwu_complete_wbclk),
+                                  .clkA(sysclk_i),.clkB(wb_clk_i));   
     // ack
     assign wb_ack_o = (state == ACK);
     assign wb_err_o = 1'b0;
     assign wb_rty_o = 1'b0;
     assign wb_dat_o = {32{1'b0}};
+    
+    assign s_trig_tready = s_trig_tvalid && sysclk_phase_i;
     
     assign command67_o = command;
     assign command68_o = command;
