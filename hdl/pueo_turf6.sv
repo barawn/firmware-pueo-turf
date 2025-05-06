@@ -198,7 +198,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
     // This USED to be called hski2c_, it's now evctl_.
     `DEFINE_WB_IF( evctl_ , 14, 32);
     // Trigger control space. Also contains the sync/runctl stuff
-    `DEFINE_WB_IF( trigctl_ , 14, 32);
+    `DEFINE_WB_IF( trig_ , 14, 32);
     // Crate space, accessed through the bridge.
     `DEFINE_WB_IF( crate_ , 27, 32);    
 
@@ -379,6 +379,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                               `CONNECT_WBM_IFM(aurora_ , aurora_ ),
                               `CONNECT_WBM_IFM(ctl_ , ctl_ ),
                               `CONNECT_WBM_IFM(evctl_ , evctl_ ),
+                              `CONNECT_WBM_IFM(trig_ , trig_ ),
                               `CONNECT_WBM_IFM(crate_ , crate_ ));
 
     /////////////////////////////////////////////////////
@@ -610,8 +611,10 @@ module pueo_turf6 #(parameter IDENT="TURF",
                              `CONNECT_AXI4S_MIN_IF( m_ev_ctrl_ , ev_ctrl_ ));
     
     
-    trig_pueo_wrap u_trig( .wb_clk_i(wb_clk),
-                           .wb_rst_i(wb_rst),
+    trig_pueo_wrap #(.WBCLKTYPE("PSCLK"),
+                     .SYSCLKTYPE("SYSCLK"))
+                   u_trig( .wb_clk_i(ps_clk),
+                           .wb_rst_i(1'b0),
                            `CONNECT_WBS_IFM( wb_ , trig_ ),
                            .sysclk_i(sys_clk),
                            .sysclk_phase_i(sys_clk_phase),
