@@ -71,7 +71,10 @@ module trig_pueo_command(
     always @(posedge wb_clk_i) begin
         if (wb_rst_i) state <= IDLE;
         else case (state)
-            IDLE: if (wb_cyc_i && wb_stb_i && wb_we_i && wb_sel_i[0]) state <= ISSUE_CMD;
+            IDLE: if (wb_cyc_i && wb_stb_i) begin
+                if (wb_we_i && wb_sel_i[0]) state <= ISSUE_CMD;
+                else state <= ACK;
+            end                
             ISSUE_CMD: state <= WAIT_COMPLETE;
             WAIT_COMPLETE: if (runcmd_complete_wbclk || fwu_complete_wbclk) state <= ACK;
             ACK: state <= IDLE;
