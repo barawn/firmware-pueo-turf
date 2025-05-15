@@ -13,7 +13,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="A",
                     parameter [3:0] VER_MAJOR=4'd0,
                     parameter [3:0] VER_MINOR=4'd4,
-                    parameter [7:0] VER_REV=8'd14,
+                    parameter [7:0] VER_REV=8'd15,
                     parameter [15:0] FIRMWARE_DATE = {16{1'b0}})                    
                     (
 
@@ -153,6 +153,9 @@ module pueo_turf6 #(parameter IDENT="TURF",
     
     // the TOP 4 BITS of the EMIO are the resets to the TURFIOs
     // the NEXT 4 BITS are GPSy: TP1/TP0 EXTINT1/EXTINT0
+    // the NEXT 4 are reserved
+    // and the BOTTOM 4 are reserved, hsk_complete (2), hsk_irq (1), and UART_IRQ_B (0).
+    
     wire [15:0] emio_gpio_t;
     wire [15:0] emio_gpio_i;
     wire [15:0] emio_gpio_o;    
@@ -297,9 +300,9 @@ module pueo_turf6 #(parameter IDENT="TURF",
                  .sysclk_ibuf_o(sys_clk_ibuf),
                  .sysclk_phase_o(sys_clk_phase),
                  .sysclk_sync_o(sys_clk_sync),
-                 .SYNC(PLGPIO[0]));
+                 .SYNC(TOUT));
     assign PLGPIO[1] = 1'b0;
-
+    assign PLGPIO[0] = 1'b1;
     // NOTE: we might add in the optional TURFIO I2C controls
     // at some point. If we do that, we need to disconnect the
     // UART. We can only do one of those at a time because their
