@@ -13,7 +13,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="A",
                     parameter [3:0] VER_MAJOR=4'd0,
                     parameter [3:0] VER_MINOR=4'd4,
-                    parameter [7:0] VER_REV=8'd15,
+                    parameter [7:0] VER_REV=8'd16,
                     parameter [15:0] FIRMWARE_DATE = {16{1'b0}})                    
                     (
 
@@ -138,8 +138,8 @@ module pueo_turf6 #(parameter IDENT="TURF",
     // Configuration information for the TURFIOs.
     localparam [31:0] TRAIN_VALUE = 32'hA55A6996;
     localparam [3:0] INV_CINTIO = 4'b1100;
-    localparam [3:0] INV_COUT =   4'b1110;
-    localparam [3:0] INV_TXCLK =  4'b1010;
+    localparam [3:0] INV_COUT =   4'b0010;      // these have been double checked
+    localparam [3:0] INV_TXCLK =  4'b0110;      // these have been double checked
     localparam [6:0] INV_CINA =   7'b0000010;
     localparam [6:0] INV_CINB =   7'b0001011;
     localparam [6:0] INV_CINC =   7'b1111111;
