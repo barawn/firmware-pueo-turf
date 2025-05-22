@@ -40,9 +40,13 @@
 // 0xE0: bit error interval load
 module turfio_single_if #(
         parameter [6:0] INV_CIN = {7{1'b0}},
+        parameter [6:0] INV_CIN_XB = {7{1'b0}},
         parameter INV_CINTIO = 1'b0,
+        parameter INV_CINTIO_XB = 1'b0,
         parameter INV_COUT = 1'b0,
+        parameter INV_COUT_XB = 1'b0,
         parameter INV_TXCLK = 1'b0,
+        parameter INV_TXCLK_XB = 1'b0,
         parameter CIN_CLKTYPE = "IFCLK67",
         parameter COUT_CLKTYPE = "IFCLK67",
         parameter [31:0] TRAIN_VALUE = 32'hA55A6996
@@ -123,6 +127,7 @@ module turfio_single_if #(
     wire [7:0] in_n = { CINTIO_N, CIN_N };
     // combine the inversion parameters
     localparam [7:0] INV_VEC = { INV_CINTIO, INV_CIN };
+    localparam [7:0] INV_VEC_XB = { INV_CINTIO_XB, INV_CIN };
     // create a mux of the data from each bit
     wire [31:0] bit_muxed_data[7:0];
     
@@ -326,7 +331,9 @@ module turfio_single_if #(
             end
             
             assign bit_muxed_data[i] = (wb_adr_i[7]) ? cin_data : control_data[wb_adr_i[2]];            
-            turfio_bit #(.INV(INV_VEC[i]),.CLKTYPE(CIN_CLKTYPE))
+            turfio_bit #(.INV(INV_VEC[i]),
+                         .INV_XB(INV_VEC_XB[i]),
+                         .CLKTYPE(CIN_CLKTYPE))
                 u_bit( .if_clk_i(cin_clk_i),
                        .if_clk_x2_i(cin_clk_x2_i),
                        .rst_i(rst),
@@ -382,7 +389,11 @@ module turfio_single_if #(
         end
     endgenerate
     
-    turfio_cout #(.INV_COUT(INV_COUT),.INV_TXCLK(INV_TXCLK),.TRAIN_VALUE(TRAIN_VALUE))
+    turfio_cout #(.INV_COUT(INV_COUT),
+                  .INV_COUT_XB(INV_COUT_XB),
+                  .INV_TXCLK(INV_TXCLK),
+                  .INV_TXCLK_XB(INV_TXCLK_XB),
+                  .TRAIN_VALUE(TRAIN_VALUE))
         u_cout(.if_clk_i(cout_clk_i),
                .if_clk_x2_i(cout_clk_x2_i),
                .if_clk_x2_phase_i(cout_clk_x2_phase_i),

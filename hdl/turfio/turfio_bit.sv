@@ -1,6 +1,7 @@
 `timescale 1ns / 1ps
 // Single bit interface, sigh.
-module turfio_bit #(parameter INV = 1'b0, parameter CLKTYPE="IFCLK67")(
+module turfio_bit #(parameter INV = 1'b0, parameter INV_XB = 1'b0,
+                    parameter CLKTYPE="IFCLK67")(
         input if_clk_i,
         input if_clk_x2_i,
         input rst_i,
@@ -46,9 +47,14 @@ module turfio_bit #(parameter INV = 1'b0, parameter CLKTYPE="IFCLK67")(
     // I output of IBUFDS_DIFF_OUT
     wire cin_inv;
     // correct polarity signal
-    wire cin_real = (INV==1'b0) ? cin_ninv : cin_inv;
+    // These can be inverted AGAIN with the INV_XB
+    localparam FULLINV = INV ^ INV_XB;
+    wire cin_real = (FULLINV==1'b0) ? cin_ninv : cin_inv;
     // incorrect polarity signal (unused)
-    wire cin_monitor = (INV==1'b0) ? cin_inv : cin_ninv;
+    wire cin_monitor = (FULLINV==1'b0) ? cin_inv : cin_ninv;
+
+    // These have to map to the TURF *schematic*. They determine
+    // if we map P to I or IB and vice versa for N.
     // I input to IBUFDS_DIFF_OUT
     wire cin_p_in = (INV==1'b0) ? CIN_P : CIN_N;
     // IB input to IBUFDS_DIFF_OUT

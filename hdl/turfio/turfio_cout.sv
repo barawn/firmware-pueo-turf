@@ -1,7 +1,9 @@
 `timescale 1ns / 1ps
 
 module turfio_cout #(parameter INV_COUT=1'b0,
+                     parameter INV_COUT_XB=1'b0,
                      parameter INV_TXCLK=1'b0, 
+                     parameter INV_TXCLK_XB=1'b0,
                      parameter TRAIN_VALUE = 32'hA55A6996)(
         input if_clk_i,
         input if_clk_x2_i,
@@ -18,6 +20,8 @@ module turfio_cout #(parameter INV_COUT=1'b0,
     wire cout_to_obuf;
     wire cout_ninv;
     wire cout_inv;
+    // These have to be determined from INV_COUT only, since they
+    // map O to P or N and vice versa for OB.
     assign COUT_P = (INV_COUT == 1'b0) ? cout_ninv : cout_inv;
     assign COUT_N = (INV_COUT == 1'b0) ? cout_inv : cout_ninv;
         
@@ -57,8 +61,12 @@ module turfio_cout #(parameter INV_COUT=1'b0,
             command_recap <= { 2'b00, command_recap[31:2] };
         end
     end
-    ODDRE1 #(.SRVAL(INV_COUT)) u_cout_oddr(.C(if_clk_x2_i),.D1(command_recap[0] ^ INV_COUT),.D2(command_recap[1] ^ INV_COUT),.SR(1'b0),.Q(cout_to_obuf));
-    ODDRE1 #(.SRVAL(INV_TXCLK)) u_txclk_oddr(.C(if_clk_i),.D1(1'b1 ^ INV_TXCLK),.D2(1'b0 ^ INV_TXCLK),.SR(1'b0),.Q(txclk_to_obuf));
+    // The DATA inversion happens with these since they can pick up another
+    // inversion at the XB.
+    localparam FULLINV_COUT = INV_COUT ^ INV_COUT_XB;
+    localparam FULLINV_TXCLK = INV_TXCLK ^ INV_TXCLK_XB;
+    ODDRE1 #(.SRVAL(INV_COUT)) u_cout_oddr(.C(if_clk_x2_i),.D1(command_recap[0] ^ FULLINV_COUT),.D2(command_recap[1] ^ FULLINV_COUT),.SR(1'b0),.Q(cout_to_obuf));
+    ODDRE1 #(.SRVAL(INV_TXCLK)) u_txclk_oddr(.C(if_clk_i),.D1(1'b1 ^ FULLINV_TXCLK),.D2(1'b0 ^ FULLINV_TXCLK),.SR(1'b0),.Q(txclk_to_obuf));
     OBUFDS u_obuf(.I(cout_to_obuf),.O(cout_ninv),.OB(cout_inv));
     OBUFDS u_txclk_obuf(.I(txclk_to_obuf),.O(txclk_ninv),.OB(txclk_inv));
 endmodule

@@ -136,14 +136,31 @@ module pueo_turf6 #(parameter IDENT="TURF",
     localparam [31:0] DATEVERSION = { (REVISION=="B" ? 1'b1 : 1'b0), FIRMWARE_DATE[14:0], FIRMWARE_VERSION };
 
     // Configuration information for the TURFIOs.
+    // We split this up into two INV parameters because OUR names all match
+    // the TURF revC schematic. But the bits that pass through the expander
+    // board might have an additional inversion.
     localparam [31:0] TRAIN_VALUE = 32'hA55A6996;
-    localparam [3:0] INV_CINTIO = 4'b1100;
-    localparam [3:0] INV_COUT =   4'b0010;      // these have been double checked
-    localparam [3:0] INV_TXCLK =  4'b0110;      // these have been double checked
-    localparam [6:0] INV_CINA =   7'b0000010;
-    localparam [6:0] INV_CINB =   7'b0001011;
-    localparam [6:0] INV_CINC =   7'b1111111;
-    localparam [6:0] INV_CIND =   7'b1100111;
+    localparam [3:0] INV_CINTIO =       4'b1100;
+    localparam [3:0] INV_CINTIO_XB =    4'b1100;        // correct
+
+    localparam [3:0] INV_COUT =         4'b1110;
+    localparam [3:0] INV_COUT_XB =      4'b1100;        // correct
+    
+    localparam [3:0] INV_TXCLK =        4'b0010;      
+    localparam [3:0] INV_TXCLK_XB =     4'b0100;        // correct
+    
+    localparam [6:0] INV_CINA =     7'b0000010;
+    localparam [6:0] INV_CINA_XB =  7'b0000000;         // correct bc no XB
+
+    localparam [6:0] INV_CINB =     7'b0001011;
+    localparam [6:0] INV_CINB_XB =  7'b0000000;         // correct bc no XB
+    
+    localparam [6:0] INV_CINC =     7'b1111111;
+    localparam [6:0] INV_CINC_XB =  7'b1111111;     // correct
+
+    localparam [6:0] INV_CIND =     7'b1100111;
+    localparam [6:0] INV_CIND_XB =  7'b1111111;     // correct
+        
     localparam [3:0] CIN_CLKTYPE = 4'b0011;
     localparam [3:0] COUT_CLKTYPE =4'b0110;
         
@@ -487,12 +504,26 @@ module pueo_turf6 #(parameter IDENT="TURF",
     turfio_if #( .INV_SYSCLK(INV_MMCM),
                  .TRAIN_VALUE(TRAIN_VALUE),
                  .INV_CINTIO(INV_CINTIO),
+                 .INV_CINTIO_XB(INV_CINTIO_XB),
+                 
                  .INV_COUT(INV_COUT),
+                 .INV_COUT_XB(INV_COUT_XB),
+                 
                  .INV_CINA(INV_CINA),
+                 .INV_CINA_XB(INV_CINA_XB),
+                 
                  .INV_CINB(INV_CINB),
+                 .INV_CINB_XB(INV_CINB_XB),
+                 
                  .INV_CINC(INV_CINC),
+                 .INV_CINC_XB(INV_CINC_XB),
+                 
                  .INV_CIND(INV_CIND),
+                 .INV_CIND_XB(INV_CIND_XB),
+                 
                  .INV_TXCLK(INV_TXCLK),
+                 .INB_TXCLK_XB(INV_TXCLK_XB),
+                 
                  .CLK300_CLKTYPE("DDRCLK0"),
                  .WBCLKTYPE("PSCLK"),
                  .CIN_CLKTYPE(CIN_CLKTYPE),

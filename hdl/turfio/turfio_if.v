@@ -12,12 +12,26 @@
 //    should be able to resolve the issues.
 module turfio_if #( parameter [31:0] TRAIN_VALUE=32'hA55A6996,
                     parameter [3:0] INV_CINTIO = 4'h0,
+                    parameter [3:0] INV_CINTIO_XB = 4'h0,
+
                     parameter [3:0] INV_COUT = 4'h0,
+                    parameter [3:0] INV_COUT_XB = 4'h0,
+                    
                     parameter [6:0] INV_CINA = 7'h00,
+                    parameter [6:0] INV_CINA_XB = 7'h00,
+                    
                     parameter [6:0] INV_CINB = 7'h00,
+                    parameter [6:0] INV_CINB_XB = 7'h00,
+                    
                     parameter [6:0] INV_CINC = 7'h00,
+                    parameter [6:0] INV_CINC_XB = 7'h00,
+                    
                     parameter [6:0] INV_CIND = 7'h00,
+                    parameter [6:0] INV_CIND_XB = 7'h00,
+                    
                     parameter [3:0] INV_TXCLK = 4'h0,
+                    parameter [3:0] INV_TXCLK_XB = 4'h0,
+                    
                     // 0 if bank 67, 1 if bank 68
                     parameter [3:0] CIN_CLKTYPE = 4'h0,
                     parameter [3:0] COUT_CLKTYPE = 4'h0,
@@ -105,7 +119,15 @@ module turfio_if #( parameter [31:0] TRAIN_VALUE=32'hA55A6996,
             else lookup_inv_cin = INV_CIND;
         end
     endfunction    
-    
+    function [6:0] lookup_inv_cin_xb;
+        input integer i;
+        begin
+            if (i==0) lookup_inv_cin_xb = INV_CINA_XB;
+            else if (i==1) lookup_inv_cin_xb = INV_CINB_XB;
+            else if (i==2) lookup_inv_cin_xb = INV_CINC_XB;
+            else lookup_inv_cin_xb = INV_CIND_XB;
+        end
+    endfunction            
     // create a vector for positive legs of inputs
     wire [6:0] cin_vec_p[NUM_IF-1:0];
     // create a vector for negative legs of inputs
@@ -258,9 +280,13 @@ module turfio_if #( parameter [31:0] TRAIN_VALUE=32'hA55A6996,
 
             // now the single_ifs...
             turfio_single_if #(.INV_CIN(lookup_inv_cin(i)),
+                               .INV_CIN_XB(lookup_inv_cin_xb(i)),
                                .INV_CINTIO(INV_CINTIO[i]),
+                               .INV_CINTIO_XB(INV_CINTIO_XB[i]),
                                .INV_COUT(INV_COUT[i]),
+                               .INV_COUT_XB(INV_COUT_XB[i]),
                                .INV_TXCLK(INV_TXCLK[i]),
+                               .INV_TXCLK_XB(INV_TXCLK_XB[i]),
                                .CIN_CLKTYPE(CIN_CLKTYPE[i] ? "IFCLK67" : "IFCLK68"),
                                .COUT_CLKTYPE(COUT_CLKTYPE[i] ? "IFCLK67" : "IFCLK68"),
                                .TRAIN_VALUE(TRAIN_VALUE))
