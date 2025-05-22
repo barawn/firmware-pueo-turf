@@ -522,7 +522,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                  .INV_CIND_XB(INV_CIND_XB),
                  
                  .INV_TXCLK(INV_TXCLK),
-                 .INB_TXCLK_XB(INV_TXCLK_XB),
+                 .INV_TXCLK_XB(INV_TXCLK_XB),
                  
                  .CLK300_CLKTYPE("DDRCLK0"),
                  .WBCLKTYPE("PSCLK"),
