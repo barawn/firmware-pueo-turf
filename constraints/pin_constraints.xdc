@@ -42,12 +42,10 @@ set_property -dict { IOSTANDARD LVCMOS25 PACKAGE_PIN B3 } [get_ports TRESETB_B]
 set_property -dict { IOSTANDARD LVCMOS25 PACKAGE_PIN E2 } [get_ports TRESETB_C]
 set_property -dict { IOSTANDARD LVCMOS25 PACKAGE_PIN E1 } [get_ports TRESETB_D]
 
-# B2B1 30 is F9 and labelled GPS_TX but it is FROM GPS (so RX here!)
-# B2B1 28 is E9 and labelled GPS_RX but it is TO GPS   (so TX here!)
-set_property IOSTANDARD LVCMOS25 [get_ports GPS_RX]
-set_property PACKAGE_PIN F9 [get_ports GPS_RX]
-set_property PULLUP true [get_ports GPS_RX]
-set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN E9} [get_ports GPS_TX]
+# B2B1 30 is F9 and labelled GPS_TX but it is FROM GPS (so RX here!)    - REVC GPS_TX_2V5
+# B2B1 28 is E9 and labelled GPS_RX but it is TO GPS   (so TX here!)    - REVC GPS_RX_2V5
+set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN E9 PULLUP true} [get_ports GPS_RX]
+set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN F9} [get_ports GPS_TX]
 
 set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN B8} [get_ports {GPS_EXTINT[1]}]
 set_property -dict {IOSTANDARD LVCMOS25 PACKAGE_PIN A8} [get_ports {GPS_EXTINT[0]}]
@@ -115,8 +113,8 @@ set_property -dict {IOSTANDARD LVDS PACKAGE_PIN B15} [get_ports {TXCLK_P[1]}]
 set_property -dict {IOSTANDARD LVDS PACKAGE_PIN C15} [get_ports {TXCLK_N[1]}]
 set_property -dict {IOSTANDARD LVDS PACKAGE_PIN P16} [get_ports {TXCLK_P[2]}]
 set_property -dict {IOSTANDARD LVDS PACKAGE_PIN N16} [get_ports {TXCLK_N[2]}]
-set_property -dict {IOSTANDARD LVDS PACKAGE_PIN AW10} [get_ports {TXCLK_P[3]}]
-set_property -dict {IOSTANDARD LVDS PACKAGE_PIN AW11} [get_ports {TXCLK_N[3]}]
+set_property -dict {IOSTANDARD LVDS PACKAGE_PIN AW10} [get_ports {TXCLK_P[3]}]  # inverted
+set_property -dict {IOSTANDARD LVDS PACKAGE_PIN AW11} [get_ports {TXCLK_N[3]}]  # inverted
 
 set_property -dict {IOSTANDARD LVDS PACKAGE_PIN AL15 UNAVAILABLE_DURING_CALIBRATION 1} [get_ports {COUT_P[0]}]
 set_property -dict {IOSTANDARD LVDS PACKAGE_PIN AM15} [get_ports {COUT_N[0]}]

@@ -146,7 +146,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
     localparam [3:0] INV_COUT =         4'b1110;
     localparam [3:0] INV_COUT_XB =      4'b1100;        // correct
     
-    localparam [3:0] INV_TXCLK =        4'b0010;      
+    localparam [3:0] INV_TXCLK =        4'b1010;      
     localparam [3:0] INV_TXCLK_XB =     4'b1100;        // correct
     
     localparam [6:0] INV_CINA =     7'b0000010;
