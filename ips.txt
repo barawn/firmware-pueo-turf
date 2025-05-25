@@ -14,6 +14,7 @@ ip/fifo/axis_ccfifo64_tlast/axis_ccfifo64_tlast.xci
 ip/fifo/axis_ccfifo64_tuser4_tlast/axis_ccfifo64_tuser4_tlast.xci
 ip/fifo/ccfifo65/ccfifo65.xci
 ip/fifo/ccfifo69/ccfifo69.xci
+ip/debug/cin_parallel_ila/cin_parallel_ila.xci
 ip/ddr/ddr4_mig/ddr4_mig.xci
 ip/event/doneaddr_broadcast/doneaddr_broadcast.xci
 ip/debug/drp_ila/drp_ila.xci
@@ -34,6 +35,8 @@ ip/event/event_in_dm_fifo_noexpand/event_in_dm_fifo_noexpand.xci
 ip/event/event_out_fifo/event_out_fifo.xci
 ip/debug/event_readout_ila/event_readout_ila.xci
 ip/debug/evreq_ila/evreq_ila.xci
+ip/debug/expander_ila/expander_ila.xci
+ip/debug/fragment_ila/fragment_ila.xci
 ip/debug/hdr_accum_ila/hdr_accum_ila.xci
 ip/event/hdr_addrfifo/hdr_addrfifo.xci
 ip/event/hdr_datamover/hdr_datamover.xci
