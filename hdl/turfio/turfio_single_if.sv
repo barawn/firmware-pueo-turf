@@ -49,6 +49,7 @@ module turfio_single_if #(
         parameter INV_TXCLK_XB = 1'b0,
         parameter CIN_CLKTYPE = "IFCLK67",
         parameter COUT_CLKTYPE = "IFCLK67",
+        parameter [7:0] BIT_DEBUG = 8'h00,
         parameter [31:0] TRAIN_VALUE = 32'hA55A6996
         )(
         input clk_i,
@@ -346,10 +347,13 @@ module turfio_single_if #(
                        .data_o(serdes_out),
                        .CIN_P(in_p[i]),
                        .CIN_N(in_n[i]));
-            // Once the SERDES is out, we need to implement both value capture
-            // and bit error testing. We do that in a module similar to the TURFIO.
-            // But we also need bitslip functionality, so we get that here.
-            turfio_cin_parallel_sync #(.TRAIN_SEQUENCE(TRAIN_VALUE),.CLKTYPE(CIN_CLKTYPE))
+            // NO: We DO NOT NEED lock/lock req for the TURFIO bits!
+            // They're synced: we determine that parameter ONCE and it's
+            // the EXACT FREAKING SAME every time.
+            // The ONLY THING WE NEED is a SINGLE offset.
+            turfio_cin_parallel_sync #(.TRAIN_SEQUENCE(TRAIN_VALUE),
+                                       .CLKTYPE(CIN_CLKTYPE),
+                                       .DEBUG(BIT_DEBUG[i] == 1'b1 ? "TRUE" : "FALSE"))
                 u_cin_sync(.ifclk_i(cin_clk_i),
                            .ifclk_phase_i(cin_clk_phase_i),
                            .rst_lock_i(lock_rst_ifclk[1]),

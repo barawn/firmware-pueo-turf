@@ -109,6 +109,12 @@ module turfio_if #( parameter [31:0] TRAIN_VALUE=32'hA55A6996,
     // number of address bits for interface
     localparam NUM_IF_ADR_BITS = 12;
 
+    localparam [31:0] BIT_DEBUG_FULL = {
+        8'h00,
+        8'h00,
+        8'h00,
+        8'h01 };
+
     // create a lookup function for parameters
     function [6:0] lookup_inv_cin;
         input integer i;
@@ -279,7 +285,7 @@ module turfio_if #( parameter [31:0] TRAIN_VALUE=32'hA55A6996,
             wire [31:0] bank_command = (COUT_CLKTYPE[i]) ? cout_command67_i : cout_command68_i;
 
             // now the single_ifs...
-            turfio_single_if #(.INV_CIN(lookup_inv_cin(i)),
+            turfio_single_if_v2 #(.INV_CIN(lookup_inv_cin(i)),
                                .INV_CIN_XB(lookup_inv_cin_xb(i)),
                                .INV_CINTIO(INV_CINTIO[i]),
                                .INV_CINTIO_XB(INV_CINTIO_XB[i]),
@@ -289,6 +295,7 @@ module turfio_if #( parameter [31:0] TRAIN_VALUE=32'hA55A6996,
                                .INV_TXCLK_XB(INV_TXCLK_XB[i]),
                                .CIN_CLKTYPE(CIN_CLKTYPE[i] ? "IFCLK67" : "IFCLK68"),
                                .COUT_CLKTYPE(COUT_CLKTYPE[i] ? "IFCLK67" : "IFCLK68"),
+                               .BIT_DEBUG(BIT_DEBUG_FULL[8*i +: 8]),
                                .TRAIN_VALUE(TRAIN_VALUE))
                 u_if( .clk_i(clk_i),
                       .rst_i(rst_i),
