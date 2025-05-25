@@ -1,30 +1,34 @@
 `timescale 1ns / 1ps
 // This is *almost* the same as the TURFIO's module, except we *also* implement bitslip functionality.
+//
+// v2 changes things. We ENTIRELY drop locking. We don't need it.
+// The SURF syncs up to us, if things aren't aligned, that's bad
+// and needs to be fixed.
+// We also get rid of the roundtrip delay crap. It's implicitly
+// automatic when we program in the phase delay offset.
 module turfio_cin_parallel_sync_v2(
         // interface clock
         input ifclk_i,
         // interface clock phase (indicates cycle 0 of 8-clock IFCLK cycle)
         input ifclk_phase_i,
-        // reset the lock (NOT the bitslip)
-        input rst_lock_i,
-        // reset the bitslip (NOT the lock)
+        // phase offset
+        input [2:0] offset_i,
+        // reset the bitslip
         input rst_bitslip_i,
         // parallel, unaligned 4-bit input stream
         input [3:0] cin_i,
         // instruct module to capture even though we're not aligned
         input capture_i,
+        // flag indicating that the capture request has completed
+        input captured_i,
         // instruct module to slip a bit forward
         input bitslip_i,
-        // lock onto the next correct training sequence
-        input lock_i,
-        // training sequence is locked
-        output locked_o,
+        // enable (shuts up the biterr counter and drives valid)
+        input enable_i,
         // parallel output
         output [31:0] cin_parallel_o,
         // output is valid
         output cin_parallel_valid_o,
-        // round-trip delay
-        output [2:0] cin_roundtrip_o,
         // bit error happened (when not locked only!!)
         output cin_biterr_o        
     );
@@ -45,26 +49,30 @@ module turfio_cin_parallel_sync_v2(
     // this is TECHNICALLY a clock-crossed register because it thinks capture_i can be async
     (* CUSTOM_CC_DST = CLKTYPE, CUSTOM_CC_SRC = CLKTYPE *)
     reg [31:0] cin_capture = {32{1'b0}};
+    
+    // The way we handle capturing is to just not update
+    // during the time the cross happens.
+    reg capture_hold = 0;
+    // set when data is valid
+    reg valid = 0;
+    // when set we capture
     reg enable_capture = 0;
-    wire do_cin_capture = enable_capture || capture_i;
-    reg enable_lock = 0;
-    (* CUSTOM_CC_SRC = CLKTYPE *)    
-    reg locked = 0;
-    // this is the sequence track for the *input*. It is unaligned to phase (other than our sync procedure)
-    reg [3:0] ifclk_sequence = {4{1'b0}};
 
     // this is the sequence track based on the phase input
     reg [2:0] ifclk_phase_counter = {3{1'b0}};
     // this buffers the input signal
     reg ifclk_phase_buf = 0;
 
-    // this is the captured round-trip delay. if the valid is high in clock 0, this measures 0 (so it's mod 8).
-    // We don't actually care about the *actual* "round-trip" delay (as in, something like a ping->pong response)
-    // we actually just care about when the "sync" command is issued, how long does it take the now-phase locked
-    // training output to return back.
-    // In other words this is more like a one-way propagation delay.
-    (* CUSTOM_CC_SRC = CLKTYPE *)
-    reg [2:0] roundtrip = {3{1'b0}};
+    // BIT ERROR GENERATION
+    wire [3:0] cin_delayed;
+    reg cin_biterr = 0;
+    assign cin_biterr_o = cin_biterr;
+    srlvec #(.NBITS(4)) u_cin_srl(.clk(ifclk_i),
+                                  .ce(1'b1),
+                                  .a(4'h7),
+                                  .din(cin_history[3:0]),
+                                  .dout(cin_delayed));
+
 
     // SYNCHRONIZATION
     // We have an 8-clock sequence, so the way this works is:
@@ -83,27 +91,17 @@ module turfio_cin_parallel_sync_v2(
     //
     // We delay the locked input because it doesn't matter and it simplifies the counter.
     // It's just a delay so we can use an SRL with address set to 7 for it.
-    wire [3:0] cin_delayed;
-    reg cin_biterr = 0;
-    assign cin_biterr_o = cin_biterr;
-    srlvec #(.NBITS(4)) u_cin_srl(.clk(ifclk_i),
-                                  .ce(1'b1),
-                                  .a(4'h7),
-                                  .din(cin_history[3:0]),
-                                  .dout(cin_delayed));
     always @(posedge ifclk_i) begin
+        if (capture_i) capture_hold <= 1;
+        else if (captured_i) capture_hold <= 0;
+    
         ifclk_phase_buf <= ifclk_phase_i;
         // ifclk_phase_i going high means phase 0
         // ifclk_phase_buf going high means phase 1
         // therefore we reset to phase 2
         if (ifclk_phase_buf) ifclk_phase_counter <= 3'd2;
         else ifclk_phase_counter <= ifclk_phase_counter + 1;
-
-        if (ifclk_sequence[3]) roundtrip <= ifclk_phase_counter;
-    
-        if (rst_lock_i) enable_lock <= 1'b0;
-        else if (lock_i) enable_lock <= 1'b1;
-        
+            
         cin_history[24 +: 4] <= cin_align;
         cin_history[20 +: 4] <= cin_history[24 +: 4];
         cin_history[16 +: 4] <= cin_history[20 +: 4];
@@ -111,26 +109,35 @@ module turfio_cin_parallel_sync_v2(
         cin_history[8 +: 4] <= cin_history[12 +: 4];
         cin_history[4 +: 4] <= cin_history[8 +: 4];
         cin_history[0 +: 4] <= cin_history[4 +: 4];
-        
-        if (rst_lock_i) locked <= 1'b0;
-        else if (enable_lock && current_cin == TRAIN_SEQUENCE) locked <= 1'b1;
-        
-        enable_capture <= ifclk_sequence == 4'h6;
-        
-        if (!locked) ifclk_sequence <= 4'h0;
-        else ifclk_sequence <= ifclk_sequence[2:0] + 1;
-        
-        if (do_cin_capture) begin
+                
+        enable_capture <= ifclk_phase_counter == offset_i;
+                
+        if (enable_capture && !capture_i && !capture_hold) begin
             cin_capture <= current_cin;
         end        
         
-        if (locked) cin_biterr <= 1'b0;
+        valid <= enable_capture && enable_i;
+        
+        if (enable_i) cin_biterr <= 1'b0;
         else cin_biterr <= (cin_history[3:0] != cin_delayed[3:0]);        
     end
 
-    assign locked_o = locked;
-    assign cin_parallel_valid_o = ifclk_sequence[3];
+    generate
+        if (DEBUG == "TRUE") begin : ILA
+            // 32 bits: current_cin
+            // 3 bits ifclk_phase_counter
+            // 1 bit enable_capture
+            // 1 bit ifclk_phase_buf
+            // 1 bit biterr
+            cin_parallel_ila u_ila(.clk(ifclk_i),
+                                   .probe0(current_cin),
+                                   .probe1(ifclk_phase_counter),
+                                   .probe2(enable_capture),
+                                   .probe3(ifclk_phase_buf),
+                                   .probe4(cin_biterr));
+        end
+    endgenerate
+    assign cin_parallel_valid_o = valid;
     assign cin_parallel_o = cin_capture;
-    assign cin_roundtrip_o = roundtrip;
     
 endmodule
