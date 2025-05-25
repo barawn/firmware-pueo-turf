@@ -13,7 +13,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="A",
                     parameter [3:0] VER_MAJOR=4'd0,
                     parameter [3:0] VER_MINOR=4'd4,
-                    parameter [7:0] VER_REV=8'd16,
+                    parameter [7:0] VER_REV=8'd17,
                     parameter [15:0] FIRMWARE_DATE = {16{1'b0}})                    
                     (
 
@@ -249,6 +249,11 @@ module pueo_turf6 #(parameter IDENT="TURF",
     wire sys_clk;
     // Global phase of sys_clk.
     wire sys_clk_phase;
+    // The X2 clock (250 MHz).
+    wire sys_clk_x2;
+    // The X2 clock's CE (to clean capture from sys_clk)
+    wire sys_clk_x2_ce;
+    
     // Sync state. This is a direct analog to the SURF clock inputs
     // and if we time everything up correctly should be exactly synchronous.
     wire sys_clk_sync;
@@ -308,12 +313,16 @@ module pueo_turf6 #(parameter IDENT="TURF",
     // an MMCM. Not sure.
     IBUFDS u_ddrclk1_ibuf(.I(DDR_CLK_P[1]),.IB(DDR_CLK_N[1]),.O(ddr_clk[1]));
 
+    
+
     localparam INV_MMCM = (PROTOTYPE=="TRUE") ? "TRUE" : "FALSE";
     system_clock_v2 #(.INVERT_MMCM(INV_MMCM))
         u_sysclk(.SYS_CLK_P(SYSCLK_P),
                  .SYS_CLK_N(SYSCLK_N),
                  .reset(1'b0),
                  .sysclk_o(sys_clk),
+                 .sysclk_x2_o(sys_clk_x2),
+                 .sysclk_x2_ce_o(sys_clk_x2_ce),
                  .sysclk_ibuf_o(sys_clk_ibuf),
                  .sysclk_phase_o(sys_clk_phase),
                  .sysclk_sync_o(sys_clk_sync),
@@ -653,9 +662,11 @@ module pueo_turf6 #(parameter IDENT="TURF",
                            .sysclk_i(sys_clk),
                            .sysclk_phase_i(sys_clk_phase),
                            .sysclk_sync_i(sys_clk_sync),
+                           .sysclk_x2_i(sys_clk_x2),
+                           .sysclk_x2_ce_i(sys_clk_x2_ce),
                            .pps_i(1'b0),
                            .command67_o(turfio_if_command67),
-                           .command68_o(turfio_if_command68));
+                           .command68_o(turfio_if_command68));                           
 
     generate
         if (UART_DEBUG == "TRUE") begin : SERDBG
