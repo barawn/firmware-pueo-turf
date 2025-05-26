@@ -6,6 +6,8 @@
 // and needs to be fixed.
 // We also get rid of the roundtrip delay crap. It's implicitly
 // automatic when we program in the phase delay offset.
+// And finally, when enabled we actually capture twice, and only output 16 bits
+// because triggers have a granularity of 16 bits.
 module turfio_cin_parallel_sync_v2(
         // interface clock
         input ifclk_i,
@@ -25,7 +27,7 @@ module turfio_cin_parallel_sync_v2(
         input bitslip_i,
         // enable (shuts up the biterr counter and drives valid)
         input enable_i,
-        // parallel output
+        // parallel output. Bottom 16 bits only when properly running.
         output [31:0] cin_parallel_o,
         // output is valid
         output cin_parallel_valid_o,
@@ -57,7 +59,29 @@ module turfio_cin_parallel_sync_v2(
     reg valid = 0;
     // when set we capture
     reg enable_capture = 0;
-
+    // when set we shift the output down to reduce to 16 bits.
+    // This is a 4 clock delay: we need to go
+    // enable_capture   srl     shift_capture
+    // 1                0000    0
+    // 0                0001    0
+    // 0                0002    0
+    // 0                0004    0
+    // 0                0008    1
+    // 0                0010    0
+    // 0                0020    0
+    // 0                0040    0
+    // so we grab address 3
+    wire shift_capture;
+    SRL16E u_shift_delay(.D(enable_capture),
+                         .CE(enable_i),
+                         .CLK(ifclk_i),
+                         .A0(1),
+                         .A1(1),
+                         .A2(0),
+                         .A3(0),
+                         .Q(shift_capture));
+    
+    
     // this is the sequence track based on the phase input
     reg [2:0] ifclk_phase_counter = {3{1'b0}};
     // this buffers the input signal
@@ -114,9 +138,12 @@ module turfio_cin_parallel_sync_v2(
                 
         if (enable_capture && !capture_i && !capture_hold) begin
             cin_capture <= current_cin;
-        end        
+        end else if (shift_capture) begin
+            // Always shift down.
+            cin_capture[15:0] <= cin_capture[31:16];
+        end
         
-        valid <= enable_capture && enable_i;
+        valid <= (enable_capture || shift_capture) && enable_i;
         
         if (enable_i) cin_biterr <= 1'b0;
         else cin_biterr <= (cin_history[3:0] != cin_delayed[3:0]);        
@@ -134,7 +161,8 @@ module turfio_cin_parallel_sync_v2(
                                    .probe1(ifclk_phase_counter),
                                    .probe2(enable_capture),
                                    .probe3(ifclk_phase_buf),
-                                   .probe4(cin_biterr));
+                                   .probe4(cin_biterr),
+                                   .probe5(shift_capture));
         end
     endgenerate
     assign cin_parallel_valid_o = valid;
