@@ -1,8 +1,10 @@
 `timescale 1ns / 1ps
 `include "interfaces.vh"
+// the '32' here is fake it includes the 4 unused TURFIO ports
 module trig_pueo_wrap #(parameter WBCLKTYPE = "NONE",
                         parameter SYSCLKTYPE = "NONE",
-                        parameter NSURF = 28)(
+                        parameter NSURF = 32,
+                        parameter DEBUG = "TRUE")(
         input wb_clk_i,
         input wb_rst_i,
         `TARGET_NAMED_PORTS_WB_IF( wb_ , 14, 32 ),
@@ -30,7 +32,9 @@ module trig_pueo_wrap #(parameter WBCLKTYPE = "NONE",
         // 8 clocks per cycle, which allows us to multiplex all
         // of the SURFs into one URAM.
         input [NSURF*16-1:0] trig_dat_i,
-        input                trig_dat_valid_i,
+        // we actually end up ignoring these since we use the trigger
+        // mask.
+        input [NSURF-1:0] trig_dat_valid_i,
         
         output [31:0] command67_o,
         output [31:0] command68_o
@@ -41,6 +45,14 @@ module trig_pueo_wrap #(parameter WBCLKTYPE = "NONE",
     assign trig_tvalid = 1'b0;
     assign trig_tdata = {16{1'b0}};
     
+    // just grab phase and valid right now to time them up
+    generate
+        if (DEBUG == "TRUE") begin : DBG
+            trig_ila u_ila(.clk(sysclk_i),
+                           .probe0(trig_dat_valid_i),
+                           .probe1(sysclk_phase_i));
+        end
+    endgenerate    
     trig_pueo_command #(.WBCLKTYPE(WBCLKTYPE),
                         .SYSCLKTYPE(SYSCLKTYPE))
                       u_command( .wb_clk_i(wb_clk_i),

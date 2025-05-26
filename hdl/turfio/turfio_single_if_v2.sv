@@ -255,7 +255,14 @@ module turfio_single_if_v2 #(
             reg bitslip_rst = 0;
             // and in ifclk
             (* ASYNC_REG = "TRUE", CUSTOM_CC_DST = CIN_CLKTYPE *)
-            reg [1:0] bitslip_rst_ifclk = {2{1'b0}};            
+            reg [1:0] bitslip_rst_ifclk = {2{1'b0}};
+            // enable for this bit in WB clk
+            (* CUSTOM_CC_SRC = "PSCLK" *)
+            reg enable = 0;
+            // and in ifclk
+            (* ASYNC_REG = "TRUE", CUSTOM_CC_DST = CIN_CLKTYPE *)
+            reg [1:0] enable_ifclk = {2{1'b0}};
+            
             // count value out
             wire [8:0] this_cntvalueout;
             // expanded
@@ -286,7 +293,7 @@ module turfio_single_if_v2 #(
             assign control_data[0] = { {8{1'b0}},
                                        {8{1'b0}},
                                        {8{1'b0}},
-                                       {3{1'b0}}, 2'b00, bitslip_rst, dis_vtc, local_rst };
+                                       {3{1'b0}}, enable, 1'b0, bitslip_rst, dis_vtc, local_rst };
             // create control reg 1
             assign control_data[1] = { {7{1'b0}}, bit_error_count_wbclk };
             // Output from the serdes
@@ -310,12 +317,18 @@ module turfio_single_if_v2 #(
                     bitslip_rst <= wb_dat_i[2];
                 end
                 
+                if (rst) begin
+                    enable <= 1'b0;
+                end else if (wb_cyc_i && wb_stb_i && wb_ack_o && (`BIT_NUMBER(wb_adr_i) == i) && !wb_adr_i[7] && wb_we_i && wb_sel_i[0]) begin
+                    enable <= wb_dat_i[4]; 
+                end                
                 rst <= local_rst || cin_rst_i;              
                 
                 if (bit_error_count_valid_wbclk) bit_error_count_wbclk <= bit_error_count;
             end            
 
             always @(posedge cin_clk_i) begin
+                enable_ifclk <= { enable_ifclk[0], enable };
                 bitslip_rst_ifclk <= { bitslip_rst_ifclk[0], bitslip_rst };
                 bitslip <= (adr_static[7] && adr_static[6] && !adr_static[5] && this_bit_access && we_static);            
                 interval_load <= (adr_static[7] && adr_static[6] && adr_static[5] && this_bit_access && we_static && sel_static[3:0] == 4'hF);
@@ -353,6 +366,7 @@ module turfio_single_if_v2 #(
                            .capture_i(capture),
                            .captured_i(done_ifclk),
                            .bitslip_i(bitslip),
+                           .enable_i(enable_ifclk[1]),
                            .cin_parallel_o(cin_response_o[32*i +: 32]),
                            .cin_parallel_valid_o(cin_valid_o[i]),
                            .cin_biterr_o(biterr));

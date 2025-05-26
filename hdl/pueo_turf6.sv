@@ -13,7 +13,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="A",
                     parameter [3:0] VER_MAJOR=4'd0,
                     parameter [3:0] VER_MINOR=4'd4,
-                    parameter [7:0] VER_REV=8'd17,
+                    parameter [7:0] VER_REV=8'd19,
                     parameter [15:0] FIRMWARE_DATE = {16{1'b0}})                    
                     (
 
@@ -393,13 +393,15 @@ module pueo_turf6 #(parameter IDENT="TURF",
     /////////////////////////////////////////////////////
     
     // bridge AXI4L -> WB
-    axil2wb #(.ADDR_WIDTH(28)) u_axil2wb(.clk_i(ps_clk),
+    axil2wb #(.ADDR_WIDTH(28),
+              .DEBUG("FALSE")) u_axil2wb(.clk_i(ps_clk),
                                          .rst_i(1'b0),
                                          `CONNECT_AXI4L_IF( s_axi_ , axi_ps_ ),
                                          `CONNECT_WBM_IFM( wb_ , wb_ps_ ));
     
     // interconnect
-    turf_intercon u_intercon( .clk_i(ps_clk),
+    turf_intercon #(.DEBUG("FALSE"))
+                  u_intercon( .clk_i(ps_clk),
                               .rst_i(1'b0),
                               `CONNECT_WBS_IFM(wbps_ , wb_ps_),
                               `CONNECT_WBS_IFM(wbeth_, wb_eth_),
@@ -504,11 +506,17 @@ module pueo_turf6 #(parameter IDENT="TURF",
                   .s_resp_tuser( aurora_resp_tuser ));                                    
 
     // turfio path
-    // commands don't exist... yet.
-    // need to rewire the command encoder. it's waay simpler
-    // now though because it's JUST the trigger stuff.
     wire [31:0] turfio_if_command67;
     wire [31:0] turfio_if_command68;
+    // triggers
+    wire [16*8-1:0] turfioa_trigger;
+    wire [7:0] turfioa_valid;
+    wire [16*8-1:0] turfiob_trigger;
+    wire [7:0] turfiob_valid;
+    wire [16*8-1:0] turfioc_trigger;
+    wire [7:0] turfioc_valid;
+    wire [16*8-1:0] turfiod_trigger;
+    wire [7:0] turfiod_valid;
     
     turfio_if #( .INV_SYSCLK(INV_MMCM),
                  .TRAIN_VALUE(TRAIN_VALUE),
@@ -543,19 +551,19 @@ module pueo_turf6 #(parameter IDENT="TURF",
                   .clk300_i( ddr_clk[0] ),
                   .ifclk67_o( if_clk67 ),
                   .ifclk68_o( if_clk68 ),
-
+                  .sysclk_i(sys_clk),
                   .sysclk_ibuf_i(sys_clk_ibuf),
                   .sysclk_phase_i(sys_clk_phase),
                   .cout_command67_i( turfio_if_command67 ),
                   .cout_command68_i( turfio_if_command68 ),
-                  .cina_command_o(),
-                  .cinb_command_o(),
-                  .cinc_command_o(),
-                  .cind_command_o(),
-                  .cina_valid_o(),
-                  .cinb_valid_o(),
-                  .cinc_valid_o(),
-                  .cind_valid_o(),
+                  .cina_trigger_o(turfioa_trigger),
+                  .cina_valid_o(turfioa_valid),
+                  .cinb_trigger_o(turfiob_trigger),
+                  .cinb_valid_o(turfiob_valid),
+                  .cinc_trigger_o(turfioc_trigger),
+                  .cinc_valid_o(turfioc_valid),
+                  .cind_trigger_o(turfiod_trigger),
+                  .cind_valid_o(turfiod_valid),
                   .CINTIO_P(CINTIO_P),
                   .CINTIO_N(CINTIO_N),
                   .COUT_P(COUT_P),
@@ -665,6 +673,10 @@ module pueo_turf6 #(parameter IDENT="TURF",
                            .sysclk_x2_i(sys_clk_x2),
                            .sysclk_x2_ce_i(sys_clk_x2_ce),
                            .pps_i(1'b0),
+                           .trig_dat_i( { turfiod_trigger, turfioc_trigger,
+                                          turfiob_trigger, turfioa_trigger } ),
+                           .trig_dat_valid_i( { turfiod_valid, turfioc_valid,
+                                                turfiob_valid, turfioa_valid } ),
                            .command67_o(turfio_if_command67),
                            .command68_o(turfio_if_command68));                           
 

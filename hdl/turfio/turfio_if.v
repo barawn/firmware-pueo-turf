@@ -55,31 +55,33 @@ module turfio_if #( parameter [31:0] TRAIN_VALUE=32'hA55A6996,
         // interface clock on bank 68
         output ifclk68_o,
         
+        // This is the real sysclk input. We resync to sysclk.
+        input sysclk_i,
         // command output broadcast in bank 67
         input [31:0] cout_command67_i,
         // command output broadcast in bank 68
         input [31:0] cout_command68_i,
         
-        // Arrayed command outputs for port A
-        output [32*7-1:0] cina_command_o,
+        // Trigger outputs for CINA
+        output [16*8-1:0] cina_trigger_o,
         // Outputs are valid
-        output [6:0] cina_valid_o,
+        output [7:0] cina_valid_o,
         
         // Arrayed command outputs for port B
-        output [32*7-1:0] cinb_command_o,
+        output [16*8-1:0] cinb_trigger_o,
         // Outputs are valid
-        output [6:0] cinb_valid_o,
+        output [7:0] cinb_valid_o,
 
         // Arrayed command outputs for port C
-        output [32*7-1:0] cinc_command_o,
+        output [16*8-1:0] cinc_trigger_o,
         // Outputs are valid
-        output [6:0] cinc_valid_o,
+        output [7:0] cinc_valid_o,
 
         // Arrayed command outputs for port B
-        output [32*7-1:0] cind_command_o,
+        output [16*8-1:0] cind_trigger_o,
         // Outputs are valid
-        output [6:0] cind_valid_o,
-        
+        output [7:0] cind_valid_o,
+                
         // vectored CINTIO corresponding to D,C,B,A
         input [3:0] CINTIO_P,
         input [3:0] CINTIO_N,
@@ -140,16 +142,16 @@ module turfio_if #( parameter [31:0] TRAIN_VALUE=32'hA55A6996,
     wire [6:0] cin_vec_n[NUM_IF-1:0];
 
     // and create a vector for the command outputs.
-    wire [32*7-1:0] cin_command_vec[NUM_IF-1:0];
+    wire [16*8-1:0] cin_trigger_vec[NUM_IF-1:0];
     // and valids
-    wire [6:0] cin_command_valid_vec[NUM_IF-1:0];
+    wire [7:0] cin_trigger_valid_vec[NUM_IF-1:0];
 
     // macro the assignment to avoid mistakes      
     `define ASSIGN_CIN_VEC( number, lowerletter, upperletter) \
         assign cin_vec_p[ number ] = CIN``upperletter``_P;    \
         assign cin_vec_n[ number ] = CIN``upperletter``_N;    \
-        assign cin``lowerletter``_command_o = cin_command_vec[ number ]; \
-        assign cin``lowerletter``_valid_o = cin_command_valid_vec[ number ]
+        assign cin``lowerletter``_trigger_o = cin_trigger_vec[ number ]; \
+        assign cin``lowerletter``_valid_o = cin_trigger_valid_vec[ number ]
 
     `ASSIGN_CIN_VEC( 0, a, A );
     `ASSIGN_CIN_VEC( 1, b, B );
@@ -272,7 +274,7 @@ module turfio_if #( parameter [31:0] TRAIN_VALUE=32'hA55A6996,
                   .locked_o(mmcm_locked));
 
     generate
-        genvar i;
+        genvar i,j;
         for (i=0;i<4;i=i+1) begin : IFL
             // hook up the local bus. Remember it's *master* named so o's to i's
             assign wbtio_cyc_o[i] = wb_cyc_i && wb_adr_i[14] && wb_adr_i[(14-NUM_IF_BITS) +: NUM_IF_BITS] == i;
@@ -283,6 +285,21 @@ module turfio_if #( parameter [31:0] TRAIN_VALUE=32'hA55A6996,
             assign wbtio_dat_o[i] = wb_dat_i;
 
             wire [31:0] bank_command = (COUT_CLKTYPE[i]) ? cout_command67_i : cout_command68_i;
+
+            // HOLY MOLY BIG
+            wire [32*8-1:0] tio_response;
+            wire [7:0] tio_response_valid;
+            reg [16*8-1:0] trigger_rereg = {32*8{1'b0}};
+            reg [7:0] trigger_valid_rereg = {8{1'b0}};
+
+            for (j=0;j<8;j=j+1) begin : BL
+                always @(posedge sysclk_i) begin : RR
+                    trigger_rereg[16*j +: 16] <= tio_response[32*j +: 16];
+                    trigger_valid_rereg[j] <= tio_response_valid[j];
+                end
+            end
+            assign cin_trigger_vec[i] = trigger_rereg;
+            assign cin_trigger_valid_vec[i] = trigger_valid_rereg;
 
             // now the single_ifs...
             turfio_single_if_v2 #(.INV_CIN(lookup_inv_cin(i)),
@@ -309,6 +326,10 @@ module turfio_if #( parameter [31:0] TRAIN_VALUE=32'hA55A6996,
                       .cout_clk_x2_i( COUT_CLKTYPE[i] ? ifclk68x2 : ifclk67x2 ),
                       .cout_clk_x2_phase_i( COUT_CLKTYPE[i] ? ifclk68x2_phase : ifclk67x2_phase ),
                       .cout_command_i(bank_command),
+                      
+                      .cin_response_o(tio_response),
+                      .cin_valid_o(tio_response_valid),
+                      
                       .CIN_P(cin_vec_p[i]),
                       .CIN_N(cin_vec_n[i]),
                       .CINTIO_P(CINTIO_P[i]),
