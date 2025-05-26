@@ -349,7 +349,7 @@ module turfio_single_if_v2 #(
                            .ifclk_phase_i(cin_clk_phase_i),
                            .rst_bitslip_i(bitslip_rst_ifclk[1]),
                            .cin_i(serdes_out),
-                           .offset_i(cin_offset),
+                           .offset_i(cin_offset_ifclk),
                            .capture_i(capture),
                            .captured_i(done_ifclk),
                            .bitslip_i(bitslip),
