@@ -214,7 +214,7 @@ module turfio_if_clocks #(parameter INVERT_MMCM = "TRUE")(
     // if_clk67_x2_phase_rst[0] goes high in phase 1 because of the timer
     // so we reset to phase 2.
     always @(posedge ifclk67_x2_o) begin
-        if_clk67_x2_phase_rst <= { if_clk67_x2_phase[0], sysclk_phase_i};
+        if_clk67_x2_phase_rst <= { if_clk67_x2_phase_rst[0], sysclk_phase_i};
         if (if_clk67_x2_phase_rst == 2'b01) if_clk67_x2_phase <= 4'd2;
         else if_clk67_x2_phase <= if_clk67_x2_phase[3:0] + 1;
     end
@@ -225,7 +225,7 @@ module turfio_if_clocks #(parameter INVERT_MMCM = "TRUE")(
     // if_clk67_x2_phase_rst[0] goes high in phase 1 because of the timer
     // so we reset to phase 2.
     always @(posedge ifclk68_x2_o) begin
-        if_clk68_x2_phase_rst <= { if_clk68_x2_phase[0], sysclk_phase_i};
+        if_clk68_x2_phase_rst <= { if_clk68_x2_phase_rst[0], sysclk_phase_i};
         if (if_clk68_x2_phase_rst == 2'b01) if_clk68_x2_phase <= 4'd2;
         else if_clk68_x2_phase <= if_clk68_x2_phase[3:0] + 1;
     end
