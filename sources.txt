@@ -23,6 +23,7 @@ hdl/ethernet/turf_fragment_gen.v
 hdl/ethernet/turf_udp_core.v
 hdl/ethernet/turf_udp_rdwr_v2.v
 hdl/turfio/turfio_if.v
+verilog-library-barawn/hdl/wbs_dummy.v
 verilog-library-barawn/hdl/wishbone_arbiter.v
 hdl/zynq_bd_wrapper.v
 hdl/event/ack_done_generator.sv
@@ -35,6 +36,9 @@ hdl/event/event_pueo_wrap.sv
 hdl/event/event_readout_generator.sv
 hdl/event/hdr_accumulator.sv
 hdl/i2c_merger.sv
+hdl/trig/master_trig_uram.sv
+hdl/trig/pueo_master_trig_process.sv
+hdl/trig/pueo_trig_ctrl.sv
 hdl/event/pueo_turfio_event_req_gen.sv
 verilog-library-barawn/hdl/simple_clock_mon.sv
 hdl/clock/system_clock_v2.sv
@@ -66,8 +70,5 @@ hdl/pueo_turf6.sv
 hdl/turfio/turfio_cin_parallel_sync.sv
 hdl/turfio/turfio_single_if.sv
 hdl/ethernet/turf_udp_rdwr.v
-verilog-library-barawn/hdl/wbs_dummy.v
 hdl/aurora/turfio_aurora_reset.sv
 hdl/ethernet/wb_if_cc.sv
-hdl/trig/pueo_master_trig_process.sv
-hdl/trig/master_trig_uram.sv
