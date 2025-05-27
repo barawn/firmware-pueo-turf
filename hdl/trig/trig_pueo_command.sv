@@ -1,6 +1,10 @@
 `timescale 1ns / 1ps
 `include "interfaces.vh"
 // this doesn't just send trig commands, it also does runcmds and fwu data
+//
+// I need to rework the FWU here to match the TURFIO.
+// In the TURFIO there's a 32-to-8 FIFO and you just
+// blitz the FIFO. 
 module trig_pueo_command(
         input wb_clk_i,
         input wb_rst_i,
@@ -14,7 +18,8 @@ module trig_pueo_command(
         // pps needs to be in sysclk domain anyway and it's
         // stretched to be at least 8 clocks long.
         input pps_i,        
-        
+        output runrst_o,
+        output runstop_o,        
         // this is really only 15 bits
         `TARGET_NAMED_PORTS_AXI4S_MIN_IF( s_trig_ , 16),
         
@@ -157,6 +162,9 @@ module trig_pueo_command(
     assign wb_dat_o = {32{1'b0}};
     
     assign s_trig_tready = s_trig_tvalid && sysclk_phase_i;
+
+    assign runrst_o = (sysclk_phase_i && runcmd == 2);
+    assign runstop_o = (sysclk_phase_i && runcmd == 3);
     
     assign command67_o = command;
     assign command68_o = command;

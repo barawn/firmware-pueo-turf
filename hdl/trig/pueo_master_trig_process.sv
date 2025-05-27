@@ -39,6 +39,9 @@ module pueo_master_trig_process #(parameter NSURF=28,
 
         input runrst_i,
         input runstop_i,
+        output running_o,
+        output [11:0] address_o,
+        
         `HOST_NAMED_PORTS_AXI4S_MIN_IF( trigout_ , 16 ),
         // as it is we will currently generate 5 64-bit words I think
         // 1 for each TURFIO's metadata and 1 for event no/trigger number.        
@@ -82,8 +85,9 @@ module pueo_master_trig_process #(parameter NSURF=28,
     
     // this needs to START at runrst, wait until the latency counter expires,
     // then count every clock.
-    // Not the same as the system clock which starts at runrst and is very big.
     reg [11:0] readout_address = {12{1'b0}};
+    // this is the current address. just duplicate stuff, it ain't bad.
+    reg [11:0] current_address = {12{1'b0}};
     
     wire [63:0] metadata_out[3:0];
     wire [3:0]  trigger_out;    
@@ -211,6 +215,11 @@ module pueo_master_trig_process #(parameter NSURF=28,
     always @(posedge sysclk_i) begin
         if (runrst_i) trig_running <= 1;
         else if (runstop_i) trig_running <= 0;
+
+        if (!trig_running)
+            current_address <= 12'd1;
+        else
+            current_address <= current_address + 1;            
         
         if (runrst_i) trig_latency_sysclk <= trig_latency_i;
         else if (runstop_i) trig_latency_sysclk <= {16{1'b1}};
@@ -311,5 +320,8 @@ module pueo_master_trig_process #(parameter NSURF=28,
                          .dout(trigout_tdata));
     // just... shut up headers for now for immediate testing.
     // this whole thing needs to be simulated.
-    assign turf_hdr_tvalid = 1'b0;                         
+    assign turf_hdr_tvalid = 1'b0;
+    
+    assign address_o = current_address;
+    assign running_o = trig_running;        
 endmodule
