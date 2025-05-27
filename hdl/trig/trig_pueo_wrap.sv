@@ -219,6 +219,9 @@ module trig_pueo_wrap #(parameter WBCLKTYPE = "NONE",
                                  .sysclk_sync_i(sysclk_sync_i),
                                  .pps_i(pps_i),
                                  
+                                 .runrst_o(runrst),
+                                 .runstop_o(runstop),
+                                 
                                  `CONNECT_AXI4S_MIN_IF(s_trig_ , trig_ ),
                                  
                                  .command67_o(command67_o),
