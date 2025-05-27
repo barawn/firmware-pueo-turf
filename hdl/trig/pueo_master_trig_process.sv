@@ -213,21 +213,21 @@ module pueo_master_trig_process #(parameter NSURF=28,
     // all this needs to be timed up so that trig_running goes 1
     // in clock 0. therefore trig_latency counter resets itself to 1.
     always @(posedge sysclk_i) begin
-        if (runrst_i) trig_running <= 1;
-        else if (runstop_i) trig_running <= 0;
+//        if (runrst_i) trig_running <= 1;
+//        else if (runstop_i) trig_running <= 0;
 
         if (!trig_running)
             current_address <= 12'd1;
         else
             current_address <= current_address + 1;            
         
-        if (runrst_i) trig_latency_sysclk <= trig_latency_i;
-        else if (runstop_i) trig_latency_sysclk <= {16{1'b1}};
+//        if (runrst_i) trig_latency_sysclk <= trig_latency_i;
+//        else if (runstop_i) trig_latency_sysclk <= {16{1'b1}};
         
-        if (!trig_running) 
-            trig_latency_counter <= 16'd1;
-        else if (!trig_readout_running)
-            trig_latency_counter <= trig_latency_counter + 1;
+//        if (!trig_running) 
+//            trig_latency_counter <= 16'd1;
+//        else if (!trig_readout_running)
+//            trig_latency_counter <= trig_latency_counter + 1;
             
         if (trigmask_update_i)
             trig_mask_sysclk <= trigmask_i;            
