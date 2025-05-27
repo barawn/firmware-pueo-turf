@@ -70,3 +70,4 @@ verilog-library-barawn/hdl/wbs_dummy.v
 hdl/aurora/turfio_aurora_reset.sv
 hdl/ethernet/wb_if_cc.sv
 hdl/trig/pueo_master_trig_process.sv
+hdl/trig/master_trig_uram.sv
