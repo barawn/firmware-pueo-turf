@@ -85,6 +85,8 @@ module turfio_single_if_v2 #(
         output TXCLK_N
     );
 
+    localparam [2:0] CIN_OFFSET_DEFAULT = 3'd0;
+
     // The WISHBONE interface has to cross clock domains:
     // in order to do that, we have to know that the cin clk is running.
     // The CIN clock spaces are being accessed when:
@@ -152,10 +154,11 @@ module turfio_single_if_v2 #(
     (* ASYNC_REG = "TRUE" *)
     reg cout_train_ifclk = 1;
     
+    // This is just standard now
     (* CUSTOM_CC_SRC = "PSCLK" *)
-    reg [2:0] cin_offset = {3{1'b0}};
-    (* CUSTOM_CC_DST = COUT_CLKTYPE *)
-    reg [2:0] cin_offset_ifclk = {3{1'b0}};
+    reg [2:0] cin_offset = CIN_OFFSET_DEFAULT;
+    (* CUSTOM_CC_DST = CIN_CLKTYPE *)
+    reg [2:0] cin_offset_ifclk = CIN_OFFSET_DEFAULT;
     
     // Control space has the cout_train control and the offset.
     wire [31:0] control_data = { {16{1'b0}},
