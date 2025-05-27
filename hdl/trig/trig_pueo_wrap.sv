@@ -39,6 +39,37 @@ module trig_pueo_wrap #(parameter WBCLKTYPE = "NONE",
         output [31:0] command67_o,
         output [31:0] command68_o
     );
+    // it's 3 clocks from phase -> trig dat valid.
+    // then the *second* trig dat valid comes in 4 clocks later.
+    // so normally SRL delays would be 2 and 6.
+    // we rewind those by 1 to allow a registered or:
+    // giving 
+    localparam [3:0] VALID_OFFSET = 4'd1;
+    localparam [3:0] VALID_OFFSET_2 = 4'd5;
+    
+    wire phase_delayed;
+    wire phase_delayed_2;
+    reg trigger_valid = 0;
+    // and we ALSO can use it to qualify when TURF can issue
+    // a trigger.
+    wire turf_trigger_ce = phase_delayed || phase_delayed_2;
+    SRL16E u_delay1(.D(sysclk_phase_i),
+                    .CE(1'b1),
+                    .CLK(sysclk_i),
+                    .A0(VALID_OFFSET[0]),
+                    .A1(VALID_OFFSET[1]),
+                    .A2(VALID_OFFSET[2]),
+                    .A3(VALID_OFFSET[3]),
+                    .Q(phase_delayed));
+    SRL16E u_delay2(.D(sysclk_phase_i),
+                    .CE(1'b1),
+                    .CLK(sysclk_i),
+                    .A0(VALID_OFFSET_2[0]),
+                    .A1(VALID_OFFSET_2[1]),
+                    .A2(VALID_OFFSET_2[2]),
+                    .A3(VALID_OFFSET_2[3]),
+                    .Q(phase_delayed_2));
+    always @(posedge sysclk_i) trigger_valid <= phase_delayed || phase_delayed_2;
     
     // probably add more here or something, or maybe split off
     `DEFINE_AXI4S_MIN_IF( trig_ , 16 );
