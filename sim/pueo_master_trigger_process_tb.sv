@@ -86,6 +86,8 @@ module pueo_master_trigger_process_tb;
         if (runrst) cur_time <= `DLYFF {32{1'b0}};
         else cur_time <= `DLYFF cur_time + 1;
         
+        turf_trig_valid_shreg <= { turf_trig_valid_shreg[1:0], turf_trig_valid };
+        
         if (turf_trig_valid_shreg[2]) turf_trig_valid <= `DLYFF 0;
         else if (do_trig && trigin_will_be_valid) turf_trig_valid <= `DLYFF 1;
 
