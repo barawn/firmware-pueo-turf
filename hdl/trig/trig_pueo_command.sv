@@ -70,7 +70,11 @@ module trig_pueo_command(
     // this resolves to a NOOP if no mark is pending
     wire [7:0] mode1data = (fwu_pending && !fwu_mark) ? fwu_data : { {6{1'b0}}, fwu_mark, fwu_data[0] && fwu_mark};
     wire [1:0] mode1type = (fwu_pending && !fwu_mark) ? 2'd3 : 2'd0;    
-    wire [1:0] runcmd = (runcmd_pending) ? runcmd_data : 2'b00;
+    // Our sleazeball here is that we only send runcmds during sync
+    // intervals. AAUUUGH this logic actually meant you sent TWO
+    // of them!!
+    wire runcmd_really_pending = runcmd_pending && sysclk_sync_i;
+    wire [1:0] runcmd = (runcmd_really_pending) ? runcmd_data : 2'b00;
     
     localparam FSM_BITS = 2;
     localparam [FSM_BITS-1:0] IDLE = 0;
@@ -101,8 +105,6 @@ module trig_pueo_command(
         end        
     end
     
-    // Our sleazeball here is that we only send runcmds during sync
-    // intervals.
     //
     // The wait doesn't freaking matter. We could even do this with FWU data
     // the way we're doing it right now. But we'll be adding FIFO support
@@ -125,7 +127,7 @@ module trig_pueo_command(
         
         // HANDLE MESSAGE SIDE OF COMMAND
         if (sysclk_phase_i) begin
-            command[31] <= ~(runcmd_pending || fwu_pending || pps_i);
+            command[31] <= ~(runcmd_really_pending || fwu_pending || pps_i);
             // pps
             command[30] <= pps_i;
             // reserved
@@ -144,7 +146,7 @@ module trig_pueo_command(
     assign send_runcmd_wbclk = (state == ISSUE_CMD && !wb_adr_i[2]);
     assign send_fwu_wbclk = (state == ISSUE_CMD && wb_adr_i[2]);
     assign fwu_complete = (fwu_pending && sysclk_phase_i);
-    assign runcmd_complete = (runcmd_pending && sysclk_phase_i);
+    assign runcmd_complete = (runcmd_really_pending && sysclk_phase_i);
     
     // flag syncs
     flag_sync u_send_runcmd_sync(.in_clkA(send_runcmd_wbclk),.out_clkB(send_runcmd),

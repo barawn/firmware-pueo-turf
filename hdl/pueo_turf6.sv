@@ -13,7 +13,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="A",
                     parameter [3:0] VER_MAJOR=4'd0,
                     parameter [3:0] VER_MINOR=4'd5,
-                    parameter [7:0] VER_REV=8'd2,
+                    parameter [7:0] VER_REV=8'd3,
                     parameter [15:0] FIRMWARE_DATE = {16{1'b0}})                    
                     (
 
