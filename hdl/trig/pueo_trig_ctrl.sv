@@ -51,8 +51,14 @@ module pueo_trig_ctrl #(
     wire soft_trig_sysclk;
     
     reg ack = 0;
+    reg [31:0] dat_reg = {32{1'b0}};
     always @(posedge wb_clk_i) begin
         ack <= wb_cyc_i && wb_stb_i;        
+        if (wb_cyc_i && wb_stb_i && !wb_we_i) begin
+            if (wb_adr_i == MASK_ADDR) dat_reg <= { {4{1'b0}}, mask_register };
+            else if (wb_adr_i == LATENCY_OFFSET_ADDR) dat_reg <= { offset_register, latency_register };
+            else dat_reg <= {32{1'b0}};
+        end
         if (wb_cyc_i && wb_stb_i && wb_we_i) begin
             if (wb_adr_i == MASK_ADDR) begin
                 if (wb_sel_i[0]) mask_register[7:0] <= wb_dat_i[7:0];
@@ -77,14 +83,18 @@ module pueo_trig_ctrl #(
     reg [7:0]  turf_metadata_in = 8'h80;
     reg        turf_trig_write = 0;
     reg        soft_trig_pending = 0;
-    reg [2:0]  phase_shreg = {3{1'b0}};
+    // sysclk_phase_i is 8 clocks, we need to hold data for 4 clocks.
+    reg [5:0]  phase_shreg = {8{1'b0}};
     // phase    phase_shreg     cycle
-    // 1        000             0
-    // 0        001             1
-    // 0        010             2
-    // 0        100             3
+    // 1        000000             0
+    // 0        000001             1
+    // 0        000010             2    0   capture here
+    // 0        000100             3    1
+    // 0        001000             4    1
+    // 0        010000             5    1
+    // 0        100000             6    1   release here
     always @(posedge sysclk_i) begin
-        phase_shreg <= { phase_shreg[1:0], sysclk_phase_i };
+        phase_shreg <= { phase_shreg[4:0], sysclk_phase_i };
         // dunno, reset this maybe??? 
         if (turf_trig_write) begin
             turf_metadata_in[6:0] <= turf_metadata_in[6:0] + 1;
@@ -93,7 +103,8 @@ module pueo_trig_ctrl #(
         if (soft_trig_sysclk && running_i) soft_trig_pending <= 1;
         else if (phase_shreg[2]) soft_trig_pending <= 0;
 
-        turf_trig_write <= soft_trig_pending && phase_shreg[1];
+        if (phase_shreg[5]) turf_trig_write <= 0;
+        else if (phase_shreg[1]) turf_trig_write <= soft_trig_pending;
     end
 
     flag_sync u_soft_sync(.in_clkA(soft_trig),.out_clkB(soft_trig_sysclk),
@@ -111,7 +122,8 @@ module pueo_trig_ctrl #(
     assign trig_mask_o = mask_register;
     assign trig_latency_o = latency_register;
     assign trig_offset_o = offset_register;
-                                
+
+    assign wb_dat_o = dat_reg;                                
     assign wb_ack_o = ack && wb_cyc_i;
     assign wb_err_o = 1'b0;
     assign wb_rty_o = 1'b0;
