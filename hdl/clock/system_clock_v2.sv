@@ -136,7 +136,7 @@ module system_clock_v2( input SYS_CLK_P,
         if (sysclk_phase[2:0] == 3'b111) sysclk_sync_obuf <= ~sysclk_sync;
     end
     always @(posedge sysclk_x2_o) begin
-        sysclk_phase_rereg_x2 <= { sysclk_phase_rereg_x2[0], sysclk_phase };
+        sysclk_phase_rereg_x2 <= { sysclk_phase_rereg_x2[0], sysclk_phase[3] };
         if (sysclk_phase_rereg_x2[0] && !sysclk_phase_rereg_x2[1]) sysclk_x2_ce <= 0;
         else sysclk_x2_ce <= ~sysclk_x2_ce;
     end
