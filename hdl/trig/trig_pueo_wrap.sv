@@ -172,10 +172,10 @@ module trig_pueo_wrap #(parameter WBCLKTYPE = "NONE",
         assign outpfx``stb_o = inpfx``stb_i && (wb_block == idx);   \
         assign outpfx``we_o = inpfx``we_i;      \
         assign outpfx``sel_o = inpfx``sel_i;    \
-        assign inpfx``dat_vec[idx] = inpfx``dat_o;  \
-        assign inpfx``ack_vec[idx] = inpfx``ack_o; \
-        assign inpfx``rty_vec[idx] = inpfx``rty_o; \
-        assign inpfx``err_vec[idx] = inpfx``err_o
+        assign inpfx``dat_vec[idx] = outpfx``dat_i;  \
+        assign inpfx``ack_vec[idx] = outpfx``ack_i; \
+        assign inpfx``rty_vec[idx] = outpfx``rty_i; \
+        assign inpfx``err_vec[idx] = outpfx``err_i
 
     `MAP_BLOCK( cmd_ , wb_ , 0);
     `MAP_BLOCK( trigctl_ , wb_ , 1);
@@ -187,11 +187,16 @@ module trig_pueo_wrap #(parameter WBCLKTYPE = "NONE",
     wbs_dummy #(.ADDRESS_WIDTH(8),.DATA_WIDTH(32))
         u_scaler( `CONNECT_WBS_IFM( wb_ , scaler_ ) );
     
+    assign wb_ack_o = wb_ack_vec[wb_block];
+    assign wb_dat_o = wb_dat_vec[wb_block];
+    assign wb_err_o = wb_err_vec[wb_block];
+    assign wb_rty_o = wb_rty_vec[wb_block];
+    
     pueo_trig_ctrl #(.WBCLKTYPE(WBCLKTYPE),
                      .SYSCLKTYPE(SYSCLKTYPE))
                       u_trigctrl( .wb_clk_i(wb_clk_i),
                                   .wb_rst_i(wb_rst_i),
-                                  `CONNECT_WBS_IFM(wb_ , trigctrl_ ),
+                                  `CONNECT_WBS_IFM(wb_ , trigctl_ ),
                                   .sysclk_i(sysclk_i),
                                   .sysclk_phase_i(sysclk_phase_i),
                                   .turf_trig_o(turf_trig),
