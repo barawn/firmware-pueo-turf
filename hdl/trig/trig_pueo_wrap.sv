@@ -42,6 +42,8 @@ module trig_pueo_wrap #(parameter WBCLKTYPE = "NONE",
         output [31:0] command67_o,
         output [31:0] command68_o
     );
+
+    localparam REAL_SURFS_PER_TIO = 7;
     // it's 3 clocks from phase -> trig dat valid.
     // then the *second* trig dat valid comes in 4 clocks later.
     // so normally SRL delays would be 2 and 6.
@@ -49,6 +51,8 @@ module trig_pueo_wrap #(parameter WBCLKTYPE = "NONE",
     // giving 
     localparam [3:0] VALID_OFFSET = 4'd1;
     localparam [3:0] VALID_OFFSET_2 = 4'd5;
+
+    wire [4*REAL_SURFS_PER_TIO*16-1:0] real_trigin;
     
     wire phase_delayed;
     wire phase_delayed_2;
@@ -103,7 +107,7 @@ module trig_pueo_wrap #(parameter WBCLKTYPE = "NONE",
                       .trig_offset_i(trig_offset),
                       .trig_latency_i(trig_latency),
                       
-                      .trigin_dat_i(trig_dat_i),
+                      .trigin_dat_i(real_trigin),
                       .trigin_dat_valid_i(trigger_valid),
                       
                       .turf_trig_i(turf_trig),
@@ -112,7 +116,7 @@ module trig_pueo_wrap #(parameter WBCLKTYPE = "NONE",
                       
                       .runrst_i(runrst),
                       .runstop_i(runstop),
-                      .addr_o(cur_addr),
+                      .address_o(cur_addr),
                       .running_o(running),
                       
                       `CONNECT_AXI4S_MIN_IF(trigout_ , trig_ ),
@@ -120,6 +124,11 @@ module trig_pueo_wrap #(parameter WBCLKTYPE = "NONE",
 
     // just grab phase and valid right now to time them up
     generate
+        genvar i;
+        for (i=0;i<4;i=i+1) begin
+            assign real_trigin[REAL_SURFS_PER_TIO*16*i +: REAL_SURFS_PER_TIO*16] =
+                trig_dat_i[8*16*i +: REAL_SURFS_PER_TIO*16];
+        end
         if (DEBUG == "TRUE") begin : DBG
             trig_ila u_ila(.clk(sysclk_i),
                            .probe0(trig_dat_valid_i),
