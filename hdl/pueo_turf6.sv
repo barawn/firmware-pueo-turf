@@ -13,7 +13,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="A",
                     parameter [3:0] VER_MAJOR=4'd0,
                     parameter [3:0] VER_MINOR=4'd5,
-                    parameter [7:0] VER_REV=8'd3,
+                    parameter [7:0] VER_REV=8'd4,
                     parameter [15:0] FIRMWARE_DATE = {16{1'b0}})                    
                     (
 
@@ -139,6 +139,14 @@ module pueo_turf6 #(parameter IDENT="TURF",
     // We split this up into two INV parameters because OUR names all match
     // the TURF revC schematic. But the bits that pass through the expander
     // board might have an additional inversion.
+
+    // There are also random inversions that were determined
+    // empirically: we fold this into the XB inversion, but I'm going to document
+    // it separately.
+    // CINA: bit 1
+    // CINB: bit 0 bit 1 bit 3
+    // CINC: none
+    // CIND: bit 3 bit 4
     localparam [31:0] TRAIN_VALUE = 32'hA55A6996;
     localparam [3:0] INV_CINTIO =       4'b1100;
     localparam [3:0] INV_CINTIO_XB =    4'b1100;        // correct
