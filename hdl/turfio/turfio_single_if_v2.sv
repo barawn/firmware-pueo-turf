@@ -141,7 +141,7 @@ module turfio_single_if_v2 #(
     wire [7:0] in_n = { CINTIO_N, CIN_N };
     // combine the inversion parameters
     localparam [7:0] INV_VEC = { INV_CINTIO, INV_CIN };
-    localparam [7:0] INV_VEC_XB = { INV_CINTIO_XB, INV_CIN };
+    localparam [7:0] INV_VEC_XB = { INV_CINTIO_XB, INV_CIN_XB };
     // create a mux of the data from each bit
     wire [31:0] bit_muxed_data[7:0];
     
