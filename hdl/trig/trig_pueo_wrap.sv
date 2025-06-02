@@ -96,7 +96,7 @@ module trig_pueo_wrap #(parameter WBCLKTYPE = "NONE",
     wire [11:0] cur_addr;
     wire        running;
     
-    pueo_master_trig_process
+    pueo_master_trig_process #(.SYSCLKTYPE(SYSCLKTYPE))
         u_master_trig(.sysclk_i(sysclk_i),
                       .sysclk_phase_i(sysclk_phase_i),
                       .sysclk_x2_i(sysclk_x2_i),
