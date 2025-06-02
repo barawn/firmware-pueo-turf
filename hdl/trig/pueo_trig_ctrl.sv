@@ -96,12 +96,12 @@ module pueo_trig_ctrl #(
     always @(posedge sysclk_i) begin
         phase_shreg <= { phase_shreg[4:0], sysclk_phase_i };
         // dunno, reset this maybe??? 
-        if (turf_trig_write) begin
+        if (turf_trig_write && phase_shreg[5]) begin
             turf_metadata_in[6:0] <= turf_metadata_in[6:0] + 1;
         end
         if (soft_trig_sysclk) turf_addr_in <= cur_addr_i;
         if (soft_trig_sysclk && running_i) soft_trig_pending <= 1;
-        else if (phase_shreg[2]) soft_trig_pending <= 0;
+        else if (phase_shreg[1]) soft_trig_pending <= 0;
 
         if (phase_shreg[5]) turf_trig_write <= 0;
         else if (phase_shreg[1]) turf_trig_write <= soft_trig_pending;
