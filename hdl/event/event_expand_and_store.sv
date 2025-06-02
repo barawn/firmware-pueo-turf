@@ -16,6 +16,8 @@ module event_expand_and_store(
     );
     parameter EXPAND_DATA = "TRUE";
     parameter DEBUG = "TRUE";
+    // only matters for EXPAND_DATE == "TRUE"
+    parameter SIGN_EXTEND = "TRUE";
 
     // this remaps the incoming data so that it stacks correctly
     //remap [0  +: 12] = [48 +: 4], [56 +: 8] 000
@@ -42,10 +44,11 @@ module event_expand_and_store(
     // this is the expansion from 12->16. 32 samples, so loop
     function [511:0] expand_data;
         input [383:0] pack_in;
-        integer i;
+        input sign_extend;
+        integer i;        
         begin
-            for (i=0;i<32;i=i+1) begin
-                expand_data[16*i +: 16] = { {4{1'b0}}, pack_in[12*i +: 12] };
+            for (i=0;i<32;i=i+1) begin                
+                expand_data[16*i +: 16] = { {4{pack_in[12*i+11]}} & {4{sign_extend}}, pack_in[12*i +: 12] };
             end
         end
     endfunction
@@ -135,7 +138,7 @@ module event_expand_and_store(
                                    .probe3(m_axis_tdata),
                                    .probe4(feed_control));
             end                                   
-            assign m_axis_tdata = expand_data(fifo_out_payload);
+            assign m_axis_tdata = expand_data(fifo_out_payload, SIGN_EXTEND == "TRUE" ? 1'b1 : 1'b0);
             assign m_axis_tvalid = fifo_out_valid;
             assign m_axis_tlast = fifo_out_last[1];
             assign fifo_out_read = m_axis_tvalid && m_axis_tready;
