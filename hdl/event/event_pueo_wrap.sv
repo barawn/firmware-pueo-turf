@@ -133,7 +133,7 @@ module event_pueo_wrap(
     assign event_tx_valid[2] = s_aurora2_tvalid;
     assign event_tx_valid[3] = s_aurora3_tvalid;
     event_cc_stat_counter #(.WBCLKTYPE(WBCLKTYPE),
-                            .ACLKTYPE(ACLKTYPE),
+                            .ACLKTYPE(ETHCLKTYPE),
                             .NUM_COUNTS(4))
                           u_statistics(.aclk(aclk),
                                        .tx_valid_i(event_tx_valid),
