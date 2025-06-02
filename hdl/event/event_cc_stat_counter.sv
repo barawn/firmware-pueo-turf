@@ -17,18 +17,15 @@
 // + same flag transfer.
 // It's just a straight win. The only downside is that your count is delayed
 // a bit, but that doesn't matter since none of this is time synced anyway.
-module event_cc_stat_counter(
+module event_cc_stat_counter #(parameter NUM_COUNTS=4,
+                               parameter WBCLKTYPE = "NONE",
+                               parameter ACLKTYPE = "NONE")(
         input aclk,
-        input [3:0] tx_valid_i,
+        input [NUM_COUNTS-1:0] tx_valid_i,
         input wb_clk_i,
         input rst_i,
-        output [31:0] tx0_count_o,
-        output [31:0] tx1_count_o,
-        output [31:0] tx2_count_o,
-        output [31:0] tx3_count_o
+        output [NUM_COUNTS*32-1:0] tx_count_o
     );
-    parameter WBCLKTYPE = "NONE";
-    parameter ACLKTYPE = "NONE";
     // the way flag crossings work is that you level change, sync the change, and generate
     // a flag on the other. so it's
     // 1 clock on source side
@@ -40,13 +37,13 @@ module event_cc_stat_counter(
     // This should comfortably work with a 100M/156.25M ratio.
     wire count_done;
     wire count_done_wbclk;
-    wire [31:0] tx_count[3:0];
+    wire [31:0] tx_count[NUM_COUNTS-1:0];
     clk_div_ce #(.CLK_DIVIDE(7)) u_timer(.clk(aclk),.ce(count_done));
     flag_sync u_sync(.in_clkA(count_done),.out_clkB(count_done_wbclk),
                      .clkA(aclk),.clkB(wb_clk_i));
     generate
         genvar i;
-        for (i=0;i<4;i=i+1) begin : TIO
+        for (i=0;i<NUM_COUNTS;i=i+1) begin : TIO
             reg [3:0] active_count = {4{1'b0}};
             (* CUSTOM_CC_SRC = ACLKTYPE *)
             reg [3:0] hold_count = {4{1'b0}};
@@ -97,12 +94,8 @@ module event_cc_stat_counter(
                 
                 if (count_done) hold_count <= active_count;
             end  
+            assign tx_count_o[32*i +: 32] = tx_count[i];
         end
     endgenerate    
-    
-    assign tx0_count_o = tx_count[0];
-    assign tx1_count_o = tx_count[1];
-    assign tx2_count_o = tx_count[2];
-    assign tx3_count_o = tx_count[3];
     
 endmodule

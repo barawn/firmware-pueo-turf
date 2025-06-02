@@ -102,7 +102,12 @@ module event_pueo_wrap(
                                    {8{1'b0}},
                                    {4{1'b0}}, tio_mask, 
                                    {7{1'b0}}, event_reset };    
+    // number of dwords received from TURFIOs
     wire [31:0] event_dwords[3:0];
+    // number of output data beats (not quite qwords b/c we ignore tkeep)
+    wire [31:0] out_qwords;
+    // number of output events (number of tlasts seen)
+    wire [31:0] out_events;
     wire [31:0] event_regs[15:0];
     assign event_regs[0] = glob_event_reg;
     assign event_regs[1] = glob_event_reg;        
@@ -113,8 +118,8 @@ module event_pueo_wrap(
     assign event_regs[6] = event_dwords[2];
     assign event_regs[7] = event_dwords[3];
     // fully shadow the top bit decode
-    assign event_regs[8] = event_regs[0];
-    assign event_regs[9] = event_regs[1];
+    assign event_regs[8] = out_qwords;
+    assign event_regs[9] = out_events;
     assign event_regs[10] = event_regs[2];
     assign event_regs[11] = event_regs[3];
     assign event_regs[12] = event_regs[4];
@@ -128,16 +133,27 @@ module event_pueo_wrap(
     assign event_tx_valid[2] = s_aurora2_tvalid;
     assign event_tx_valid[3] = s_aurora3_tvalid;
     event_cc_stat_counter #(.WBCLKTYPE(WBCLKTYPE),
-                            .ACLKTYPE(ACLKTYPE))
+                            .ACLKTYPE(ACLKTYPE),
+                            .NUM_COUNTS(4))
                           u_statistics(.aclk(aclk),
                                        .tx_valid_i(event_tx_valid),
                                        .wb_clk_i(wb_clk_i),
                                        .rst_i(event_reset),
-                                       .tx0_count_o(event_dwords[0]),
-                                       .tx1_count_o(event_dwords[1]),
-                                       .tx2_count_o(event_dwords[2]),
-                                       .tx3_count_o(event_dwords[3]));
-
+                                       .tx_count_o({event_dwords[3],
+                                                    event_dwords[2],
+                                                    event_dwords[1],
+                                                    event_dwords[0]}));
+    wire out_event_count = m_ev_data_tvalid && m_ev_data_tready && m_ev_data_tlast;
+    wire out_qword_count = m_ev_data_tvalid && m_ev_data_tready;
+    wire [1:0] out_count = { out_event_count, out_qword_count };
+    event_cc_stat_counter #(.WBCLKTYPE(WBCLKTYPE),
+                            .ACLKTYPE(ACLKTYPE),
+                            .NUM_COUNTS(2))
+                          u_out_statistics(.aclk(ethclk),
+                                           .tx_valid_i( out_count ),
+                                           .wb_clk_i(wb_clk_i),
+                                           .rst_i(event_reset),
+                                           .tx_count_o({ out_events, out_qwords }));
     always @(posedge wb_clk_i) begin
         if (wb_cyc_i && wb_stb_i && !wb_we_i && !ack) begin
             dat_reg <= event_regs[reg_addr];
