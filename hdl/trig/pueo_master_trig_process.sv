@@ -7,7 +7,6 @@ module pueo_master_trig_process #(parameter NSURF=28,
                                   parameter ADDRBITS = 12,
                                   parameter NBIT=16,
                                   parameter SYSCLKTYPE = "NONE",
-                                  parameter WBCLKTYPE = "NONE",
                                   parameter [2:0] PHASE_RESET = 4)(
         input sysclk_i,
         input sysclk_phase_i,
