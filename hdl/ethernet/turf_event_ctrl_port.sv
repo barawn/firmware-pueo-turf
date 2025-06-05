@@ -29,14 +29,17 @@ module turf_event_ctrl_port #(
         output [9:0] nfragment_count_o,
         // Fragment source mask
         output [15:0] fragsrc_mask_o,
+        // Fragment holdoff
+        output [31:0] fragment_holdoff_o,
         output [31:0] event_ip_o,
         output [15:0] event_port_o,
         output        event_open_o
     );
     localparam [15:0] MAX_FRAGSRCMASK_BITS = { {(16-MAX_FRAGSRCMASK){1'b0}}, {MAX_FRAGSRCMASK{1'b1}} };
-    localparam NUM_CMDS = 5;
+    localparam NUM_CMDS = 6;
     localparam [16*NUM_CMDS-1:0] CMD_TABLE =
-        { "PW",
+        { "PX",
+          "PW",
           "PR",
           "ID",
           "CL",
@@ -54,6 +57,7 @@ module turf_event_ctrl_port #(
     localparam ID_CMD = 2;
     localparam PR_CMD = 3;
     localparam PW_CMD = 4;
+    localparam PX_CMD = 5;
 
     // break up into command and payload
     wire [15:0] command = s_udpdata_tdata[15:0];
@@ -74,6 +78,8 @@ module turf_event_ctrl_port #(
     reg [31:0] event_ip = {32{1'b0}};
     reg [15:0] event_port = {16{1'b0}};
     reg event_is_open = 0;
+
+    reg [31:0] fragment_holdoff = {32{1'b0}};
     
     reg [63:0] response = {64{1'b0}};
             
@@ -115,6 +121,8 @@ module turf_event_ctrl_port #(
                 response <= { s_udpdata_tdata[48 +: 16], MAX_FRAGMENT_LEN, MAX_ADDR, MAX_FRAGSRCMASK_BITS };
             else if (cmd_match[PW_CMD])
                 response <= { s_udpdata_tdata[48 +: 16], nfragment_as_bytes, MAX_ADDR, fragsrc_mask_o };
+            else if (cmd_match[PX_CMD])
+                response <= { s_udpdata_tdata[48 +: 16], {16{1'b0}}, fragment_holdoff };
         end
         
         if (state == PARSE_COMMAND) begin
@@ -130,6 +138,9 @@ module turf_event_ctrl_port #(
                 // I should probably parameterize how many bits to store but whatever
                 if (payload[32 +: 16] <= MAX_FRAGMENT_LEN) nfragment <= payload[ 35 +: 10];
                 fragsrc_mask <= payload[0 +: MAX_FRAGSRCMASK];
+            end
+            if (cmd_match[PX_CMD] && !event_is_open) begin
+                fragment_holdoff <= payload[0 +: 32];
             end
         end
     
@@ -198,5 +209,5 @@ module turf_event_ctrl_port #(
     assign fragsrc_mask_o[MAX_FRAGSRCMASK-1:0] = fragsrc_mask;
     assign fragsrc_mask_o[15:MAX_FRAGSRCMASK] = {(16-MAX_FRAGSRCMASK){1'b0}};
 
-    
+    assign fragment_holdoff_o = fragment_holdoff;    
 endmodule

@@ -19,6 +19,8 @@ module turf_fragment_gen(
         input [31:0] event_ip_i,
         // Destination port
         input [15:0] event_port_i,
+        // Inter-fragment delay (sigh).
+        input [31:0] fragment_delay_i,
         // control interface
         `TARGET_NAMED_PORTS_AXI4S_MIN_IF( s_ctrl_ , 32 ),
         // data interface
@@ -52,12 +54,20 @@ module turf_fragment_gen(
     // after going through control logic).
     // This is functionally 32-bit (and generates our header).
 
-    localparam FSM_BITS = 2;
+    localparam FSM_BITS = 3;
     localparam [FSM_BITS-1:0] IDLE = 0;
     localparam [FSM_BITS-1:0] HEADER = 1;
     localparam [FSM_BITS-1:0] TAG = 2;
     localparam [FSM_BITS-1:0] STREAM = 3;
+    localparam [FSM_BITS-1:0] DELAY_HEADER = 4;
+    localparam [FSM_BITS-1:0] DELAY_IDLE = 5;
     reg [FSM_BITS-1:0] state = IDLE;
+    
+    // fragment delay counter
+    (* USE_DSP = "TRUE" *)
+    reg [31:0] fragment_delay_counter = {16{1'b0}};
+    // ooooh let's see if this dumbass thing uses the pattern detector
+    wire fragment_delay_reached = (fragment_delay_counter == fragment_delay_i);
     
     // number of beats that have transferred (starts at 0)
     reg [9:0] fragment_beats = {10{1'b0}};
@@ -122,13 +132,19 @@ module turf_fragment_gen(
                     // The benefit of using tlast_internal here (USE_TLAST = "FALSE")
                     // is that no matter what we're not going to break the UDP stream.
                     if (last_payload) begin
-                        if (tlast) state <= IDLE;
-                        else state <= HEADER;
+                        if (tlast) state <= DELAY_IDLE;
+                        else state <= DELAY_HEADER;
                     end
                 end
+                DELAY_IDLE: if (fragment_delay_reached) state <= IDLE;
+                DELAY_HEADER: if (fragment_delay_reached) state <= HEADER;
             endcase
         end
         
+        if (state != DELAY_IDLE && state != DELAY_HEADER)
+            fragment_delay_counter <= {32{1'b0}};
+        else
+            fragment_delay_counter <= fragment_delay_counter + 1;            
         // Calculate the fragment length.
         // We have to do this for the first fragment and then after each new fragment
         if ((state == IDLE && s_ctrl_tvalid && s_ctrl_tready)|| 

@@ -367,6 +367,7 @@ module turf_udp_wrap #( parameter NSFP=2,
     // Event related stuff
     wire [9:0]  num_fragment_qwords;
     wire [15:0] fragsrc_mask;
+    wire [31:0] fragment_holdoff;
     wire [31:0] event_ip;
     wire [15:0] event_port;
     wire        event_is_open;    
@@ -475,6 +476,7 @@ module turf_udp_wrap #( parameter NSFP=2,
                     .my_mac_address( my_mac_address ),
                     .nfragment_count_o( num_fragment_qwords ),
                     .fragsrc_mask_o(fragsrc_mask),
+                    .fragment_holdoff_o(fragment_holdoff),
                     .event_ip_o( event_ip ),
                     .event_port_o( event_port ),
                     .event_open_o( event_is_open ));
@@ -501,6 +503,7 @@ module turf_udp_wrap #( parameter NSFP=2,
     turf_fragment_gen u_fraggen(.aclk(clk156),.aresetn(!clk156_rst),
                                 .nfragment_count_i(num_fragment_qwords),
                                 .fragsrc_mask_i(fragsrc_mask),
+                                .fragment_delay_i(fragment_holdoff),
                                 .event_open_i( event_is_open ),
                                 .event_ip_i( event_ip ),
                                 .event_port_i( event_port ),
