@@ -49,6 +49,8 @@ module turfio_event_accumulator_tb;
             // the output data for SURF0 would then start off
             // 08 0A 0C 0E 10 12 14 16 18
             // which gets expanded to
+            // xA08 x0C0 x00E x121 x614 x181
+            
             // 0080 0a0c 00e1 0012 0141 0618            
             // 09 0B 0D 0F 11 13 15 17 19
             // etc. for SURF1/2/3/4/5/6
@@ -224,7 +226,7 @@ module turfio_event_accumulator_tb;
         if (hdone_tready) hdone_tdata <= hdone_tdata + 1;
     end        
     hdr_accumulator u_hdr( .aclk(aclk),
-                           .aresetn(1'b1),
+                           .aresetn(!reset_reqgen),
                            .tio_mask_i(tio_mask),
                            `CONNECT_AXI4S_MIN_IF( s_done_ , hdone_ ),
                            `CONNECT_AXI4S_MIN_IF( m_cmpl_ , hdr_cmpl_ ),
@@ -262,6 +264,8 @@ module turfio_event_accumulator_tb;
     assign ev_ctrl_tready = 1'b1;
     assign ev_data_tready = 1'b1;
     wire any_err;
+    // just fake the damn allow
+    reg allow = 0;    
     event_readout_generator u_generator( .memclk(memclk),
                                          .memresetn(!intercon_reset),
                                          `CONNECT_AXI4S_MIN_IF( s_hdr_ , hdr_cmpl_ ),
@@ -279,6 +283,8 @@ module turfio_event_accumulator_tb;
                                          .s_t3_tvalid(tfio_cmpl_tvalid[3]),
                                          .aclk(ethclk),
                                          .aresetn(1'b1),
+                                         .allow_i(allow),
+                                         .tio_mask_i(4'b0000),
                                          `CONNECT_AXI4S_MIN_IF( m_ctrl_ , ev_ctrl_ ),
                                          `CONNECT_AXI4S_MIN_IF( m_data_ , ev_data_ ),
                                          `CONNECT_AXIM( m_axi_ , outaxi_ ),
@@ -397,6 +403,11 @@ sim_mem_wrapper u_mem(
         #1 start = 0;
         @(posedge memclk);
         #1 run_doneaddr = 1;
+        @(posedge memclk);
+        @(posedge memclk);
+        #1 allow = 1;
+        @(posedge memclk);
+        #1 allow = 0;
         #70000;
     end                                  
 
