@@ -154,7 +154,7 @@ module turf_udp_core(
         .s_ip_dscp( 6'h00 ),
         .s_ip_length( {16{1'b0}} ),
         .s_ip_ecn( 2'b00 ),
-        .s_ip_ttl( {8{1'b0}} ),
+        .s_ip_ttl( 8'd64 ),
         .s_ip_protocol( {8{1'b0}} ),
         .s_ip_source_ip( {32{1'b0}} ),
         .s_ip_dest_ip( {32{1'b0}} ),
@@ -166,7 +166,7 @@ module turf_udp_core(
         // Unused UDP ports
         .s_udp_ip_dscp({6{1'b0}}),
         .s_udp_ip_ecn({2{1'b0}}),
-        .s_udp_ip_ttl({8{1'b0}}),
+        .s_udp_ip_ttl(8'd64),
         // UDP frame input
         .s_udp_hdr_valid( s_udphdr_tvalid ),
         .s_udp_hdr_ready( s_udphdr_tready ),
