@@ -67,8 +67,11 @@ module pueo_time_wrap #(parameter SYSCLKTYPE = "NONE",
     reg [31:0]  llast_pps = {32{1'b0}};
     
     always @(posedge sys_clk_i) begin
-        if (pps_in_holdoff) pps_reg <= 1'b0;
-        else pps_reg <= pps_i;
+        // you HAVE to leave it running because you want
+        // a posedge no matter what. The holdoff just prevents
+        // the flag assertion.
+        pps_reg <= pps_i;
+        pps_rereg <= pps_reg;
 
         pps_rereg <= pps_reg;
 
@@ -80,7 +83,7 @@ module pueo_time_wrap #(parameter SYSCLKTYPE = "NONE",
         else pps_holdoff_counter <= pps_holdoff_counter - 1;
                 
         use_ext_pps_sysclk <= {use_ext_pps_sysclk[0], use_ext_pps};
-        pps_flag <= (use_ext_pps_sysclk[1]) ? pps_reg && !pps_reg :
+        pps_flag <= (use_ext_pps_sysclk[1]) ? pps_reg && !pps_reg && !pps_in_holdoff:
                                               int_pps;
 
         if (load_second) cur_second <= update_second;
