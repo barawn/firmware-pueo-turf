@@ -127,6 +127,8 @@ module pueo_time_register_core #(parameter WBCLKTYPE = "NONE",
     assign pps_trim_o = dat_reg[15:0];
     assign update_sec_o = dat_reg;
     
+    assign pps_holdoff_o = pps_holdoff;
+    
     assign wb_dat_o = dat_reg;
     assign wb_ack_o = (state == ACK) && wb_cyc_i;
     assign wb_err_o = 1'b0;
