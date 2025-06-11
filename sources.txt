@@ -36,8 +36,11 @@ hdl/event/event_pueo_wrap.sv
 hdl/event/event_readout_generator.sv
 hdl/event/hdr_accumulator.sv
 hdl/i2c_merger.sv
+hdl/time/internal_pps.sv
 hdl/trig/master_trig_uram.sv
 hdl/trig/pueo_master_trig_process.sv
+hdl/time/pueo_time_register_core.sv
+hdl/time/pueo_time_wrap.sv
 hdl/trig/pueo_trig_ctrl.sv
 hdl/event/pueo_turfio_event_req_gen.sv
 verilog-library-barawn/hdl/simple_clock_mon.sv
@@ -72,3 +75,4 @@ hdl/turfio/turfio_single_if.sv
 hdl/ethernet/turf_udp_rdwr.v
 hdl/aurora/turfio_aurora_reset.sv
 hdl/ethernet/wb_if_cc.sv
+hdl/trig/turf_header_generator_v2.sv
