@@ -1,0 +1,128 @@
+`timescale 1ns / 1ps
+`include "interfaces.vh"
+// The register core in the time wrapper has a LOT
+// of clock domain jumping. Need to be careful, but
+// we don't really have to worry about the clock
+// not running since it's basically guaranteed.
+module pueo_time_wrap #(parameter SYSCLKTYPE = "NONE",
+                        parameter WBCLKTYPE = "NONE")(
+        input wb_clk_i,
+        input wb_rst_i,
+        `TARGET_NAMED_PORTS_WB_IF( wb_ , 13, 32 ),
+        input sys_clk_i,
+        input pps_i,
+        input runrst_i,
+        
+        output pps_flag_o,
+        output [31:0] cur_sec_o,
+        output [31:0] cur_time_o,
+        output [31:0] last_pps_o,
+        output [31:0] llast_pps_o
+    );
+    
+    // whatever just make it work
+    (* USE_DSP = "TRUE", CUSTOM_CC_DST = SYSCLKTYPE *)
+    reg [31:0] pps_holdoff_counter = {32{1'b0}};
+    // this is upshifted in units of 4096 clocks
+    // which puts the max over a second and the min
+    // at like 32 microseconds.
+    wire [15:0] pps_holdoff;
+    // 12 at bottom, 16 programmable, 4 useless at top
+    wire [31:0] pps_holdoff_expanded = { {4{1'b0}}, pps_holdoff, {12{1'b1}} };
+    
+    wire int_pps;
+    wire en_int_pps;
+    wire use_ext_pps;
+    wire update_pps_trim;
+    wire [15:0] int_pps_trim;
+    wire [15:0] int_pps_trim_out;
+    
+    internal_pps #(.SYSCLKTYPE(SYSCLKTYPE),
+                   .WBCLKTYPE(WBCLKTYPE))
+                   u_intpps(.sysclk_i(sys_clk_i),
+                            .wbclk_i(wb_clk_i),
+                            .en_i(en_int_pps),
+                            .trim_i(int_pps_trim),
+                            .update_trim_i(update_pps_trim),
+                            .trim_o(int_pps_trim_out),
+                            .pps_o(int_pps));
+
+    (* CUSTOM_CC_DST = SYSCLKTYPE *)
+    reg [1:0] use_ext_pps_sysclk = 2'b00;
+
+    (* IOB = "TRUE" *)
+    reg pps_reg = 0;
+    reg pps_rereg = 0;
+    reg pps_flag = 0;
+    wire pps_flag_wbclk;
+    reg pps_in_holdoff = 0;
+
+    wire [31:0] update_second;  // in wbclk
+    wire        load_second;    // in sysclk
+    (* CUSTOM_CC_DST = SYSCLKTYPE *)
+    reg [31:0]  cur_second = {32{1'b0}};
+    (* USE_DSP = "TRUE" *)
+    reg [31:0]  cur_time = {32{1'b0}};
+    reg [31:0]  last_pps = {32{1'b0}};
+    reg [31:0]  llast_pps = {32{1'b0}};
+    
+    always @(posedge sys_clk_i) begin
+        if (pps_in_holdoff) pps_reg <= 1'b0;
+        else pps_reg <= pps_i;
+
+        pps_rereg <= pps_reg;
+
+        if (!use_ext_pps_sysclk[1]) pps_in_holdoff <= 0;
+        else if (pps_flag) pps_in_holdoff <= 1;
+        else if (pps_holdoff_counter == 0) pps_in_holdoff <= 0;
+        
+        if (!pps_in_holdoff) pps_holdoff_counter <= pps_holdoff;
+        else pps_holdoff_counter <= pps_holdoff_counter - 1;
+                
+        use_ext_pps_sysclk <= {use_ext_pps_sysclk[0], use_ext_pps};
+        pps_flag <= (use_ext_pps_sysclk[1]) ? pps_reg && !pps_reg :
+                                              int_pps;
+
+        if (load_second) cur_second <= update_second;
+        else if (pps_flag) cur_second <= cur_second + 1;
+
+        if (runrst_i) cur_time <= {32{1'b0}};
+        else cur_time <= cur_time + 1;
+
+        if (pps_flag) begin
+            last_pps <= cur_time;
+            llast_pps <= last_pps;
+        end
+    end
+
+    pueo_time_register_core #(.WBCLKTYPE(WBCLKTYPE),
+                              .SYSCLKTYPE(SYSCLKTYPE))
+            u_core(.wb_clk_i(wb_clk_i),
+                   .wb_rst_i(1'b0),
+                   .sys_clk_i(sys_clk_i),
+                   `CONNECT_WBS_IFS(wb_ , wb_ ),
+                   // pps holdoff
+                   .pps_holdoff_o(pps_holdoff),
+                   // enable the internal pps
+                   .en_int_pps_o(en_int_pps),
+                   // use the external PPS
+                   .use_ext_pps_o(use_ext_pps),
+                   // update the internal PPS trim
+                   .update_pps_trim_o(update_pps_trim),
+                   // next PPS trim
+                   .pps_trim_o(int_pps_trim),
+                   // current PPS trim
+                   .pps_trim_i(int_pps_trim_out),
+                   // update the PPS second to this value
+                   .update_sec_o(update_second),
+                   // load the updated second
+                   .load_sec_o(load_second),
+                   // note! these are in sysclk,
+                   // so we need ADDITIONAL holding
+                   // registers which act as cross-clocks.
+                   // JOY.
+                   .cur_sec_i(cur_second),
+                   .last_pps_i(last_pps),
+                   .llast_pps_i(llast_pps));    
+        
+endmodule
