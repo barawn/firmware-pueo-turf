@@ -12,8 +12,8 @@
 module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="A",
                     parameter [3:0] VER_MAJOR=4'd0,
-                    parameter [3:0] VER_MINOR=4'd5,
-                    parameter [7:0] VER_REV=8'd7,
+                    parameter [3:0] VER_MINOR=4'd6,
+                    parameter [7:0] VER_REV=8'd0,
                     parameter [15:0] FIRMWARE_DATE = {16{1'b0}})                    
                     (
 
@@ -224,7 +224,9 @@ module pueo_turf6 #(parameter IDENT="TURF",
     // Control (CIN/COUT stuff) space
     `DEFINE_WB_IF( ctl_ , 15, 32);
     // This USED to be called hski2c_, it's now evctl_.
-    `DEFINE_WB_IF( evctl_ , 14, 32);
+    `DEFINE_WB_IF( evctl_ , 13, 32);
+    // now split off: time control
+    `DEFINE_WB_IF( time_ , 13, 32);
     // Trigger control space. Also contains the sync/runctl stuff
     `DEFINE_WB_IF( trig_ , 14, 32);
     // Crate space, accessed through the bridge.
@@ -418,6 +420,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                               `CONNECT_WBM_IFM(aurora_ , aurora_ ),
                               `CONNECT_WBM_IFM(ctl_ , ctl_ ),
                               `CONNECT_WBM_IFM(evctl_ , evctl_ ),
+                              `CONNECT_WBM_IFM(time_ , time_ ),
                               `CONNECT_WBM_IFM(trig_ , trig_ ),
                               `CONNECT_WBM_IFM(crate_ , crate_ ));
 
@@ -638,10 +641,26 @@ module pueo_turf6 #(parameter IDENT="TURF",
             `CONNECT_WBM_IFM( wb_ , wb_eth_ )          
           );
     
+    wire runrst;
+    wire pps;
+    wire [31:0] cur_sec;
+    wire [31:0] cur_time;
+    wire [31:0] last_pps;
+    wire [31:0] llast_pps;
+    pueo_time_wrap #(.WBCLKTYPE("PSCLK"),
+                     .SYSCLKTYPE("SYSCLK"))
+                     u_time(.wb_clk_i(ps_clk),
+                            .wb_rst_i(1'b0),
+                            `CONNECT_WBS_IFM( wb_ , time_ ),
+                            .sys_clk_i(sys_clk),
+                            .pps_i(GPS_TIMEPULSE[0]),
+                            .runrst_i(runrst),
+                            .pps_flag_o(pps),
+                            .cur_sec_o(cur_sec),
+                            .cur_time_o(cur_time),
+                            .last_pps_o(last_pps),
+                            .llast_pps_o(llast_pps));
                            
-    // Dummy evctl
-    //wbs_dummy #(.ADDRESS_WIDTH(15),.DATA_WIDTH(32)) u_evctl(`CONNECT_WBS_IFM(wb_ , evctl_ ));    
-
     event_pueo_wrap #(.WBCLKTYPE("PSCLK"),
                       .ETHCLKTYPE("GBECLK"),
                       .ACLKTYPE("USERCLK"),
@@ -720,7 +739,8 @@ module pueo_turf6 #(parameter IDENT="TURF",
                            .probe13(UART_MOSI),
                            .probe14(UART_MISO),
                            .probe15(UART_CS_B),
-                           .probe16(UART_IRQ_B));
+                           .probe16(UART_IRQ_B),
+                           .probe17(GPS_TIMEPULSE));
         end
     endgenerate
     
