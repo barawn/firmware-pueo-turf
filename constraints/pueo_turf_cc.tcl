@@ -230,6 +230,7 @@ set_cc_paths $ifclk68 $psclk $clktypelist
 
 
 set_cc_paths $psclk $sys_clk $clktypelist
+set_cc_paths $sys_clk $psclk $clktypelist
 
 set_cc_paths $psclk $gbeclk $clktypelist
 set_cc_paths $gbeclk $psclk $clktypelist
