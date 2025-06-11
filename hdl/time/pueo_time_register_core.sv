@@ -37,7 +37,7 @@ module pueo_time_register_core #(parameter WBCLKTYPE = "NONE",
     reg [31:0] last_pps_holding = {32{1'b0}};
     (* CUSTOM_CC_SRC = SYSCLKTYPE *)
     reg [31:0] llast_pps_holding = {32{1'b0}};
-
+    
     (* CUSTOM_CC_SRC = WBCLKTYPE *)
     reg [15:0] pps_holdoff = {16{1'b0}};
     
@@ -50,7 +50,7 @@ module pueo_time_register_core #(parameter WBCLKTYPE = "NONE",
     wire update_trim_wbclk;
     wire load_sec_wbclk;
 
-    (* CUSTOM_CC_DST = WBCLKTYPE *)
+    (* CUSTOM_CC_DST = WBCLKTYPE, CUSTOM_CC_SRC = WBCLKTYPE *)
     reg [31:0] dat_reg = {32{1'b0}};        
         
     always @(posedge sys_clk_i) begin
@@ -70,7 +70,7 @@ module pueo_time_register_core #(parameter WBCLKTYPE = "NONE",
     localparam [FSM_BITS-1:0] ACK = 3;
     reg [FSM_BITS-1:0] state = IDLE;
 
-    assign capture_req = (state == ACK && !wb_we_i && wb_adr_i[7:0] == SEC_ADDR);
+    assign capture_req = (state == IDLE && wb_cyc_i && wb_stb_i && !wb_we_i && wb_adr_i[7:0] == SEC_ADDR);
     assign update_trim_wbclk = (state == ACK && wb_we_i && wb_adr_i[7:0] == TRIM_ADDR);
     assign load_sec_wbclk = (state == ACK && wb_we_i && wb_adr_i[7:0] == SEC_ADDR);
 
@@ -80,7 +80,8 @@ module pueo_time_register_core #(parameter WBCLKTYPE = "NONE",
                             .clkA(wb_clk_i),.clkB(sys_clk_i));
     flag_sync u_load_sync(.in_clkA(load_sec_wbclk),.out_clkB(load_sec_o),
                           .clkA(wb_clk_i),.clkB(sys_clk_i));
-    
+    flag_sync u_ack_sync(.in_clkA(ack_sysclk),.out_clkB(ack_sysclk_wbclk),
+                         .clkA(sys_clk_i),.clkB(wb_clk_i));
     always @(posedge wb_clk_i) begin
         // ctrl addr is purely in wbclk space
         if (state == ACK && wb_we_i && wb_adr_i[7:0] == CTRL_ADDR) begin
@@ -88,8 +89,8 @@ module pueo_time_register_core #(parameter WBCLKTYPE = "NONE",
                 en_int_pps <= wb_dat_i[0];
                 use_ext_pps <= wb_dat_i[1];
             end
-            if (wb_sel_i[2]) pps_holdoff[0 +: 8] <= wb_dat_i[0 +: 8];
-            if (wb_sel_i[3]) pps_holdoff[8 +: 8] <= wb_dat_i[8 +: 8];                
+            if (wb_sel_i[2]) pps_holdoff[0 +: 8] <= wb_dat_i[16 +: 8];
+            if (wb_sel_i[3]) pps_holdoff[8 +: 8] <= wb_dat_i[24 +: 8];                
         end
         
         if (wb_rst_i) state <= IDLE;
@@ -105,7 +106,8 @@ module pueo_time_register_core #(parameter WBCLKTYPE = "NONE",
             ACK: state <= IDLE;
         endcase
         
-        if (state == CAPTURE) begin
+        if (state == IDLE) dat_reg <= wb_dat_i;
+        else if (state == CAPTURE) begin
             if (wb_adr_i == CTRL_ADDR)
                 dat_reg <= { pps_holdoff, {14{1'b0}}, use_ext_pps, en_int_pps };
             else if (wb_adr_i == TRIM_ADDR)
@@ -115,18 +117,18 @@ module pueo_time_register_core #(parameter WBCLKTYPE = "NONE",
             else if (wb_adr_i == LASTPPS_ADDR)
                 dat_reg <= last_pps_holding;
             else if (wb_adr_i == LLASTPPS_ADDR)
-                dat_reg <= llast_pps_holding;                
+                dat_reg <= llast_pps_holding;
         end
     end
         
     assign use_ext_pps_o = use_ext_pps;
     assign en_int_pps_o = en_int_pps;
     
-    assign pps_trim_o = wb_dat_i[15:0];
-    assign update_sec_o = wb_dat_i;
+    assign pps_trim_o = dat_reg[15:0];
+    assign update_sec_o = dat_reg;
     
-    assign dat_o = dat_reg;
-    assign ack_o = (state == ACK);
-    assign err_o = 1'b0;
-    assign rty_o = 1'b0;
+    assign wb_dat_o = dat_reg;
+    assign wb_ack_o = (state == ACK) && wb_cyc_i;
+    assign wb_err_o = 1'b0;
+    assign wb_rty_o = 1'b0;
 endmodule
