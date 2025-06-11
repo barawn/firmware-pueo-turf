@@ -25,6 +25,11 @@ module event_pueo_wrap(
         input s_aurora2_tlast,
         `TARGET_NAMED_PORTS_AXI4S_MIN_IF( s_aurora3_ , 32 ),
         input s_aurora3_tlast,
+
+        // this is data that gets included in the headers,
+        // which is over in the trig module.
+        output [3:0] tio_mask_o,
+        output [11:0] runcfg_o,
         
         input ethclk,
         input event_open_i,
@@ -98,8 +103,11 @@ module event_pueo_wrap(
     // holding register.
     // 8 clocks @ 156.25 MHz is a little over 5 clocks at 100 MHz,
     // so it should be fine.
-    wire [31:0] glob_event_reg = { {8{1'b0}},
-                                   {8{1'b0}},
+    
+    (* CUSTOM_CC_SRC = WBCLKTYPE *)
+    reg [11:0] runcfg = {12{1'b0}};
+    
+    wire [31:0] glob_event_reg = { {4{1'b0}}, runcfg, 
                                    {4{1'b0}}, tio_mask, 
                                    {7{1'b0}}, event_reset };    
     // number of dwords received from TURFIOs
@@ -163,6 +171,8 @@ module event_pueo_wrap(
             // just grab all the addresses
             if (wb_sel_i[0]) event_reset <= wb_dat_i[0];
             if (wb_sel_i[1]) tio_mask <= wb_dat_i[8 +: 4];
+            if (wb_sel_i[2]) runcfg[0 +: 8] <= wb_dat_i[16 +: 8];
+            if (wb_sel_i[3]) runcfg[8 +: 4] <= wb_dat_i[24 +: 4];
         end
         update_tio_mask <= (wb_cyc_i && wb_stb_i && wb_ack_o && wb_we_i && wb_sel_i[1]);
     end
@@ -439,5 +449,8 @@ module event_pueo_wrap(
     `CONNECT_PHY_IF( c0_ddr4_ ,            c0_ddr4_     ));
 
     assign ddr4_clk_o = memclk;
+
+    assign runcfg_o = runcfg;
+    assign tio_mask_o = tio_mask;
         
 endmodule
