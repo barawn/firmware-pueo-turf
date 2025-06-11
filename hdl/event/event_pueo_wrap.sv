@@ -14,7 +14,7 @@ module event_pueo_wrap(
         `PHY_IF_NAMED_PORTS( c0_ddr4_ , 64, 8, 8, 17, 2, 1, 1, 1, 1, 1 ),
         
         input wb_clk_i,        
-        `TARGET_NAMED_PORTS_WB_IF( wb_ , 14, 32 ),
+        `TARGET_NAMED_PORTS_WB_IF( wb_ , 13, 32 ),
         
         input aclk,
         `TARGET_NAMED_PORTS_AXI4S_MIN_IF( s_aurora0_ , 32 ),
