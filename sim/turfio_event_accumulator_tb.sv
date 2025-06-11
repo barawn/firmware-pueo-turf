@@ -34,6 +34,9 @@ module turfio_event_accumulator_tb;
             indata <= 32'hC0804000;
             indata_valid <= 1'b0;            
         end else begin
+            // header total = 4 bytes/SURF, 8 SURFs (virt) per TURFIO = 
+            // 32 bytes/TFIO x 4 TFIO/TURF = 128 bytes
+            // this is 32 total 32-bit words
             // the way this works, the headers will contain
             // C1 81 41 01 C0 80 40 00
             // C3 83 43 03 C2 82 42 02
@@ -260,9 +263,11 @@ module turfio_event_accumulator_tb;
 
     `DEFINE_AXI4S_MIN_IF( ev_ctrl_ , 32 );
     `DEFINE_AXI4S_IF( ev_data_ , 64 );
-    
     assign ev_ctrl_tready = 1'b1;
     assign ev_data_tready = 1'b1;
+    `DEFINE_AXI4S_MIN_IF( nack_ , 48 );
+    assign nack_tdata = {48{1'b0}};
+    assign nack_tvalid = 1'b0;
     wire any_err;
     // just fake the damn allow
     reg allow = 0;    
@@ -284,6 +289,7 @@ module turfio_event_accumulator_tb;
                                          .aclk(ethclk),
                                          .aresetn(1'b1),
                                          .allow_i(allow),
+                                         `CONNECT_AXI4S_MIN_IF( s_nack_ , nack_ ),
                                          .tio_mask_i(4'b0000),
                                          `CONNECT_AXI4S_MIN_IF( m_ctrl_ , ev_ctrl_ ),
                                          `CONNECT_AXI4S_MIN_IF( m_data_ , ev_data_ ),
