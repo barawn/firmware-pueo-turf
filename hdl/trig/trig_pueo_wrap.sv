@@ -21,6 +21,7 @@ module trig_pueo_wrap #(parameter WBCLKTYPE = "NONE",
         input sysclk_x2_ce_i,
 
         input pps_i,
+        output runrst_o,
         // SOOOOO MANY INPUTS.
         // SURFs send triggers on a 4-clock cycle, even
         // though they train on the 8-clock cycle.
@@ -85,6 +86,7 @@ module trig_pueo_wrap #(parameter WBCLKTYPE = "NONE",
     wire        trig_mask_update;
     wire [15:0] trig_offset;
     wire [15:0] trig_latency;
+    wire [15:0] trig_holdoff;
     
     wire [11:0] turf_trig;
     wire [7:0]  turf_metadata;
@@ -106,6 +108,7 @@ module trig_pueo_wrap #(parameter WBCLKTYPE = "NONE",
                       .trigmask_update_i(trig_mask_update),
                       .trig_offset_i(trig_offset),
                       .trig_latency_i(trig_latency),
+                      .trig_holdoff_i(trig_holdoff),
                       
                       .trigin_dat_i(real_trigin),
                       .trigin_dat_valid_i(trigger_valid),
@@ -207,7 +210,8 @@ module trig_pueo_wrap #(parameter WBCLKTYPE = "NONE",
                                   .trig_mask_o(trig_mask),
                                   .update_trig_mask_o(trig_mask_update),
                                   .trig_offset_o(trig_offset),
-                                  .trig_latency_o(trig_latency));
+                                  .trig_latency_o(trig_latency),
+                                  .trig_holdoff_o(trig_holdoff));
             
     trig_pueo_command #(.WBCLKTYPE(WBCLKTYPE),
                         .SYSCLKTYPE(SYSCLKTYPE))
@@ -226,5 +230,5 @@ module trig_pueo_wrap #(parameter WBCLKTYPE = "NONE",
                                  
                                  .command67_o(command67_o),
                                  .command68_o(command68_o));
-    
+    assign runrst_o = runrst;
 endmodule
