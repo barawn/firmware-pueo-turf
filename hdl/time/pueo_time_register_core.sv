@@ -20,10 +20,10 @@ module pueo_time_register_core #(parameter WBCLKTYPE = "NONE",
     );
 
     localparam [7:0] CTRL_ADDR = 8'h00;
-    localparam [7:0] TRIM_ADDR = 8'h08;
-    localparam [7:0] SEC_ADDR = 8'h0C;
-    localparam [7:0] LASTPPS_ADDR = 8'h10;
-    localparam [7:0] LLASTPPS_ADDR = 8'h14;
+    localparam [7:0] TRIM_ADDR = 8'h04;
+    localparam [7:0] SEC_ADDR = 8'h08;
+    localparam [7:0] LASTPPS_ADDR = 8'h0C;
+    localparam [7:0] LLASTPPS_ADDR = 8'h10;
 
     wire capture_req;
     wire capture_req_sysclk;
