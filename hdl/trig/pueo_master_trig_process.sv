@@ -20,8 +20,8 @@ module pueo_master_trig_process #(parameter NSURF=28,
         input                   trigmask_update_i,
         // parameters from wishbone captured at runrst
         input [15:0]            trig_offset_i,
-        input [15:0]            trig_latency_i,        
-
+        input [15:0]            trig_latency_i,
+        input [15:0]            trig_holdoff_i,
 
         // these get organized as
         // tio3, tio2, tio1, tio0
@@ -35,6 +35,12 @@ module pueo_master_trig_process #(parameter NSURF=28,
         input [11:0]            turf_trig_i,
         input [7:0]             turf_metadata_i,
         input                   turf_valid_i,
+
+        // global time. takes 16 bytes.
+        input [31:0]            cur_sec_i,
+        input [31:0]            cur_count_i,
+        input [31:0]            last_pps_i,
+        input [31:0]            llast_pps_i,
 
         input runrst_i,
         input runstop_i,
@@ -50,14 +56,19 @@ module pueo_master_trig_process #(parameter NSURF=28,
     wire update_trig_mask_sysclk;
     (* CUSTOM_CC_DST = SYSCLKTYPE *)
     reg [27:0] trig_mask_sysclk = {28{1'b1}};
-    (* CUSTOM_CC_DST = SYSCLKTYPE *)
-    reg [15:0] trig_offset_sysclk = {16{1'b0}};
     // start off max, reset to max, that way any sane value
     // will work.
     (* CUSTOM_CC_DST = SYSCLKTYPE *)
     reg [15:0] trig_latency_sysclk = {16{1'b1}};
     reg [15:0] trig_latency_counter = {16{1'b0}};
-
+    (* CUSTOM_CC_DST = SYSCLKTYPE *)
+    reg [15:0] trig_offset_sysclk = {16{1'b0}};
+    (* CUSTOM_CC_DST = SYSCLKTYPE *)
+    reg [15:0] trig_holdoff_sysclk = {16{1'b0}};
+    // loads to trig_holdoff_sysclk if not trig_holdoff else count down.
+    reg [16:0] trig_holdoff_counter = {17{1'b0}};
+    reg trig_holdoff = 0;
+    wire trig_holdoff_reached = trig_holdoff_counter[16];
 
     // This was wrong before.
     // We CANNOT cascade the URAMs. At all. It won't work.
@@ -95,6 +106,10 @@ module pueo_master_trig_process #(parameter NSURF=28,
     reg [1:0] sysclk_x2_phase_buf = {2{1'b0}};
     // sequence controls the muxing    
     reg [2:0] sysclk_x2_sequence = {3{1'b0}};
+
+    // OK, so now we apply offsets.
+    reg trigger_occurred = 0;
+    reg [11:0] trigger_occurred_address = {12{1'b0}};
 
     generate
         genvar i,j;
@@ -279,6 +294,9 @@ module pueo_master_trig_process #(parameter NSURF=28,
         end
         
         if (sysclk_x2_ce_i) begin
+            if (runrst_i) trig_offset_sysclk <= trig_offset_i;
+        end        
+        if (sysclk_x2_ce_i) begin
             if (!trig_running)
                 trig_latency_counter <= {16{1'b0}};
             else if (trig_latency_counter < trig_latency_sysclk)
@@ -296,7 +314,27 @@ module pueo_master_trig_process #(parameter NSURF=28,
                 readout_address <= {12{1'b0}};
             else
                 readout_address <= readout_address + 1;
-        end                                
+        end
+        
+        // this will get more complicated when we have
+        // SURF buffer tracking!!!!
+        // even with a holdoff spec of 0 we have
+        // clk  trigger_occurred    trig_holdoff    trig_holdoff_counter
+        // 0    1                   0               0_0000
+        // 1    0                   1               0_0000
+        // 2    0                   1               1_FFFF
+        // 3    0                   0               0_FFFE
+        // So trig_holdoff_counter is holdoff - 2 and in sysclk_x2_clock units
+        // so only program in an even value.
+        // nominally 84.        
+        if (trigger_occurred) trig_holdoff <= 1;
+        else if (trig_holdoff_reached) trig_holdoff <= 0;
+
+        if (!trig_holdoff) trig_holdoff_counter <= {1'b0, trig_holdoff_sysclk};
+        else trig_holdoff_counter <= trig_holdoff_counter[15:0] - 1;
+
+        trigger_occurred <= |trigger_out[3:0] && sysclk_x2_ce_i && !trig_holdoff;
+        trigger_occurred_address <= readout_address - trig_offset_sysclk;
     end
     // ok: in the end, if we have |trigger_out we write readout_address into
     // an outbound FIFO for transmission and we capture the metadata into FIFOs
@@ -310,8 +348,8 @@ module pueo_master_trig_process #(parameter NSURF=28,
     // be very crufty.
     // just... skip going full we're not ever going to fill up.
     trigger_fifo u_fifo( .wr_clk(sysclk_x2_i),
-                         .din( { 2'b10, readout_address, {2{1'b0}} } ),
-                         .wr_en( |trigger_out[3:0] && sysclk_x2_ce_i ),
+                         .din( { 2'b10, trigger_occurred_address, {2{1'b0}} } ),
+                         .wr_en( trigger_occurred ),
                          .rd_clk(sysclk_i),
                          .srst(!trig_running),
                          .valid(trigout_tvalid),
