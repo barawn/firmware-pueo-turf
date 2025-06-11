@@ -28,7 +28,8 @@ module pueo_trig_ctrl #(
 
         // constants
         output [15:0] trig_latency_o,
-        output [15:0] trig_offset_o
+        output [15:0] trig_offset_o,
+        output [15:0] trig_holdoff_o
     );
 
     // There is no soft offset because it doesn't matter,
@@ -39,13 +40,16 @@ module pueo_trig_ctrl #(
     localparam [7:0] EXT_OFFSET_ADDR = 8'h0C;
     localparam [7:0] SOFT_TRIGGER_ADDR = 8'h10;
     localparam [7:0] PPS_EXT_TRIGGER_ADDR = 8'h14;
-    
+    localparam [7:0] HOLDOFF_ADDR = 8'h18;
+        
     (* CUSTOM_CC_SRC = WBCLKTYPE *)
     reg [27:0] mask_register = {28{1'b1}};
     (* CUSTOM_CC_SRC = WBCLKTYPE *)
     reg [15:0] offset_register = {16{1'b0}};
     (* CUSTOM_CC_SRC = WBCLKTYPE *)
     reg [15:0] latency_register = {16{1'b0}};
+    (* CUSTOM_CC_SRC = WBCLKTYPE *)
+    reg [15:0] holdoff_register = 16'd82;
     
     reg soft_trig = 0;
     wire soft_trig_sysclk;
@@ -57,6 +61,7 @@ module pueo_trig_ctrl #(
         if (wb_cyc_i && wb_stb_i && !wb_we_i) begin
             if (wb_adr_i == MASK_ADDR) dat_reg <= { {4{1'b0}}, mask_register };
             else if (wb_adr_i == LATENCY_OFFSET_ADDR) dat_reg <= { offset_register, latency_register };
+            else if (wb_adr_i == HOLDOFF_ADDR) dat_reg <= { {16{1'b0}}, holdoff_register };
             else dat_reg <= {32{1'b0}};
         end
         if (wb_cyc_i && wb_stb_i && wb_we_i) begin
@@ -71,6 +76,10 @@ module pueo_trig_ctrl #(
                 if (wb_sel_i[1]) latency_register[15:8] <= wb_dat_i[15:8];
                 if (wb_sel_i[2]) offset_register[7:0] <= wb_dat_i[23:16];
                 if (wb_sel_i[3]) offset_register[15:8] <= wb_dat_i[31:24];
+            end
+            if (wb_adr_i == HOLDOFF_ADDR) begin
+                if (wb_sel_i[0]) holdoff_register[7:0] <= wb_dat_i[7:0];
+                if (wb_sel_i[1]) holdoff_register[15:8] <= wb_dat_i[15:8];
             end
         end
         soft_trig <= ack && (wb_adr_i == SOFT_TRIGGER_ADDR && wb_we_i);
@@ -122,7 +131,8 @@ module pueo_trig_ctrl #(
     assign trig_mask_o = mask_register;
     assign trig_latency_o = latency_register;
     assign trig_offset_o = offset_register;
-
+    assign trig_holdoff_o = holdoff_register;
+    
     assign wb_dat_o = dat_reg;                                
     assign wb_ack_o = ack && wb_cyc_i;
     assign wb_err_o = 1'b0;
