@@ -13,6 +13,8 @@ module pueo_time_wrap #(parameter SYSCLKTYPE = "NONE",
         input pps_i,
         input runrst_i,
         
+        output pps_pulse_o,
+        
         output pps_flag_o,
         output [31:0] cur_sec_o,
         output [31:0] cur_time_o,
@@ -79,7 +81,7 @@ module pueo_time_wrap #(parameter SYSCLKTYPE = "NONE",
         else if (pps_flag) pps_in_holdoff <= 1;
         else if (pps_holdoff_counter == 0) pps_in_holdoff <= 0;
         
-        if (!pps_in_holdoff) pps_holdoff_counter <= pps_holdoff;
+        if (!pps_in_holdoff) pps_holdoff_counter <= pps_holdoff_expanded;
         else pps_holdoff_counter <= pps_holdoff_counter - 1;
                 
         use_ext_pps_sysclk <= {use_ext_pps_sysclk[0], use_ext_pps};
@@ -127,5 +129,12 @@ module pueo_time_wrap #(parameter SYSCLKTYPE = "NONE",
                    .cur_sec_i(cur_second),
                    .last_pps_i(last_pps),
                    .llast_pps_i(llast_pps));    
+
+    assign cur_sec_o = cur_second;
+    assign cur_time_o = cur_time;
+    assign last_pps_o = last_pps;
+    assign llast_pps_o = llast_pps;
+
+    assign pps_pulse_o = pps_in_holdoff;
         
 endmodule
