@@ -644,6 +644,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
     
     wire runrst;
     wire pps;
+    wire pps_dbg;
     wire [31:0] cur_sec;
     wire [31:0] cur_time;
     wire [31:0] last_pps;
@@ -655,6 +656,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                             `CONNECT_WBS_IFM( wb_ , time_ ),
                             .sys_clk_i(sys_clk),
                             .pps_i(GPS_TIMEPULSE[0]),
+                            .pps_dbg_o(pps_dbg),
                             .runrst_i(runrst),
                             .pps_flag_o(pps),
                             .pps_pulse_o(pps_pulse),
@@ -701,7 +703,8 @@ module pueo_turf6 #(parameter IDENT="TURF",
                            .sysclk_sync_i(sys_clk_sync),
                            .sysclk_x2_i(sys_clk_x2),
                            .sysclk_x2_ce_i(sys_clk_x2_ce),
-                           .pps_i(1'b0),
+                           .pps_i(pps),
+                           .runrst_o(runrst),
                            .trig_dat_i( { turfiod_trigger, turfioc_trigger,
                                           turfiob_trigger, turfioa_trigger } ),
                            .trig_dat_valid_i( { turfiod_valid, turfioc_valid,
@@ -742,7 +745,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                            .probe14(UART_MISO),
                            .probe15(UART_CS_B),
                            .probe16(UART_IRQ_B),
-                           .probe17(GPS_TIMEPULSE));
+                           .probe17({GPS_TIMEPULSE[1],pps_dbg}));
         end
     endgenerate
     
