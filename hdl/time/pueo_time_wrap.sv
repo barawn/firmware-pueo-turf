@@ -11,6 +11,7 @@ module pueo_time_wrap #(parameter SYSCLKTYPE = "NONE",
         `TARGET_NAMED_PORTS_WB_IF( wb_ , 13, 32 ),
         input sys_clk_i,
         input pps_i,
+        output pps_dbg_o,
         input runrst_i,
         
         output pps_pulse_o,
@@ -23,7 +24,7 @@ module pueo_time_wrap #(parameter SYSCLKTYPE = "NONE",
     );
     
     // whatever just make it work
-    (* USE_DSP = "TRUE", CUSTOM_CC_DST = SYSCLKTYPE *)
+    (* CUSTOM_CC_DST = SYSCLKTYPE *)
     reg [31:0] pps_holdoff_counter = {32{1'b0}};
     // this is upshifted in units of 4096 clocks
     // which puts the max over a second and the min
@@ -51,8 +52,7 @@ module pueo_time_wrap #(parameter SYSCLKTYPE = "NONE",
 
     (* CUSTOM_CC_DST = SYSCLKTYPE *)
     reg [1:0] use_ext_pps_sysclk = 2'b00;
-
-    (* IOB = "TRUE" *)
+    (* CUSTOM_CC_SRC = SYSCLKTYPE *)
     reg pps_reg = 0;
     reg pps_rereg = 0;
     reg pps_flag = 0;
@@ -67,6 +67,10 @@ module pueo_time_wrap #(parameter SYSCLKTYPE = "NONE",
     reg [31:0]  cur_time = {32{1'b0}};
     reg [31:0]  last_pps = {32{1'b0}};
     reg [31:0]  llast_pps = {32{1'b0}};
+    
+    (* CUSTOM_CC_DST = WBCLKTYPE *)
+    reg [1:0] pps_dbg_wbclk = {2{1'b0}};
+    always @(posedge wb_clk_i) pps_dbg_wbclk <= { pps_dbg_wbclk[0], pps_reg };
     
     always @(posedge sys_clk_i) begin
         // you HAVE to leave it running because you want
@@ -134,6 +138,6 @@ module pueo_time_wrap #(parameter SYSCLKTYPE = "NONE",
     assign llast_pps_o = llast_pps;
 
     assign pps_pulse_o = pps_in_holdoff;
-
+    assign pps_dbg_o = pps_dbg_wbclk[1];
     assign pps_flag_o = pps_flag;        
 endmodule
