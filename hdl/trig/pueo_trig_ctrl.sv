@@ -42,6 +42,11 @@ module pueo_trig_ctrl #(
     localparam [7:0] PPS_EXT_TRIGGER_ADDR = 8'h14;
     localparam [7:0] HOLDOFF_ADDR = 8'h18;
         
+    // Holdoff between triggers in units of 12 samples
+    localparam [15:0] DEFAULT_HOLDOFF = 16'd82;
+    // Latency from trigger to readout (to allow accumulation)
+    localparam [15:0] DEFAULT_LATENCY = 16'd100;        
+        
     (* CUSTOM_CC_SRC = WBCLKTYPE *)
     reg [27:0] mask_register = {28{1'b1}};
     (* CUSTOM_CC_SRC = WBCLKTYPE *)
