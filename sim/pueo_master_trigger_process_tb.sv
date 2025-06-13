@@ -9,6 +9,9 @@ module pueo_master_trigger_process_tb;
     wire sysclk;
     tb_rclk #(.PERIOD(8.0)) u_clk(.clk(sysclk));
 
+    wire memclk;
+    tb_rclk #(.PERIOD(3.333)) u_memclk(.clk(memclk));
+
     // we'll use the system_clock_v2 module. that way phase matches.
     wire sys_clk;
     wire sys_clk_x2;
@@ -31,7 +34,7 @@ module pueo_master_trigger_process_tb;
     
     localparam NSURF = 32;
     localparam NBIT = 16;
-    wire [NSURF*NBIT-1:0] trig_in = {NSURF*NBIT{1'b0}};
+    reg [NSURF*NBIT-1:0] trig_in = {NSURF*NBIT{1'b0}};
     wire trigin_dat_valid_i = sys_clk_phase_dly[2];
     wire trigin_will_be_valid = sys_clk_phase_dly[1];
         
@@ -88,6 +91,21 @@ module pueo_master_trigger_process_tb;
     assign wb_dat_o = wb_dat;
     `DEFINE_AXI4S_MIN_IF( turfhdr_ , 64 ); 
     assign turfhdr_tready = 1'b1;           
+
+    wire [31:0] cur_sec = 32'd1234;
+    reg [31:0] cur_count = {32{1'b0}};
+    wire [31:0] last_pps = 32'hBABEFACE;
+    wire [31:0] llast_pps = 32'hDEADBEEF;
+    wire [3:0] tio_mask = 4'hA;
+    wire [11:0] runcfg = 12'hBCD;
+
+    wire runrst;
+
+    always @(posedge sys_clk) begin
+        if (runrst) cur_count <= {32{1'b0}};
+        else cur_count <= cur_count + 1;
+    end    
+
     trig_pueo_wrap #(.DEBUG("FALSE"))
         u_trig( .wb_clk_i(wb_clk),
                 .wb_rst_i(1'b0),
@@ -98,8 +116,20 @@ module pueo_master_trigger_process_tb;
                 .sysclk_x2_i(sys_clk_x2),
                 .sysclk_x2_ce_i(sys_clk_x2_ce),
                 .pps_i(1'b0),
+
+                .cur_sec_i(cur_sec),
+                .cur_time_i(cur_count),
+                .last_pps_i(last_pps),
+                .llast_pps_i(llast_pps),
+                
+                .tio_mask_i(tio_mask),
+                .runcfg_i(runcfg),
+
+                .runrst_o(runrst),
+
                 .trig_dat_i(trig_in),
                 .trig_dat_valid_i(trigin_dat_valid_i),
+                .memclk(memclk),
                 `CONNECT_AXI4S_MIN_IF( turfhdr_ , turfhdr_ ));
                     
 //    reg do_trig = 0;
@@ -156,11 +186,32 @@ module pueo_master_trigger_process_tb;
 
     initial begin
         #1000;
+        // latency
         wb_write( 32'h104, 32'd200 );
+        // unmask surf 0
+        #100;
+        wb_write( 32'h100, 32'h0FFF_FFFE );
         #100;
         wb_write( 32'h000, 32'd2 );        
         #1000;
+        // soft trig
         wb_write( 32'h110, 32'd1 );
+        #100;
+        // ok now plunk in an RF trig that occurred at the same time.
+        @(posedge sys_clk); #1;
+        while (!trigin_will_be_valid) @(posedge sys_clk);
+        #1 trig_in[0 +: 16] <= 16'h8010;
+        @(posedge sys_clk); // trigin valid and trig_in - clk 0
+        @(posedge sys_clk); // clk 1
+        @(posedge sys_clk); // clk 2
+        @(posedge sys_clk); // clk 3
+        #1 trig_in[0 +: 16] <= 16'h00AA;
+        @(posedge sys_clk); // clk 0
+        @(posedge sys_clk); // clk 1
+        @(posedge sys_clk); // clk 2
+        @(posedge sys_clk); // clk 3
+        #1 trig_in[0 +: 16] <= 16'h0000;
+                        
         #1000;
         wb_write( 32'h110, 32'd1 );
         #1000;
