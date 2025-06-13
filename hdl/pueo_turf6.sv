@@ -13,7 +13,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="A",
                     parameter [3:0] VER_MAJOR=4'd0,
                     parameter [3:0] VER_MINOR=4'd6,
-                    parameter [7:0] VER_REV=8'd0,
+                    parameter [7:0] VER_REV=8'd2,
                     parameter [15:0] FIRMWARE_DATE = {16{1'b0}})                    
                     (
 
@@ -664,11 +664,15 @@ module pueo_turf6 #(parameter IDENT="TURF",
                             .cur_time_o(cur_time),
                             .last_pps_o(last_pps),
                             .llast_pps_o(llast_pps));
-                           
-    event_pueo_wrap #(.WBCLKTYPE("PSCLK"),
-                      .ETHCLKTYPE("GBECLK"),
-                      .ACLKTYPE("USERCLK"),
-                      .MEMCLKTYPE("DDRCLK0"))
+
+    `DEFINE_AXI4S_MIN_IF( turfhdr_ , 64 );
+    wire [3:0] tio_mask;
+    wire [11:0] runcfg;
+                               
+    event_pueo_wrap_v2  #(.WBCLKTYPE("PSCLK"),
+                          .ETHCLKTYPE("GBECLK"),
+                          .ACLKTYPE("USERCLK"),
+                          .MEMCLKTYPE("DDRCLK0"))
                     u_event( .wb_clk_i(ps_clk),
                              `CONNECT_WBS_IFM( wb_ , evctl_ ),                    
                              .DDR_CLK_P(DDR_CLK_P[0]),
@@ -685,6 +689,12 @@ module pueo_turf6 #(parameter IDENT="TURF",
                              .s_aurora2_tlast(aur2_tlast),
                              `CONNECT_AXI4S_MIN_IF( s_aurora3_ , aur3_ ),
                              .s_aurora3_tlast(aur3_tlast),
+                             
+                             // in memclk domain
+                             `CONNECT_AXI4S_MIN_IF( s_turfhdr_ , turfhdr_ ),
+                             .tio_mask_o(tio_mask),
+                             .runcfg_o(runcfg),
+                             
                              .ethclk(gbe_sysclk),
                              .event_open_i(event_open),
                              `CONNECT_AXI4S_MIN_IF( s_ack_ , ack_ ),
@@ -704,7 +714,16 @@ module pueo_turf6 #(parameter IDENT="TURF",
                            .sysclk_x2_i(sys_clk_x2),
                            .sysclk_x2_ce_i(sys_clk_x2_ce),
                            .pps_i(pps),
+                           
+                           .tio_mask_i(tio_mask),
+                           .runcfg_i(runcfg),
                            .runrst_o(runrst),
+
+                           .cur_sec_i(cur_sec),
+                           .cur_time_i(cur_time),
+                           .last_pps_i(last_pps),
+                           .llast_pps_i(llast_pps),                           
+                           
                            .trig_dat_i( { turfiod_trigger, turfioc_trigger,
                                           turfiob_trigger, turfioa_trigger } ),
                            .trig_dat_valid_i( { turfiod_valid, turfioc_valid,
