@@ -52,8 +52,6 @@ module internal_pps #(parameter SYSCLKTYPE="NONE",
     // en_sysclk[1] is used as the not reset
     // en_sysclk_flag is en_sysclk && !en_sysclk[1] so they both go high
     // same cycle.
-    wire      update_sysclk;
-    
     wire      target_reached;
     
     always @(posedge sysclk_i) begin
@@ -80,6 +78,7 @@ module internal_pps #(parameter SYSCLKTYPE="NONE",
               .INMODEREG(1'b0),
               .ALUMODEREG(1'b0),
               .OPMODEREG(1'b0),
+              .CARRYINREG(1'b0),
               .CARRYINSELREG(1'b0))
               u_counter(.CLK(sysclk_i),
                         `A_UNUSED_PORTS,
