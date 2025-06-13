@@ -87,7 +87,7 @@ module event_pueo_wrap_v2(
                     .tio_mask_o(tio_mask_o),
                     .tio_mask_aclk_o(tio_mask_aclk),
                     .tio_mask_memclk_o(tio_mask_memclk),
-                    .runcfg_o(runcfg),
+                    .runcfg_o(runcfg_o),
                     .event_reset_o(event_reset_wbclk),
                     .event_reset_aclk_o(event_reset_aclk),
                     .event_reset_memclk_o(event_reset_memclk),
@@ -323,8 +323,5 @@ module event_pueo_wrap_v2(
     `CONNECT_PHY_IF( c0_ddr4_ ,            c0_ddr4_     ));
 
     assign ddr4_clk_o = memclk;
-
-    assign runcfg_o = runcfg;
-    assign tio_mask_o = tio_mask;
         
 endmodule
