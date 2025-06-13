@@ -22,6 +22,9 @@ module pueo_trig_ctrl #(
         // no triggers if we're not running
         input         running_i,                
 
+        // for the event counter wbclk shadow
+        input  event_i,
+
         // masks
         output [27:0] trig_mask_o,
         output update_trig_mask_o,
@@ -41,6 +44,7 @@ module pueo_trig_ctrl #(
     localparam [7:0] SOFT_TRIGGER_ADDR = 8'h10;
     localparam [7:0] PPS_EXT_TRIGGER_ADDR = 8'h14;
     localparam [7:0] HOLDOFF_ADDR = 8'h18;
+    localparam [7:0] EVENT_COUNT_ADDR = 8'h1C;
         
     // Holdoff between triggers in units of 12 samples
     localparam [15:0] DEFAULT_HOLDOFF = 16'd82;
@@ -56,17 +60,32 @@ module pueo_trig_ctrl #(
     (* CUSTOM_CC_SRC = WBCLKTYPE *)
     reg [15:0] holdoff_register = 16'd82;
     
+    (* CUSTOM_CC_DST = WBCLKTYPE *)
+    reg [1:0] running_wbclk = {2{1'b0}};
+    
     reg soft_trig = 0;
     wire soft_trig_sysclk;
+
+    wire event_flag_wbclk;
+    flag_sync u_event_flag_sync(.in_clkA(event_i),.out_clkB(event_flag_wbclk),
+                                .clkA(sys_clk_i),.clkB(wb_clk_i));
+    reg [31:0] event_counter_shadow = {32{1'b0}};    
     
     reg ack = 0;
     reg [31:0] dat_reg = {32{1'b0}};
     always @(posedge wb_clk_i) begin
+        running_wbclk <= { running_wbclk[0], running_i };
+    
+        if (!running_wbclk) event_counter_shadow <= {32{1'b0}};
+        else if (event_flag_wbclk) event_counter_shadow <= event_counter_shadow + 1;
+    
         ack <= wb_cyc_i && wb_stb_i;        
         if (wb_cyc_i && wb_stb_i && !wb_we_i) begin
             if (wb_adr_i == MASK_ADDR) dat_reg <= { {4{1'b0}}, mask_register };
             else if (wb_adr_i == LATENCY_OFFSET_ADDR) dat_reg <= { offset_register, latency_register };
             else if (wb_adr_i == HOLDOFF_ADDR) dat_reg <= { {16{1'b0}}, holdoff_register };
+            else if (wb_adr_i == SOFT_TRIGGER_ADDR) dat_reg <= { {15{1'b0}}, running_wbclk, {16{1'b0}} };
+            else if (wb_adr_i == EVENT_COUNT_ADDR) dat_reg <= event_counter_shadow;
             else dat_reg <= {32{1'b0}};
         end
         if (wb_cyc_i && wb_stb_i && wb_we_i) begin
