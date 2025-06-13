@@ -3,6 +3,7 @@
 // the '32' here is fake it includes the 4 unused TURFIO ports
 module trig_pueo_wrap #(parameter WBCLKTYPE = "NONE",
                         parameter SYSCLKTYPE = "NONE",
+                        parameter MEMCLKTYPE = "NONE",
                         parameter NSURF = 32,
                         parameter DEBUG = "TRUE")(
         input wb_clk_i,
@@ -21,7 +22,16 @@ module trig_pueo_wrap #(parameter WBCLKTYPE = "NONE",
         input sysclk_x2_ce_i,
 
         input pps_i,
+        input [31:0] cur_sec_i,
+        input [31:0] cur_time_i,
+        input [31:0] last_pps_i,
+        input [31:0] llast_pps_i,
+        
+        // run config
+        input [3:0] tio_mask_i,         // IN SYSCLK
+        input [11:0] runcfg_i,          // IN SYSCLK
         output runrst_o,
+        
         // SOOOOO MANY INPUTS.
         // SURFs send triggers on a 4-clock cycle, even
         // though they train on the 8-clock cycle.
@@ -38,6 +48,7 @@ module trig_pueo_wrap #(parameter WBCLKTYPE = "NONE",
         input [NSURF-1:0] trig_dat_valid_i,
 
         // probably needs a tlast or something, who knows        
+        input memclk,
         `HOST_NAMED_PORTS_AXI4S_MIN_IF( turfhdr_ , 64 ),
         
         output [31:0] command67_o,
@@ -98,7 +109,10 @@ module trig_pueo_wrap #(parameter WBCLKTYPE = "NONE",
     wire [11:0] cur_addr;
     wire        running;
     
-    pueo_master_trig_process #(.SYSCLKTYPE(SYSCLKTYPE))
+    wire        event_flag;
+    
+    pueo_master_trig_process_v2 #(.SYSCLKTYPE(SYSCLKTYPE),
+                               .MEMCLKTYPE(MEMCLKTYPE))
         u_master_trig(.sysclk_i(sysclk_i),
                       .sysclk_phase_i(sysclk_phase_i),
                       .sysclk_x2_i(sysclk_x2_i),
@@ -122,7 +136,18 @@ module trig_pueo_wrap #(parameter WBCLKTYPE = "NONE",
                       .address_o(cur_addr),
                       .running_o(running),
                       
+                      .cur_sec_i(cur_sec_i),
+                      .cur_time_i(cur_time_i),
+                      .last_pps_i(last_pps_i),
+                      .llast_pps_i(llast_pps_i),
+                      .tio_mask_i(tio_mask_i),
+                      .runcfg_i(runcfg_i),
+
+                      .event_o(event_flag),
+                                            
                       `CONNECT_AXI4S_MIN_IF(trigout_ , trig_ ),
+                      
+                      .memclk_i(memclk),
                       `CONNECT_AXI4S_MIN_IF(turf_hdr_ , turfhdr_ ));
 
     // just grab phase and valid right now to time them up
@@ -165,7 +190,8 @@ module trig_pueo_wrap #(parameter WBCLKTYPE = "NONE",
     wire [3:0] wb_err_vec;
     `DEFINE_WB_IF( cmd_ , 8, 32 );
     `DEFINE_WB_IF( trigctl_ , 8, 32 );
-    `DEFINE_WB_IF( time_ , 8, 32 );
+    // WHO KNOWS, MAN
+    `DEFINE_WB_IF( rsvd_ , 8, 32 );
     `DEFINE_WB_IF( scaler_ , 8, 32 );
     
     `define MAP_BLOCK( outpfx , inpfx , idx )    \
@@ -182,11 +208,11 @@ module trig_pueo_wrap #(parameter WBCLKTYPE = "NONE",
 
     `MAP_BLOCK( cmd_ , wb_ , 0);
     `MAP_BLOCK( trigctl_ , wb_ , 1);
-    `MAP_BLOCK( time_ , wb_ , 2);
+    `MAP_BLOCK( rsvd_ , wb_ , 2);
     `MAP_BLOCK( scaler_ , wb_ , 3);
 
     wbs_dummy #(.ADDRESS_WIDTH(8),.DATA_WIDTH(32))
-        u_time( `CONNECT_WBS_IFM( wb_ , time_ ) );
+        u_rsvd( `CONNECT_WBS_IFM( wb_ , rsvd_ ) );
     wbs_dummy #(.ADDRESS_WIDTH(8),.DATA_WIDTH(32))
         u_scaler( `CONNECT_WBS_IFM( wb_ , scaler_ ) );
     
