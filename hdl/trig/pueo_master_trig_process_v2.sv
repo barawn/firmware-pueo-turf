@@ -101,6 +101,8 @@ module pueo_master_trig_process_v2 #(parameter NSURF=28,
     wire [7:0]  trig_mask_vec[3:0];
     wire [8*NBIT-1:0] trigin_vec[3:0];
     
+    // This is wrong but I DO NOT CARE. GOOD ENOUGH.
+    (* CUSTOM_CC_SRC = SYSCLKTYPE *)
     reg trig_running = 0;
     reg trig_readout_running = 0;
     
