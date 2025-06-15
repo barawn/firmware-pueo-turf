@@ -197,7 +197,7 @@ module turf_header_generator_v2 #(parameter MEMCLKTYPE="NONE",
         else if (state == CUR_TIME) data_in_holding <= { cur_time_hold, cur_sec_hold };
         else if (state == PPS_HOLD) data_in_holding <= { llast_pps_hold, last_pps_hold };
         else if (state == METADATA_WRITE) data_in_holding <= meta_holding[0 +: DATA_WIDTH];
-        else if (state == TRAILER) data_in_holding <= { CONST_SURF_WORDS, meta_holding[0 +: 48] };
+        else if (state == TRAILER) data_in_holding <= { CONST_SURF_WORDS, run_config_word, meta_holding[0 +: 32] };
         
         write_header <= (state != IDLE && state != METADATA_WAIT);
     end
