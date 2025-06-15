@@ -61,7 +61,6 @@ module turf_header_generator_v2 #(parameter MEMCLKTYPE="NONE",
     wire meta_shifting_done;
     reg meta_in_window = 0;
     reg meta_shifting = 0;
-    wire meta_shifting_done;
     
     reg [63:0] data_in_holding = {64{1'b0}};
     reg [31:0] event_counter = {32{1'b0}};
