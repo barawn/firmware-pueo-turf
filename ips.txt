@@ -64,3 +64,4 @@ ip/fifo/udp_hsk_txcount/udp_hsk_txcount.xci
 ip/fifo/udp_hsk_txfifo/udp_hsk_txfifo.xci
 ip/debug/udp_ila/udp_ila.xci
 ip/debug/udp_rdwr_ila/udp_rdwr_ila.xci
+ip/fifo/udp_timeserver_fifo/udp_timeserver_fifo.xci
