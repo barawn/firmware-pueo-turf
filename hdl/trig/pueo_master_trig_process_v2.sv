@@ -14,7 +14,6 @@ module pueo_master_trig_process_v2 #(parameter NSURF=28,
         input sysclk_x2_i,
         input sysclk_x2_ce_i,
         
-        input                   wb_clk_i,        
         // wishbone side, needs an update since it can change dynamically
         input [27:0]            trigmask_i,
         // flag to update trigmask
