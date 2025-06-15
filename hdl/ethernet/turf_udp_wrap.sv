@@ -48,6 +48,10 @@ module turf_udp_wrap #( parameter NSFP=2,
         output hsk_irq_o,
         output hsk_complete_o,
 
+        input sysclk_i,
+        input [31:0] cur_sec_i,
+        input pps_i,
+
         // WB CLK SIDE
         input wb_clk_i,
         // this is the DRP side interface + maybe more? who knows??
@@ -313,7 +317,7 @@ module turf_udp_wrap #( parameter NSFP=2,
 
     // OK! Now we can hook up the UDP port switch, the RDWR/ack/nack/control core and finally the fragment generator.
     // Our inbound ports are
-    // 'Tr', 'Tw', 'Ta', 'Tn', 'Tc'
+    // 'Tr', 'Tw', 'Ta', 'Tn', 'Tc' and 37.
     // 21601 ('Ta') - port 3 - 0x5461 0110 0001
     // 21603 ('Tc') - port 2 - 0x5463 0110 0011
     // 21614 ('Tn') - port 1 - 0x546E 0110 1110
@@ -323,20 +327,24 @@ module turf_udp_wrap #( parameter NSFP=2,
     //
     // Now we add 'Th' = 21608 - port 4
 
-    localparam NUM_INBOUND = 5;
+    localparam NUM_INBOUND = 6;
     localparam [NUM_INBOUND*16-1:0]
-        INBOUND = { 16'd21608,      // 4
+        INBOUND = { 16'd37,         // 5
+                    16'd21608,      // 4
                     16'd21601,      // 3
                     16'd21603,      // 2
                     16'd21614,      // 1
                     16'd21618 };    // 0
                  // 16'd21623   is covered in the last match
     localparam [NUM_INBOUND*16-1:0]
-        INBOUND_MASK = { 16'd0,                     // 4 exact match
+        INBOUND_MASK = { 16'd0,                     // 5 exact match
+                         16'd0,                     // 4 exact match
                          16'd0,                     // 3 exact match
                          16'd0,                     // 2 exact match
                          16'd0,                     // 1 exact match
                          16'b0000_0000_0000_0111 }; // 0 match 21616-21623
+
+    localparam TIME_PORT = 5;
     localparam TH_PORT = 4;
     localparam TA_PORT = 3;
     localparam TC_PORT = 2;
@@ -356,8 +364,8 @@ module turf_udp_wrap #( parameter NSFP=2,
     
     wire [NUM_INBOUND-1:0] in_port_active;
     
-    localparam NUM_OUTBOUND = 6;
-    localparam T0_PORT = 5;
+    localparam NUM_OUTBOUND = 7;
+    localparam T0_PORT = 6;
     // we don't actually have to *specify* the outbound port values, but we do
     localparam [NUM_OUTBOUND*16-1:0]
         OUTBOUND = { 16'd21552, // T0 port
@@ -525,6 +533,13 @@ module turf_udp_wrap #( parameter NSFP=2,
                        .complete_o(hsk_complete_o),
                        .irq_o(hsk_irq_o));
 
+    turf_udp_timeserver u_time(.aclk(clk156),.aresetn(!clk156_rst),
+                                `CONNECT_UDP_INOUT(s_udphdr_, s_udpdata_,
+                                                   m_udphdr_, m_udpdata_,
+                                                   TIME_PORT),
+                                .sysclk_i(sysclk_i),                                                   
+                                .pps_i(pps_i),
+                                .cur_sec_i(cur_sec_i));                                                   
 
     wire [NUM_OUTBOUND-1:0] out_port_active;
     udp_port_mux #(.NUM_PORT(NUM_OUTBOUND),

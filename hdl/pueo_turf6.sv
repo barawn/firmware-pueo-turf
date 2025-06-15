@@ -13,7 +13,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="A",
                     parameter [3:0] VER_MAJOR=4'd0,
                     parameter [3:0] VER_MINOR=4'd6,
-                    parameter [7:0] VER_REV=8'd2,
+                    parameter [7:0] VER_REV=8'd4,
                     parameter [15:0] FIRMWARE_DATE = {16{1'b0}})                    
                     (
 
@@ -611,6 +611,8 @@ module pueo_turf6 #(parameter IDENT="TURF",
     // the TXP/TXNs and RXP/RXNs plus refclks.
     // We also grab the LEDs for funsies and push them to EMIOs.
     wire [3:0] sfp_led;
+    wire [31:0] cur_sec;
+    wire pps;
     turf_udp_wrap #(.WBCLKTYPE("PSCLK"),
                     .ETHCLKTYPE("GBECLK"))
           u_ethernet(
@@ -637,15 +639,18 @@ module pueo_turf6 #(parameter IDENT="TURF",
             .event_open_o(event_open),
             `CONNECT_AXI4S_MIN_IF( s_ev_ctrl_ , ev_ctrl_ ),
             `CONNECT_AXI4S_IF( s_ev_data_ , ev_data_ ),
+            
+            .cur_sec_i(cur_sec),
+            .pps_i(pps),
+            .sysclk_i(sys_clk),
+            
             .wb_clk_i(ps_clk),
             `CONNECT_WBS_IFM( gtp_ , gbe_ ),
             `CONNECT_WBM_IFM( wb_ , wb_eth_ )          
           );
     
     wire runrst;
-    wire pps;
     wire pps_dbg;
-    wire [31:0] cur_sec;
     wire [31:0] cur_time;
     wire [31:0] last_pps;
     wire [31:0] llast_pps;
@@ -728,6 +733,10 @@ module pueo_turf6 #(parameter IDENT="TURF",
                                           turfiob_trigger, turfioa_trigger } ),
                            .trig_dat_valid_i( { turfiod_valid, turfioc_valid,
                                                 turfiob_valid, turfioa_valid } ),
+                                                
+                           .memclk(ddr_clk[0]),
+                           `CONNECT_AXI4S_MIN_IF( turfhdr_ , turfhdr_ ),                                
+                                                
                            .command67_o(turfio_if_command67),
                            .command68_o(turfio_if_command68));                           
 
