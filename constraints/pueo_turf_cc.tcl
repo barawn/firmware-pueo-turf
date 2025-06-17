@@ -81,6 +81,75 @@ proc set_ignore_paths { srcClk dstClk ctlist } {
     set_false_path -from $srcRegs -to $dstRegs
 }
 
+# The standard multicycle path calls don't actually use "set_multicycle_path" because
+# that whole procedure is dopestick annoying and often DOES NOT WORK if you're going
+# between domains that don't have an integer relationship.
+# Instead we just friggin' embed the min delay/max delays in UNITS OF THE SOURCE CLOCK.
+#
+# To have a destination be included in MULTIPLE tags you include them SEPARATED BY SPACES
+# you CANNOT HAVE A MULTICYCLE PATH with one source to multiple destinations in this syntax:
+# you have to break it up somewhere.
+#
+# TAGS HAVE TO JUST BE SIMPLE ALPHANUMERICS
+#
+# convenience function
+proc build_multicycle_re_dst { tag } {
+    # this works out to be "($tag)|($tag .*)|(.* $tag .*)|(.* $tag$)"
+    # it'd be awesome if I could figure out how to make a word boundary work,
+    # but I can't.
+    set RE_DST {"(}    
+    append RE_DST $tag
+    append RE_DST {)|(}
+    append RE_DST $tag
+    append RE_DST { .*)|(.* }
+    append RE_DST $tag
+    append RE_DST { .*)|(.* }
+    append RE_DST $tag
+    append RE_DST {$)"}
+    return $RE_DST
+}
+
+# note: the min/max delay attributes are set ONLY ON THE SOURCE REGISTER.
+# EXAMPLE
+# (* CUSTOM_MC_SRC_TAG = "ATOP_XFER", CUSTOM_MC_MIN = -2.5, CUSTOM_MC_MAX = 3.0 *)
+# reg atop = 0;
+# (* CUSTOM_MC_SRC_TAG = "BTOP_XFER", CUSTOM_MC_MIN = -3, CUSTOM_MC_MAX = 4.5 *)
+# reg btop = 0;
+# (* CUSTOM_MC_DST_TAG = "ATOP_XFER BTOP_XFER" *)
+# reg dest = 0;
+proc set_mc_paths { tag } {
+    set RE_DST [build_multicycle_re_dst $tag]
+    set srcRegs [get_cells -hier -filter "CUSTOM_MC_SRC_TAG == $tag"]
+    set dstRegs [get_cells -hier -regexp -filter "CUSTOM_MC_DST_TAG =~ $RE_DST"]
+    if {[llength $srcRegs] == 0} {
+        puts "set_mc_paths: No registers flagged with CUSTOM_MC_SRC_TAG $tag: returning."
+        return
+    }
+    if {[llength $dstRegs] == 0} {
+        puts "set_mc_paths: No registers flagged with CUSTOM_MC_DST_TAG $tag: returning."
+        return
+    }
+    set thisReg [lindex $srcRegs 0]
+    set srcClk [get_clocks -of_objects [get_cells $thisReg]]
+    set thisSourceClockPeriod [get_property PERIOD $srcClk]
+    set thisMin [get_property CUSTOM_MC_MIN [get_cells $thisReg]]
+    if {[llength $thisMin] == 0} {
+        puts "set_mc_paths: No minimum delay specified in tag $tag: returning."
+        return
+    }        
+    set thisMax [get_property CUSTOM_MC_MAX [get_cells $thisReg]]
+    if {[llength $thisMax] == 0} {
+        puts "set_mc_paths: No maximum delay specified in tag $tag: returning."
+        return
+    }        
+    set minTime [expr $thisMin*$thisSourceClockPeriod]
+    set maxTime [expr $thisMax*$thisSourceClockPeriod]
+    puts "set_mc_paths: $tag min $minTime max $maxTime"
+    set_min_delay -from $srcRegs -to $dstRegs $minTime
+    set_max_delay -from $srcRegs -to $dstRegs $maxTime
+}    
+
+
 ######## END CONVENIENCE FUNCTIONS
 
 ######## CLOCK DEFINITIONS
@@ -228,9 +297,13 @@ set_cc_paths $ifclk67 $psclk $clktypelist
 set_cc_paths $psclk $ifclk68 $clktypelist
 set_cc_paths $ifclk68 $psclk $clktypelist
 
-
 set_cc_paths $psclk $sys_clk $clktypelist
 set_cc_paths $sys_clk $psclk $clktypelist
 
 set_cc_paths $psclk $gbeclk $clktypelist
 set_cc_paths $gbeclk $psclk $clktypelist
+
+set_cc_paths $sys_clk $gbeclk $clktypelist
+set_cc_paths $gbeclk $sys_clk $clktypelist
+
+set_mc_paths TRIG_META
