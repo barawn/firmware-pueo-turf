@@ -106,7 +106,7 @@ module event_register_core #(parameter WBCLKTYPE="NONE",
 
     always @(posedge memclk) begin
         event_reset_memclk <= { event_reset_memclk[0], event_reset };
-        if (update_tio_mask_memclk) tio_mask_memclk <= {4{1'b0}};
+        if (update_tio_mask_memclk) tio_mask_memclk <= tio_mask;
     end
     
     always @(posedge ethclk) begin
