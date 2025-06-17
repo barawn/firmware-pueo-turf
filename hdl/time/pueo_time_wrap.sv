@@ -61,7 +61,7 @@ module pueo_time_wrap #(parameter SYSCLKTYPE = "NONE",
 
     wire [31:0] update_second;  // in wbclk
     wire        load_second;    // in sysclk
-    (* CUSTOM_CC_DST = SYSCLKTYPE *)
+    (* CUSTOM_CC_DST = SYSCLKTYPE, CUSTOM_CC_SRC = SYSCLKTYPE *)
     reg [31:0]  cur_second = {32{1'b0}};
     (* USE_DSP = "TRUE" *)
     reg [31:0]  cur_time = {32{1'b0}};
