@@ -28,6 +28,7 @@ module event_pueo_wrap_v2(
 
         // TURF headers. In memclk already.
         `TARGET_NAMED_PORTS_AXI4S_MIN_IF( s_turfhdr_ , 64 ),
+        input s_turfhdr_tlast,
 
         // this is data that gets included in the headers,
         // which is over in the trig module.
@@ -113,8 +114,6 @@ module event_pueo_wrap_v2(
     wire [3:0] hdr_tlast;
     `DEFINE_AXI4S_MIN_IFV( cmpl_ , 64, [3:0] ); // completions
     `DEFINE_AXI4S_MIN_IF( hdrcmpl_ , 24 ); // header completion
-    `DEFINE_AXI4S_MIN_IF( thdr_ , 64 ); // TURF headers. Dumb for now since just testing.
-    wire thdr_tlast;
     
     // transfer event open over to aclk
     (* CUSTOM_CC_SRC = ETHCLKTYPE *)
@@ -122,6 +121,13 @@ module event_pueo_wrap_v2(
     (* CUSTOM_CC_DST = ACLKTYPE, ASYNC_REG = "TRUE" *)
     reg [1:0] event_open_aclk_sync = {2{1'b0}};
     wire event_open_aclk = event_open_aclk_sync[1];
+    
+    always @(posedge ethclk) begin
+        event_open_ethclk <= event_open_i;
+    end
+    always @(posedge aclk) begin
+        event_open_aclk_sync <= { event_open_aclk_sync[0],event_open_ethclk };
+    end                
     
     // Vectorize the Aurora links. This also integrates trashing
     // events when the interface isn't open. Just force tready high
@@ -251,7 +257,7 @@ module event_pueo_wrap_v2(
                                `CONNECT_AXI4S_MIN_IFV( s_done_ , addr_ , [4] ),
                                `CONNECT_AXI4S_MIN_IF( m_cmpl_ , hdrcmpl_ ),
                                `CONNECT_AXI4S_MIN_IF( s_thdr_ , s_turfhdr_ ),
-                               .s_thdr_tlast( thdr_tlast ),
+                               .s_thdr_tlast( s_turfhdr_tlast ),
                                `CONNECT_AXI4S_MIN_IFV( s_hdr0_ , hdr_ , [ 0 ] ),
                                .s_hdr0_tlast( hdr_tlast[0] ),
                                `CONNECT_AXI4S_MIN_IFV( s_hdr1_ , hdr_ , [ 1 ] ),
