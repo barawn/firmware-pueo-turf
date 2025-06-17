@@ -60,7 +60,8 @@ module pueo_master_trig_process_v2 #(parameter NSURF=28,
         
         `HOST_NAMED_PORTS_AXI4S_MIN_IF( trigout_ , 16 ),
         input memclk_i,     
-        `HOST_NAMED_PORTS_AXI4S_MIN_IF( turf_hdr_ , 64 )
+        `HOST_NAMED_PORTS_AXI4S_MIN_IF( turf_hdr_ , 64 ),
+        output turf_hdr_tlast
     );
     
     wire update_trig_mask_sysclk;
@@ -118,6 +119,8 @@ module pueo_master_trig_process_v2 #(parameter NSURF=28,
     // This realigns the metadata output.
     // You capture only at CE - trigger occurred will also go high after then,
     // rereg goes high next, and then everything gets captured in the clock after that.
+    // Because we capture at CE, this makes this a multicycle path with a min of 0 and max of 8.
+    (* CUSTOM_MC_SRC_TAG = "TRIG_META", CUSTOM_MC_MIN = 0.0, CUSTOM_MC_MAX = 2.0 *)
     reg [64*4-1:0] metadata_store = {64*4{1'b0}};
     
     // x2 phase buffering
@@ -405,7 +408,8 @@ module pueo_master_trig_process_v2 #(parameter NSURF=28,
                     
                     .memclk(memclk_i),
                     .memresetn(1'b1),
-                    `CONNECT_AXI4S_MIN_IF( m_thdr_ , turf_hdr_ ));    
+                    `CONNECT_AXI4S_MIN_IF( m_thdr_ , turf_hdr_ ),
+                    .m_thdr_tlast(turf_hdr_tlast));    
     
     assign address_o = current_address;
     assign running_o = trig_running;        
