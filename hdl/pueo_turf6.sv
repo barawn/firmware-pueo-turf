@@ -13,7 +13,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="A",
                     parameter [3:0] VER_MAJOR=4'd0,
                     parameter [3:0] VER_MINOR=4'd6,
-                    parameter [7:0] VER_REV=8'd5,
+                    parameter [7:0] VER_REV=8'd10,
                     parameter [15:0] FIRMWARE_DATE = {16{1'b0}})                    
                     (
 
@@ -671,6 +671,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                             .llast_pps_o(llast_pps));
 
     `DEFINE_AXI4S_MIN_IF( turfhdr_ , 64 );
+    wire turfhdr_tlast;
     wire [3:0] tio_mask;
     wire [11:0] runcfg;
                                
@@ -697,6 +698,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                              
                              // in memclk domain
                              `CONNECT_AXI4S_MIN_IF( s_turfhdr_ , turfhdr_ ),
+                             .s_turfhdr_tlast(turfhdr_tlast),
                              .tio_mask_o(tio_mask),
                              .runcfg_o(runcfg),
                              
@@ -735,7 +737,8 @@ module pueo_turf6 #(parameter IDENT="TURF",
                                                 turfiob_valid, turfioa_valid } ),
                                                 
                            .memclk(ddr_clk[0]),
-                           `CONNECT_AXI4S_MIN_IF( turfhdr_ , turfhdr_ ),                                
+                           `CONNECT_AXI4S_MIN_IF( turfhdr_ , turfhdr_ ),
+                           .turfhdr_tlast(turfhdr_tlast),                              
                                                 
                            .command67_o(turfio_if_command67),
                            .command68_o(turfio_if_command68));                           
