@@ -532,8 +532,9 @@ module turf_udp_wrap #( parameter NSFP=2,
                        .cs_b(hsk_cs_b_i),
                        .complete_o(hsk_complete_o),
                        .irq_o(hsk_irq_o));
-
-    turf_udp_timeserver u_time(.aclk(clk156),.aresetn(!clk156_rst),
+                       
+    assign hdrout_tuser[16*TIME_PORT +: 16] = OUTBOUND[16*TIME_PORT +: 16];
+    turf_udp_timeserver #(.ACLKTYPE(ETHCLKTYPE)) u_time(.aclk(clk156),.aresetn(!clk156_rst),
                                 `CONNECT_UDP_INOUT(s_udphdr_, s_udpdata_,
                                                    m_udphdr_, m_udpdata_,
                                                    TIME_PORT),
