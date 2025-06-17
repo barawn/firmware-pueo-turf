@@ -6,10 +6,12 @@ module turf_header_generator_v2 #(parameter MEMCLKTYPE="NONE",
                                   parameter SYSCLKTYPE="NONE",
                                   parameter META_WINDOW=16,
                                   parameter NUM_META=32,
-                                  parameter META_BITS=8)(
+                                  parameter META_BITS=8,
+                                  parameter DEBUG="TRUE")(
         input memclk,
         input memresetn,
         `HOST_NAMED_PORTS_AXI4S_MIN_IF( m_thdr_, 64 ),
+        output m_thdr_tlast,
         
         input sysclk_i,
         // event counter resets
@@ -50,6 +52,7 @@ module turf_header_generator_v2 #(parameter MEMCLKTYPE="NONE",
     // also include the TURFIO mask.
     localparam [15:0] CONST_SURF_WORDS = 16'd64;
 
+    (* CUSTOM_MC_DST_TAG = "TRIG_META" *)
     reg [NUM_META*META_BITS-1:0] meta_holding = {NUM_META*META_BITS{1'b0}};
     wire [(NUM_META*META_BITS+DATA_WIDTH)-1:0] 
         meta_expanded = { {DATA_WIDTH{1'b0}}, meta_holding };
@@ -103,6 +106,7 @@ module turf_header_generator_v2 #(parameter MEMCLKTYPE="NONE",
     reg [FSM_BITS-1:0] state = IDLE;
     
     reg write_header = 0;
+    reg write_last = 0;
     
     reg event_flag = 0;
     
@@ -120,10 +124,10 @@ module turf_header_generator_v2 #(parameter MEMCLKTYPE="NONE",
     SRL16E u_shift_delay(.D(meta_start_shift),
                          .CE(1'b1),
                          .CLK(sysclk_i),
-                         .A0(SHIFT_DELAY[0]),
-                         .A1(SHIFT_DELAY[1]),
-                         .A2(SHIFT_DELAY[2]),
-                         .A3(SHIFT_DELAY[3]),
+                         .A0(FULL_SHIFT_DELAY[0]),
+                         .A1(FULL_SHIFT_DELAY[1]),
+                         .A2(FULL_SHIFT_DELAY[2]),
+                         .A3(FULL_SHIFT_DELAY[3]),
                          .Q(meta_shifting_done));
 
     assign meta_start_shift = (state == METADATA_WAIT && window_complete);
@@ -200,14 +204,29 @@ module turf_header_generator_v2 #(parameter MEMCLKTYPE="NONE",
         else if (state == TRAILER) data_in_holding <= { CONST_SURF_WORDS, run_config_word, meta_holding[0 +: 32] };
         
         write_header <= (state != IDLE && state != METADATA_WAIT);
+        write_last <= (state == TRAILER);
     end
     
+    generate
+        if (DEBUG == "TRUE") begin : ILA
+            // i need:
+            // trig = 1
+            // state = 3
+            // data = 64
+            // write_header = 1
+            turf_header_gen_ila u_ila(.clk(sysclk_i),
+                                      .probe0(trig_i),
+                                      .probe1(state),
+                                      .probe2(data_in_holding),
+                                      .probe3(write_header));
+        end
+    endgenerate   
     turf_evhdr_fifo u_fifo(.wr_clk(sysclk_i),
-                           .din( data_in_holding ),
+                           .din( {write_last, data_in_holding} ),
                            .wr_en(write_header),
                            .srst(!running),
                            .rd_clk(memclk),
-                           .dout(m_thdr_tdata),
+                           .dout({m_thdr_tlast, m_thdr_tdata}),
                            .valid(m_thdr_tvalid),
                            .rd_en(m_thdr_tvalid && m_thdr_tready));    
 
