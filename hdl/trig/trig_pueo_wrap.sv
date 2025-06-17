@@ -50,6 +50,7 @@ module trig_pueo_wrap #(parameter WBCLKTYPE = "NONE",
         // probably needs a tlast or something, who knows        
         input memclk,
         `HOST_NAMED_PORTS_AXI4S_MIN_IF( turfhdr_ , 64 ),
+        output turfhdr_tlast,
         
         output [31:0] command67_o,
         output [31:0] command68_o
@@ -147,7 +148,8 @@ module trig_pueo_wrap #(parameter WBCLKTYPE = "NONE",
                       `CONNECT_AXI4S_MIN_IF(trigout_ , trig_ ),
                       
                       .memclk_i(memclk),
-                      `CONNECT_AXI4S_MIN_IF(turf_hdr_ , turfhdr_ ));
+                      `CONNECT_AXI4S_MIN_IF(turf_hdr_ , turfhdr_ ),
+                      .turf_hdr_tlast(turfhdr_tlast));
 
     // just grab phase and valid right now to time them up
     generate
