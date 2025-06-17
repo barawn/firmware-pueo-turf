@@ -71,8 +71,8 @@ module pueo_time_register_core #(parameter WBCLKTYPE = "NONE",
     reg [FSM_BITS-1:0] state = IDLE;
 
     assign capture_req = (state == IDLE && wb_cyc_i && wb_stb_i && !wb_we_i && wb_adr_i[7:0] == SEC_ADDR);
-    assign update_trim_wbclk = (state == IDLE && wb_we_i && wb_adr_i[7:0] == TRIM_ADDR);
-    assign load_sec_wbclk = (state == IDLE && wb_we_i && wb_adr_i[7:0] == SEC_ADDR);
+    assign update_trim_wbclk = (state == IDLE && wb_cyc_i && wb_stb_i && wb_we_i && wb_adr_i[7:0] == TRIM_ADDR);
+    assign load_sec_wbclk = (state == IDLE && wb_cyc_i && wb_stb_i && wb_we_i && wb_adr_i[7:0] == SEC_ADDR);
 
     flag_sync u_capture_sync(.in_clkA(capture_req),.out_clkB(capture_req_sysclk),
                              .clkA(wb_clk_i),.clkB(sys_clk_i));
