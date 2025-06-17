@@ -53,6 +53,7 @@ ip/debug/trig_ila/trig_ila.xci
 ip/trigger/trigger_fifo/trigger_fifo.xci
 ip/fifo/turf_evhdr_fifo/turf_evhdr_fifo.xci
 ip/event/turf_header_fifo/turf_header_fifo.xci
+ip/debug/turf_header_gen_ila/turf_header_gen_ila.xci
 ip/aurora/turfio_aurora/turfio_aurora.xci
 ip/event/turfio_datamover/turfio_datamover.xci
 ip/event/turfio_hdr_fifo/turfio_hdr_fifo.xci

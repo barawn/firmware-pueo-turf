@@ -80,3 +80,4 @@ hdl/turfio/turfio_single_if.sv
 hdl/ethernet/turf_udp_rdwr.v
 hdl/aurora/turfio_aurora_reset.sv
 hdl/ethernet/wb_if_cc.sv
+hdl/trig/pueo_scaler_wrap.sv
