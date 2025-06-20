@@ -12,8 +12,8 @@
 module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="A",
                     parameter [3:0] VER_MAJOR=4'd0,
-                    parameter [3:0] VER_MINOR=4'd6,
-                    parameter [7:0] VER_REV=8'd10,
+                    parameter [3:0] VER_MINOR=4'd7,
+                    parameter [7:0] VER_REV=8'd0,
                     parameter [15:0] FIRMWARE_DATE = {16{1'b0}})                    
                     (
 
@@ -126,7 +126,12 @@ module pueo_turf6 #(parameter IDENT="TURF",
         input [6:0] CIND_P,
         input [6:0] CIND_N,
         output [3:0] COUT_P,
-        output [3:0] COUT_N        
+        output [3:0] COUT_N,
+        // The SPAREs are too awkward to use, and we hooked up
+        // the RXCLKs correctly. So use 'em.
+        input [3:0] RXCLK_GPIO_P,   // 0,1,2,3 116, 110, 172, 178: G17 E15 AT10 AT12 
+        input [3:0] RXCLK_GPIO_N    // 0,1,2,3 118, 112, 170, 176: F17 D14 AT11 AT13
+                
     );
     
     localparam PROTOTYPE = (REVISION == "A") ? "TRUE" : "FALSE";
@@ -167,10 +172,13 @@ module pueo_turf6 #(parameter IDENT="TURF",
     localparam [6:0] INV_CINC_XB =  7'b1111111;     // correct
 
     localparam [6:0] INV_CIND =     7'b1100111;
-    localparam [6:0] INV_CIND_XB =  7'b1111111;     // correct
+    localparam [6:0] INV_CIND_XB =  7'b1111111;     // correct    
         
     localparam [3:0] CIN_CLKTYPE = 4'b0011;
     localparam [3:0] COUT_CLKTYPE =4'b0110;
+        
+    localparam [3:0] INV_RXCLK_GPIO = 4'b1100;
+    localparam [3:0] INV_RXCLK_GPIO_XB = 4'b0000;       
         
     wire emio_scl;
     wire emio_sda_i;
@@ -204,7 +212,17 @@ module pueo_turf6 #(parameter IDENT="TURF",
     IOBUF u_tiob_resetd(.IO(TRESETB_D),.I(emio_gpio_o[15]),
                                        .O(emio_gpio_i[15]),
                                        .T(emio_gpio_t[15]));
+    // TURFIO GPIOs forwarded through RXCLK fakery
+    // I should use the parameters here
+    // I so don't care atm
+    wire [3:0] tio_gpio;
+    wire [3:0] tio_gpio_cmpl;
+    IBUFDS_DIFF_OUT u_tioa_gpio(.I(RXCLK_GPIO_P[0]),.IB(RXCLK_GPIO_N[0]),.O(tio_gpio[0]),.OB(tio_gpio_cmpl[0]));
+    IBUFDS_DIFF_OUT u_tiob_gpio(.I(RXCLK_GPIO_P[1]),.IB(RXCLK_GPIO_N[1]),.O(tio_gpio[1]),.OB(tio_gpio_cmpl[1]));
+    IBUFDS_DIFF_OUT u_tioc_gpio(.I(RXCLK_GPIO_N[2]),.IB(RXCLK_GPIO_P[2]),.O(tio_gpio_cmpl[2]),.OB(tio_gpio[2]));
+    IBUFDS_DIFF_OUT u_tiod_gpio(.I(RXCLK_GPIO_N[3]),.IB(RXCLK_GPIO_P[3]),.O(tio_gpio_cmpl[3]),.OB(tio_gpio[3]));   
                                                                               
+    wire [5:0] gp_in = { tio_gpio, TIN };
     
     //////////////////////////////////////////////
     //              REGISTER SPACES             //
@@ -411,7 +429,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                                          `CONNECT_WBM_IFM( wb_ , wb_ps_ ));
     
     // interconnect
-    turf_intercon #(.DEBUG("FALSE"))
+    turf_intercon #(.DEBUG("TRUE"))
                   u_intercon( .clk_i(ps_clk),
                               .rst_i(1'b0),
                               `CONNECT_WBS_IFM(wbps_ , wb_ps_),
@@ -711,7 +729,8 @@ module pueo_turf6 #(parameter IDENT="TURF",
     
     
     trig_pueo_wrap #(.WBCLKTYPE("PSCLK"),
-                     .SYSCLKTYPE("SYSCLK"))
+                     .SYSCLKTYPE("SYSCLK"),
+                     .MEMCLKTYPE("DDRCLK0"))
                    u_trig( .wb_clk_i(ps_clk),
                            .wb_rst_i(1'b0),
                            `CONNECT_WBS_IFM( wb_ , trig_ ),
@@ -721,6 +740,8 @@ module pueo_turf6 #(parameter IDENT="TURF",
                            .sysclk_x2_i(sys_clk_x2),
                            .sysclk_x2_ce_i(sys_clk_x2_ce),
                            .pps_i(pps),
+                           
+                           .gp_in_i(gp_in),
                            
                            .tio_mask_i(tio_mask),
                            .runcfg_i(runcfg),

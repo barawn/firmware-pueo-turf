@@ -40,6 +40,11 @@ module trig_pueo_command(
     // Splitting the command up into message/trigger, we only muck with
     // two portions of the message: either the runcmd, or in FWU mode
     // the FWU data. (OMG WE CAN ACTUALLY DO FWU yes it's true)
+    (* CUSTOM_CC_SRC = WBCLKTYPE *)    
+    reg en_crate_pps = 0;
+    (* CUSTOM_CC_DST = SYSCLKTYPE, ASYNC_REG = "TRUE" *)
+    reg [1:0] en_crate_pps_sysclk = {2{1'b0}};
+    reg crate_pps = 0;
     
     reg [31:0] command = {32{1'b0}};
     
@@ -86,17 +91,33 @@ module trig_pueo_command(
     // right now this is immensely stupid, we just check adr_i[2]: if it's 0, we're sending a runcmd,
     // otherwise we're sending FWU data, and if we send FWU data, bit 31 determines whether we're
     // sending FWU or mark.
+    
+    // update: check adr_i[3:2]:
+    // 00 -> runcmd
+    // 01 -> fwu
+    // 10 -> control
+    // 11 -> reserved
+    wire RUNCMD_ADDR = (wb_adr_i[3:2] == 2'b00);
+    wire FWU_ADDR = (wb_adr_i[3:2] == 2'b01);
+    wire CONTROL_ADDR = (wb_adr_i[3:2] == 2'b10);
+    wire RESERVED_ADDR = (wb_adr_i[3:2] == 2'b11);
+        
     always @(posedge wb_clk_i) begin
         if (wb_rst_i) state <= IDLE;
         else case (state)
             IDLE: if (wb_cyc_i && wb_stb_i) begin
-                if (wb_we_i && wb_sel_i[0]) state <= ISSUE_CMD;
+                if (RESERVED_ADDR || CONTROL_ADDR) state <= ACK;
+                else if (wb_we_i && wb_sel_i[0]) state <= ISSUE_CMD;
                 else state <= ACK;
             end                
             ISSUE_CMD: state <= WAIT_COMPLETE;
             WAIT_COMPLETE: if (runcmd_complete_wbclk || fwu_complete_wbclk) state <= ACK;
             ACK: state <= IDLE;
         endcase
+        
+        if (state == ACK && CONTROL_ADDR && wb_we_i) begin
+            if (wb_sel_i[0]) en_crate_pps <= wb_dat_i[0];
+        end
         
         // ok so this is dumb but it doesn't friggin matter
         if (state == IDLE && wb_cyc_i && wb_stb_i && wb_we_i) begin
@@ -110,6 +131,9 @@ module trig_pueo_command(
     // the way we're doing it right now. But we'll be adding FIFO support
     // to FWU data later so it'll matter then. Blah blah blah.
     always @(posedge sysclk_i) begin
+        en_crate_pps_sysclk <= {en_crate_pps_sysclk[0], en_crate_pps};
+        crate_pps <= (en_crate_pps_sysclk[1] && pps_i);
+        
         // the request ALWAYS has priority.
         // if we're currently IN the phase we're going to send,
         if (send_runcmd) runcmd_pending <= 1;
@@ -127,9 +151,9 @@ module trig_pueo_command(
         
         // HANDLE MESSAGE SIDE OF COMMAND
         if (sysclk_phase_i) begin
-            command[31] <= ~(runcmd_really_pending || fwu_pending || pps_i);
+            command[31] <= ~(runcmd_really_pending || fwu_pending || crate_pps);
             // pps
-            command[30] <= pps_i;
+            command[30] <= crate_pps;
             // reserved
             command[29:28] <= 2'b00;
             // runcmd
@@ -143,8 +167,8 @@ module trig_pueo_command(
     end
 
     // this makes it so that 0x0 sends a runcmd, 0x4 sends fwu (mark OR data)
-    assign send_runcmd_wbclk = (state == ISSUE_CMD && !wb_adr_i[2]);
-    assign send_fwu_wbclk = (state == ISSUE_CMD && wb_adr_i[2]);
+    assign send_runcmd_wbclk = (state == ISSUE_CMD && RUNCMD_ADDR);
+    assign send_fwu_wbclk = (state == ISSUE_CMD && FWU_ADDR);
     assign fwu_complete = (fwu_pending && sysclk_phase_i);
     assign runcmd_complete = (runcmd_really_pending && sysclk_phase_i);
     
@@ -161,7 +185,7 @@ module trig_pueo_command(
     assign wb_ack_o = (state == ACK);
     assign wb_err_o = 1'b0;
     assign wb_rty_o = 1'b0;
-    assign wb_dat_o = {32{1'b0}};
+    assign wb_dat_o = { {31{1'b0}}, en_crate_pps };
     
     assign s_trig_tready = s_trig_tvalid && sysclk_phase_i;
 
