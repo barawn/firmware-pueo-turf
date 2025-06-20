@@ -81,7 +81,7 @@ module pueo_trig_ctrl #(
 
     wire event_flag_wbclk;
     flag_sync u_event_flag_sync(.in_clkA(event_i),.out_clkB(event_flag_wbclk),
-                                .clkA(sys_clk_i),.clkB(wb_clk_i));
+                                .clkA(sysclk_i),.clkB(wb_clk_i));
     reg [31:0] event_counter_shadow = {32{1'b0}};    
     
     reg ack = 0;
