@@ -8,6 +8,9 @@ module pueo_master_trig_process_v2 #(parameter NSURF=28,
                                      parameter NBIT=16,
                                      parameter SYSCLKTYPE = "NONE",
                                      parameter MEMCLKTYPE = "NONE",
+                                     parameter [15:0] DEFAULT_OFFSET = 16'd0,
+                                     parameter [15:0] DEFAULT_LATENCY = 16'd0,
+                                     parameter [15:0] DEFAULT_HOLDOFF = 16'd0,
                                      parameter [2:0] PHASE_RESET = 4)(
         input sysclk_i,
         input sysclk_phase_i,
@@ -30,11 +33,21 @@ module pueo_master_trig_process_v2 #(parameter NSURF=28,
         // high when dat_i changes
         input                   trigin_dat_valid_i,
         // occurs in sysclk
-        // This is muxed externally and is just a fifo
-        // that's read out at a fixed point.
-        input [11:0]            turf_trig_i,
-        input [7:0]             turf_metadata_i,
-        input                   turf_valid_i,
+        input [11:0]            turf_trig0_i,
+        input [7:0]             turf_metadata0_i,
+        input                   turf_valid0_i,
+
+        input [11:0]            turf_trig1_i,
+        input [7:0]             turf_metadata1_i,
+        input                   turf_valid1_i,
+        
+        input [11:0]            turf_trig2_i,
+        input [7:0]             turf_metadata2_i,
+        input                   turf_valid2_i,
+        
+        input [11:0]            turf_trig3_i,
+        input [7:0]             turf_metadata3_i,
+        input                   turf_valid3_i,
 
         // global time. takes 16 bytes.
         input [31:0]            cur_sec_i,
@@ -58,24 +71,25 @@ module pueo_master_trig_process_v2 #(parameter NSURF=28,
         output running_o,
         output [11:0] address_o,
         
+        output [31:0] scal_trig_o,
+        
         `HOST_NAMED_PORTS_AXI4S_MIN_IF( trigout_ , 16 ),
         input memclk_i,     
         `HOST_NAMED_PORTS_AXI4S_MIN_IF( turf_hdr_ , 64 ),
         output turf_hdr_tlast
     );
     
-    wire update_trig_mask_sysclk;
     (* CUSTOM_CC_DST = SYSCLKTYPE *)
     reg [27:0] trig_mask_sysclk = {28{1'b1}};
     // start off max, reset to max, that way any sane value
     // will work.
     (* CUSTOM_CC_DST = SYSCLKTYPE *)
-    reg [15:0] trig_latency_sysclk = {16{1'b1}};
+    reg [15:0] trig_latency_sysclk = DEFAULT_LATENCY;
     reg [15:0] trig_latency_counter = {16{1'b0}};
     (* CUSTOM_CC_DST = SYSCLKTYPE *)
-    reg [15:0] trig_offset_sysclk = {16{1'b0}};
+    reg [15:0] trig_offset_sysclk = DEFAULT_OFFSET;
     (* CUSTOM_CC_DST = SYSCLKTYPE *)
-    reg [15:0] trig_holdoff_sysclk = {16{1'b0}};
+    reg [15:0] trig_holdoff_sysclk = DEFAULT_HOLDOFF;
     // loads to trig_holdoff_sysclk if not trig_holdoff else count down.
     reg [16:0] trig_holdoff_counter = {17{1'b0}};
     reg trig_holdoff = 0;
@@ -120,7 +134,7 @@ module pueo_master_trig_process_v2 #(parameter NSURF=28,
     // You capture only at CE - trigger occurred will also go high after then,
     // rereg goes high next, and then everything gets captured in the clock after that.
     // Because we capture at CE, this makes this a multicycle path with a min of 0 and max of 8.
-    (* CUSTOM_MC_SRC_TAG = "TRIG_META", CUSTOM_MC_MIN = 0.0, CUSTOM_MC_MAX = 2.0 *)
+    (* CUSTOM_MC_SRC_TAG = "TRIG_META", CUSTOM_MC_MIN = "0.0", CUSTOM_MC_MAX = "2.0" *)
     reg [64*4-1:0] metadata_store = {64*4{1'b0}};
     
     // x2 phase buffering
@@ -136,7 +150,19 @@ module pueo_master_trig_process_v2 #(parameter NSURF=28,
     // so it is valid to be captured again.
     reg trigger_occurred_rereg = 0;
     reg [11:0] trigger_occurred_address = {12{1'b0}};
-
+    
+    wire [11:0] turf_trig_i[3:0];
+    wire [7:0] turf_metadata_i[3:0];
+    wire turf_valid_i[3:0];
+    `define TURF_VEC( num )     \
+        assign turf_trig_i[ num ] = turf_trig``num``_i;     \
+        assign turf_metadata_i[ num ] = turf_metadata``num``_i; \
+        assign turf_valid_i[ num ] = turf_valid``num``_i
+    `TURF_VEC( 0 );
+    `TURF_VEC( 1 );
+    `TURF_VEC( 2 );
+    `TURF_VEC( 3 );
+    
     generate
         genvar i,j;
         for (i=0;i<4;i=i+1) begin : TIO
@@ -148,6 +174,7 @@ module pueo_master_trig_process_v2 #(parameter NSURF=28,
                     reg [ADDRBITS-1:0] s_addr = {ADDRBITS{1'b0}};
                     reg [7:0] s_metadata = {8{1'b0}};
                     reg       s_valid = 0;
+
                     // shift register on s_valid to form s_trigger
                     reg [2:0] s_valid_shreg = {3{1'b0}};
                     wire      s_trigger = s_valid_shreg[2];
@@ -184,11 +211,16 @@ module pueo_master_trig_process_v2 #(parameter NSURF=28,
                     // We also capture ADDR if trigin[15] && !s_valid.
                     // and s_valid is 0 if s_trigger and 1 if trigin[15].
                     // Yipes, this is complicated.
+                    
+                    // GWAAAAAR
+                    // You do NOT want to gate this stuff at the beginning!
+                    // Let it ALL run and mask it AT THE WRITE INPUT.
+                    // mask : !trig_mask_vec[i][j] && trig_running && 
                     always @(posedge sysclk_i) begin : TFORM
                         // clear s_valid when s_trigger asserts
                         if (s_trigger)
                             s_valid <= 0;
-                        else if (!trig_mask_vec[i][j] && trig_running && trigin[15])
+                        else if (trigin[15])
                             // otherwise if not masked and running and trigger valid, go for it!
                             s_valid <= 1;
 
@@ -196,31 +228,31 @@ module pueo_master_trig_process_v2 #(parameter NSURF=28,
                         s_valid_shreg <= { s_valid_shreg[1:0], s_valid };
                         
                         // s_addr is captured with a valid trigger when not already valid.
-                        if (trigin_dat_valid_i && !trig_mask_vec[i][j] && 
-                            trigin[15] && trig_running && !s_valid) begin
+                        if (trigin_dat_valid_i && trigin[15] && !s_valid) begin
                             // We ALWAYS skip the bottom 2 bits, they're pointless.
                             // Who knows, maybe embed something there???
                             s_addr <= trigin[2 +: ADDRBITS];
                         end
                     end
+                    // These are ALWAYS RUNNING, even without the trigger running.
+                    assign scal_trig_o[8*i + j] = s_trigger;
                     assign trigger[i][j] = s_trigger;
                     assign metadata[i][j] = trigin[7:0];
                     assign address[i][j] = s_addr;
-                end else if (i == 3) begin : TF
+                end else begin : TF
                     // note the latency is different here but who gives an eff.
                     // the TURF should match to the trig valid (3 clocks post sync
                     // and hold for 4 clocks).
-                    assign address[i][j] = turf_trig_i;
-                    assign metadata[i][j] = turf_metadata_i;
-                    assign trigger[i][j] = turf_valid_i;
-                end else begin : FK
-                    assign address[i][j] = {ADDRBITS{1'b0}};
-                    assign metadata[i][j] = {8{1'b0}};
-                    assign trigger[i][j] = 1'b0;
+                    assign address[i][j] = turf_trig_i[i];
+                    assign metadata[i][j] = turf_metadata_i[i];
+                    assign trigger[i][j] = turf_valid_i[i];
+                    assign scal_trig_o[8*i + j] = turf_valid_i[i];
                 end
             end
             assign address_muxed[i] = address[i][sysclk_x2_sequence];
-            assign trigger_muxed[i] = trigger[i][sysclk_x2_sequence];
+            // THIS is where we apply the trigger cutoff, and ONLY here!
+            // This ensures we actually still even capture the metadata for masked off SURFs.
+            assign trigger_muxed[i] = trigger[i][sysclk_x2_sequence] && trig_running && !trig_mask_vec[i][sysclk_x2_sequence];
             assign trigger_bwe[i] = trigger[i];
             // At this point we now have a clean set of
             // address_muxed

@@ -32,6 +32,9 @@ module trig_pueo_wrap #(parameter WBCLKTYPE = "NONE",
         input [11:0] runcfg_i,          // IN SYSCLK
         output runrst_o,
         
+        input pps_trig_i,
+        input [5:0] gp_in_i,
+        
         // SOOOOO MANY INPUTS.
         // SURFs send triggers on a 4-clock cycle, even
         // though they train on the 8-clock cycle.
@@ -56,6 +59,10 @@ module trig_pueo_wrap #(parameter WBCLKTYPE = "NONE",
         output [31:0] command68_o
     );
 
+    localparam [15:0] DEFAULT_HOLDOFF = 16'd82;
+    localparam [15:0] DEFAULT_LATENCY = 16'd100;
+    localparam [15:0] DEFAULT_OFFSET = 16'd0;
+        
     localparam REAL_SURFS_PER_TIO = 7;
     // it's 3 clocks from phase -> trig dat valid.
     // then the *second* trig dat valid comes in 4 clocks later.
@@ -100,9 +107,21 @@ module trig_pueo_wrap #(parameter WBCLKTYPE = "NONE",
     wire [15:0] trig_latency;
     wire [15:0] trig_holdoff;
     
-    wire [11:0] turf_trig;
-    wire [7:0]  turf_metadata;
-    wire        turf_valid;
+    wire [11:0] turf_soft_trig;
+    wire [7:0]  turf_soft_metadata;
+    wire        turf_soft_valid;
+
+    wire [11:0] turf_pps_trig;
+    wire [7:0]  turf_pps_metadata;
+    wire        turf_pps_valid;
+    
+    wire [11:0] turf_ext_trig;
+    wire [7:0]  turf_ext_metadata;
+    wire        turf_ext_valid;    
+
+    wire [11:0] turf_rsv_trig = {12{1'b0}};
+    wire [7:0]  turf_rsv_metadata = {8{1'b0}};
+    wire        turf_rsv_valid = 1'b0;
 
     wire        runrst;
     wire        runstop;
@@ -112,8 +131,13 @@ module trig_pueo_wrap #(parameter WBCLKTYPE = "NONE",
     
     wire        event_flag;
     
+    wire [31:0] scal_trig;
+    
     pueo_master_trig_process_v2 #(.SYSCLKTYPE(SYSCLKTYPE),
-                               .MEMCLKTYPE(MEMCLKTYPE))
+                               .MEMCLKTYPE(MEMCLKTYPE),
+                               .DEFAULT_OFFSET(DEFAULT_OFFSET),
+                               .DEFAULT_LATENCY(DEFAULT_LATENCY),
+                               .DEFAULT_HOLDOFF(DEFAULT_HOLDOFF))
         u_master_trig(.sysclk_i(sysclk_i),
                       .sysclk_phase_i(sysclk_phase_i),
                       .sysclk_x2_i(sysclk_x2_i),
@@ -127,14 +151,28 @@ module trig_pueo_wrap #(parameter WBCLKTYPE = "NONE",
                       .trigin_dat_i(real_trigin),
                       .trigin_dat_valid_i(trigger_valid),
                       
-                      .turf_trig_i(turf_trig),
-                      .turf_metadata_i(turf_metadata),
-                      .turf_valid_i(turf_valid),
+                      .turf_trig0_i(turf_soft_trig),
+                      .turf_metadata0_i(turf_soft_metadata),
+                      .turf_valid0_i(turf_soft_valid),
+                      
+                      .turf_trig1_i(turf_pps_trig),
+                      .turf_metadata1_i(turf_pps_metadata),
+                      .turf_valid1_i(turf_pps_valid),
+                      
+                      .turf_trig2_i(turf_ext_trig),
+                      .turf_metadata2_i(turf_ext_metadata),
+                      .turf_valid2_i(turf_ext_valid),
+                      
+                      .turf_trig3_i(turf_rsv_trig),
+                      .turf_metadata3_i(turf_rsv_metadata),
+                      .turf_valid3_i(turf_rsv_valid),                      
                       
                       .runrst_i(runrst),
                       .runstop_i(runstop),
                       .address_o(cur_addr),
                       .running_o(running),
+                      
+                      .scal_trig_o(scal_trig),
                       
                       .cur_sec_i(cur_sec_i),
                       .cur_time_i(cur_time_i),
@@ -214,31 +252,62 @@ module trig_pueo_wrap #(parameter WBCLKTYPE = "NONE",
 
     wbs_dummy #(.ADDRESS_WIDTH(8),.DATA_WIDTH(32))
         u_rsvd( `CONNECT_WBS_IFM( wb_ , rsvd_ ) );
-    wbs_dummy #(.ADDRESS_WIDTH(8),.DATA_WIDTH(32))
-        u_scaler( `CONNECT_WBS_IFM( wb_ , scaler_ ) );
-    
+
+    pueo_scaler_wrap #(.WBCLKTYPE(WBCLKTYPE),
+                       .SYSCLKTYPE(SYSCLKTYPE),
+                       .ETHCLKTYPE(MEMCLKTYPE))
+                     u_scalers(.wb_clk_i(wb_clk_i),
+                               .wb_rst_i(wb_rst_i),
+                               `CONNECT_WBS_IFM(wb_ , scaler_ ),
+                               .pps_i(pps_i),
+                               .gp_gate_i(gp_in_i),
+                               
+                               .sys_clk_i(sysclk_i),
+                               .sys_adr_i(),
+                               .sys_dat_o(),
+                               .eth_clk_i(),
+                               .eth_adr_i(),
+                               .eth_dat_o(),
+                               
+                               .trig_i(scal_trig));
+
     assign wb_ack_o = wb_ack_vec[wb_block];
     assign wb_dat_o = wb_dat_vec[wb_block];
     assign wb_err_o = wb_err_vec[wb_block];
     assign wb_rty_o = wb_rty_vec[wb_block];
     
     pueo_trig_ctrl #(.WBCLKTYPE(WBCLKTYPE),
-                     .SYSCLKTYPE(SYSCLKTYPE))
+                     .SYSCLKTYPE(SYSCLKTYPE),
+                     .DEFAULT_LATENCY(DEFAULT_LATENCY),
+                     .DEFAULT_HOLDOFF(DEFAULT_HOLDOFF),
+                     .DEFAULT_OFFSET(DEFAULT_OFFSET))
                       u_trigctrl( .wb_clk_i(wb_clk_i),
                                   .wb_rst_i(wb_rst_i),
                                   `CONNECT_WBS_IFM(wb_ , trigctl_ ),
                                   .sysclk_i(sysclk_i),
                                   .sysclk_phase_i(sysclk_phase_i),
-                                  .turf_trig_o(turf_trig),
-                                  .turf_metadata_o(turf_metadata),
-                                  .turf_valid_o(turf_valid),
+                                  .turf_soft_trig_o(turf_soft_trig),
+                                  .turf_soft_metadata_o(turf_soft_metadata),
+                                  .turf_soft_valid_o(turf_soft_valid),
+                                  
+                                  .turf_pps_trig_o(turf_pps_trig),
+                                  .turf_pps_metadata_o(turf_pps_metadata),
+                                  .turf_pps_valid_o(turf_pps_valid),
+
+                                  .turf_ext_trig_o(turf_ext_trig),
+                                  .turf_ext_metadata_o(turf_ext_metadata),
+                                  .turf_ext_valid_o(turf_ext_valid),
+                                  
                                   .cur_addr_i(cur_addr),
                                   .running_i(running),
                                   .trig_mask_o(trig_mask),
                                   .update_trig_mask_o(trig_mask_update),
                                   .trig_offset_o(trig_offset),
                                   .trig_latency_o(trig_latency),
-                                  .trig_holdoff_o(trig_holdoff));
+                                  .trig_holdoff_o(trig_holdoff),
+                                  .pps_trig_i(pps_trig_i),
+                                  .gp_in_i(gp_in_i)                                  
+                                  );
             
     trig_pueo_command #(.WBCLKTYPE(WBCLKTYPE),
                         .SYSCLKTYPE(SYSCLKTYPE))
