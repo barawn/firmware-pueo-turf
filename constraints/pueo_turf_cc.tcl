@@ -2,6 +2,24 @@
 # These all have escape clauses because clocks sometimes don't exist in the elaboration/synthesis
 # steps.
 
+# i hate you xilinx
+proc get_all_cells { theFilter { opts "-hier" } } {
+    set optsList [ split $opts ]    
+    set basicFilt "$theFilter && PRIMITIVE_LEVEL != MACRO"
+    set macroFilt "$theFilter && PRIMITIVE_LEVEL == MACRO"
+    set basicCells [get_cells {*}$optsList -filter $basicFilt ]
+    # for macros, we segregate them off, and then ALSO pick up all cells which have it as their parent.
+    # this also picks up DSPs, I think, but I hope that's okay??
+    # The overall problem is a bug in Vivado, I think. But this works around it.
+    set macroCells [get_cells {*}$optsList -filter $macroFilt ]
+    foreach m $macroCells {
+        set parentFilt "PARENT == $m"
+        set macroChildren [get_cells -hier -filter $parentFilt ]
+        lappend basicCells $macroChildren
+    }
+    return $basicCells
+}
+
 proc set_cc_paths { srcClk dstClk ctlist } {
     if {$srcClk eq ""} {
         puts "set_cc_paths: No source clock: returning."
@@ -15,8 +33,10 @@ proc set_cc_paths { srcClk dstClk ctlist } {
     set srcType $ctypes($srcClk)
     set dstType $ctypes($dstClk)
     set maxTime [get_property PERIOD $srcClk]
-    set srcRegs [get_cells -hier -filter "CUSTOM_CC_SRC == $srcType"]
-    set dstRegs [get_cells -hier -filter "CUSTOM_CC_DST == $dstType"]
+    
+    set srcRegs [get_all_cells "CUSTOM_CC_SRC == $srcType" ]
+    set dstRegs [get_all_cells "CUSTOM_CC_DST == $dstType" ]
+    
     if {[llength $srcRegs] == 0} {
         puts "set_cc_paths: No registers flagged with CUSTOM_CC_SRC $srcType: returning."
         return
@@ -42,8 +62,10 @@ proc set_gray_paths { srcClk dstClk ctlist } {
     set dstType $ctypes($dstClk)
     set maxTime [get_property PERIOD $srcClk]
     set maxSkew [expr min([get_property PERIOD $srcClk], [get_property PERIOD $dstClk])]
-    set srcRegs [get_cells -hier -filter "CUSTOM_GRAY_SRC == $srcType"]
-    set dstRegs [get_cells -hier -filter "CUSTOM_GRAY_DST == $dstType"]
+
+    set srcRegs [get_all_cells "CUSTOM_GRAY_SRC == $srcType" ]
+    set dstRegs [get_all_cells "CUSTOM_GRAY_DST == $dstType" ]
+    
     if {[llength $srcRegs] == 0} {
         puts "set_gray_paths: No registers flagged with CUSTOM_GRAY_SRC $srcType: returning."
         return
@@ -68,8 +90,10 @@ proc set_ignore_paths { srcClk dstClk ctlist } {
     array set ctypes $ctlist
     set srcType $ctypes($srcClk)
     set dstType $ctypes($dstClk)
-    set srcRegs [get_cells -hier -filter "CUSTOM_IGN_SRC == $srcType"]
-    set dstRegs [get_cells -hier -filter "CUSTOM_IGN_DST == $dstType"]
+    
+    set srcRegs [get_all_cells "CUSTOM_IGN_SRC == $srcType" ]
+    set dstRegs [get_all_cells "CUSTOM_IGN_DST == $dstType" ]
+
     if {[llength $srcRegs] == 0} {
         puts "set_ignore_paths: No registers flagged with CUSTOM_IGN_SRC $srcType: returning."
         return
@@ -119,7 +143,7 @@ proc build_multicycle_re_dst { tag } {
 # reg dest = 0;
 proc set_mc_paths { tag } {
     set RE_DST [build_multicycle_re_dst $tag]
-    set srcRegs [get_cells -hier -filter "CUSTOM_MC_SRC_TAG == $tag"]
+    set srcRegs [get_all_cells "CUSTOM_MC_SRC_TAG == $tag" ] 
     set dstRegs [get_cells -hier -regexp -filter "CUSTOM_MC_DST_TAG =~ $RE_DST"]
     if {[llength $srcRegs] == 0} {
         puts "set_mc_paths: No registers flagged with CUSTOM_MC_SRC_TAG $tag: returning."
