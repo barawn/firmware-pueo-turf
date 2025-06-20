@@ -55,8 +55,10 @@ module pueo_scaler_register_core #(parameter SYSCLKTYPE="NONE",
     wire access_in_sysclk;
     wire access_busy;
     flag_sync u_access(.in_clkA(state == CYCLE),.out_clkB(access_in_sysclk),.busy_clkA(access_busy),
-                       .clkA(wb_cyc_i),.clkB(sysclk_i));
+                       .clkA(wb_clk_i),.clkB(sysclk_i));
     always @(posedge sysclk_i) begin
+        gp_gate_rereg <= gp_gate_i;
+        
         gate <= gate_in_expanded[gate_sel];
         
         if (access_in_sysclk && access_write && access_type == ACCESS_TYPE_CONTROL) begin
@@ -89,7 +91,7 @@ module pueo_scaler_register_core #(parameter SYSCLKTYPE="NONE",
         end
         
         if (state == IDLE) dat_holding <= wb_dat_i;
-        else if (state == WAIT_BUSY && !access_busy) begin
+        else if (state == WAIT_BUSY && !access_busy && !access_write) begin
             if (access_type == ACCESS_TYPE_CONTROL) begin
                 dat_holding <= { pps_gatelen, {13{1'b0}}, gate_sel };
             end else if (access_type == ACCESS_TYPE_ENABLE) begin
@@ -104,6 +106,8 @@ module pueo_scaler_register_core #(parameter SYSCLKTYPE="NONE",
     end
 
     assign wb_ack_o = (state == ACK);
+    assign wb_err_o = 1'b0;
+    assign wb_rty_o = 1'b0;
     assign wb_dat_o = dat_holding;
     assign gate_o = gate;
     assign gate_en_o = gate_enable;
