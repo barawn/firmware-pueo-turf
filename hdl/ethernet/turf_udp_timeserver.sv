@@ -36,9 +36,12 @@ module turf_udp_timeserver #(parameter ACLKTYPE="NONE")(
     reg [31:0] cur_sec_holding = {32{1'b0}};
 
     reg pps_toggle = 0;
+    // delay PPS by one second so that the new second has arrived
+    reg pps_rereg = 0;
+    always @(posedge sysclk_i) pps_rereg <= pps_i;
     // flag in our domain
     wire pps_flag_aclk;
-    flag_sync u_pps_sync(.in_clkA(pps_i),.out_clkB(pps_flag_aclk),
+    flag_sync u_pps_sync(.in_clkA(pps_rereg),.out_clkB(pps_flag_aclk),
                          .clkA(sysclk_i),.clkB(aclk));
 
     wire [48:0] fifo_din = { pps_toggle, s_udphdr_tdata[16 +: 48] };
