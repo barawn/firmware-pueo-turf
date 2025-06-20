@@ -400,6 +400,18 @@ set_property DIFF_TERM_ADV TERM_100 [get_ports {CIND_N[5]}]
 set_property IOSTANDARD LVDS [get_ports {CIND_N[6]}]
 set_property DIFF_TERM_ADV TERM_100 [get_ports {CIND_N[6]}]
 
+set_property -dict { PACKAGE_PIN G17 IOSTANDARD LVDS DIFF_TERM_ADV TERM_100 } [get_ports {RXCLK_GPIO_P[0]}]
+set_property -dict { PACKAGE_PIN F17 IOSTANDARD LVDS DIFF_TERM_ADV TERM_100 } [get_ports {RXCLK_GPIO_N[0]}]
+
+set_property -dict { PACKAGE_PIN E15 IOSTANDARD LVDS DIFF_TERM_ADV TERM_100 } [get_ports {RXCLK_GPIO_P[1]}]
+set_property -dict { PACKAGE_PIN D14 IOSTANDARD LVDS DIFF_TERM_ADV TERM_100 } [get_ports {RXCLK_GPIO_N[1]}]
+
+set_property -dict { PACKAGE_PIN AT10 IOSTANDARD LVDS DIFF_TERM_ADV TERM_100 } [get_ports {RXCLK_GPIO_P[2]}]
+set_property -dict { PACKAGE_PIN AT11 IOSTANDARD LVDS DIFF_TERM_ADV TERM_100 } [get_ports {RXCLK_GPIO_N[2]}]
+
+set_property -dict { PACKAGE_PIN AT12 IOSTANDARD LVDS DIFF_TERM_ADV TERM_100 } [get_ports {RXCLK_GPIO_P[3]}]
+set_property -dict { PACKAGE_PIN AT13 IOSTANDARD LVDS DIFF_TERM_ADV TERM_100 } [get_ports {RXCLK_GPIO_N[3]}]
+
 ####################################################################################
 # Constraints from file : 'pueo_turf_cc.tcl'
 ####################################################################################
