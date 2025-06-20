@@ -466,7 +466,8 @@ module turf_udp_wrap #( parameter NSFP=2,
     wire rdwrout_tuser;
     assign hdrout_tuser[16*TRW_PORT +: 16] = (rdwrout_tuser) ? OUTBOUND[TRW_PORT*16 +: 16] : TW_PORT_VALUE;
     turf_udp_rdwr_v2 #(.ACLKTYPE(ETHCLKTYPE),
-                       .WBCLKTYPE(WBCLKTYPE))
+                       .WBCLKTYPE(WBCLKTYPE),
+                       .DEBUG("FALSE"))
                      u_rdwr( .aclk(clk156),.aresetn(!clk156_rst),
                             `CONNECT_UDP_INOUT( s_hdr_ , s_payload_ , m_hdr_ , m_payload_ , TRW_PORT ),
                             .s_hdr_tuser( rdwr_tuser ),
