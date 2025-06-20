@@ -57,6 +57,7 @@ module turf_header_generator_v2 #(parameter MEMCLKTYPE="NONE",
     wire [(NUM_META*META_BITS+DATA_WIDTH)-1:0] 
         meta_expanded = { {DATA_WIDTH{1'b0}}, meta_holding };
     // have to pipeline the comparison, it's too big.
+    (* CUSTOM_MC_DST_TAG = "TRIG_META" *)
     reg [NUM_META-1:0] meta_valid = {NUM_META{1'b0}};
     wire meta_window_done;
     reg window_complete = 0;  
