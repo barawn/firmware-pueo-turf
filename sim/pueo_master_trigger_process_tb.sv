@@ -106,6 +106,9 @@ module pueo_master_trigger_process_tb;
         else cur_count <= cur_count + 1;
     end    
 
+    reg pps_trig = 0;
+    reg [5:0] ext_trig = 0;
+    reg pps = 0;
     trig_pueo_wrap #(.DEBUG("FALSE"))
         u_trig( .wb_clk_i(wb_clk),
                 .wb_rst_i(1'b0),
@@ -115,7 +118,7 @@ module pueo_master_trigger_process_tb;
                 .sysclk_sync_i(sys_clk_sync),
                 .sysclk_x2_i(sys_clk_x2),
                 .sysclk_x2_ce_i(sys_clk_x2_ce),
-                .pps_i(1'b0),
+                .pps_i(pps),
 
                 .cur_sec_i(cur_sec),
                 .cur_time_i(cur_count),
@@ -126,6 +129,9 @@ module pueo_master_trigger_process_tb;
                 .runcfg_i(runcfg),
 
                 .runrst_o(runrst),
+
+                .pps_trig_i(pps_trig),
+                .gp_in_i(ext_trig),
 
                 .trig_dat_i(trig_in),
                 .trig_dat_valid_i(trigin_dat_valid_i),
@@ -188,6 +194,9 @@ module pueo_master_trigger_process_tb;
         #1000;
         // latency
         wb_write( 32'h104, 32'd200 );
+        // enable PPS trigger with an offset of 100.
+        #100;
+        wb_write( 32'h108, 32'h00640001);
         // unmask surf 0
         #100;
         wb_write( 32'h100, 32'h0FFF_FFFE );
@@ -215,7 +224,15 @@ module pueo_master_trigger_process_tb;
         #1000;
         wb_write( 32'h110, 32'd1 );
         #1000;
-        wb_write( 32'h110, 32'd1 );
+        @(posedge sys_clk);
+        #1 pps_trig = 1;
+        @(posedge sys_clk);
+        #1 pps_trig = 0;
+        #500;
+        @(posedge sys_clk);
+        #1 pps = 1;
+        @(posedge sys_clk);
+        #1 pps = 0;        
     end        
 
 endmodule
