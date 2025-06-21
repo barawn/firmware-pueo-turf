@@ -13,6 +13,7 @@ module event_register_core #(parameter WBCLKTYPE="NONE",
         output [3:0] tio_mask_memclk_o,
 
         output [11:0] runcfg_o,
+        input  event_open_i,
         output event_reset_o,
         output event_reset_aclk_o,
         output event_reset_memclk_o,
@@ -33,6 +34,7 @@ module event_register_core #(parameter WBCLKTYPE="NONE",
     wire [31:0] out_qwords;
     wire [31:0] event_dwords[3:0];   
 
+    reg event_force_reset = 0;
     (* CUSTOM_CC_SRC = WBCLKTYPE *)
     reg event_reset = 0;
     (* CUSTOM_CC_DST = ACLKTYPE, ASYNC_REG = "TRUE" *)
@@ -58,7 +60,7 @@ module event_register_core #(parameter WBCLKTYPE="NONE",
     
     wire [31:0] glob_event_reg = { {4{1'b0}}, runcfg,           // 16
                                    {4{1'b0}}, tio_mask,         // 8
-                                   {7{1'b0}}, event_reset };    // 8
+                                   {6{1'b0}}, event_reset, event_force_reset};    // 8
     
     reg ack = 0;
     wire [3:0] reg_addr = wb_adr_i[2 +: 4];
@@ -84,13 +86,15 @@ module event_register_core #(parameter WBCLKTYPE="NONE",
     assign event_regs[15] = event_regs[7];
     
     always @(posedge wb_clk_i) begin
+        event_reset <= event_force_reset || !event_open_i;
+    
         if (wb_cyc_i && wb_stb_i && !wb_we_i && !ack) begin
             dat_reg <= event_regs[reg_addr];
         end            
         ack <= wb_cyc_i && wb_stb_i;
         if (wb_cyc_i && wb_stb_i && wb_ack_o && wb_we_i) begin
             if (reg_addr == 4'h0) begin
-                if (wb_sel_i[0]) event_reset <= wb_dat_i[0];
+                if (wb_sel_i[0]) event_force_reset <= wb_dat_i[0];
                 if (wb_sel_i[1]) tio_mask <= wb_dat_i[8 +: 4];
                 if (wb_sel_i[2]) runcfg[0 +: 8] <= wb_dat_i[16 +: 8];
                 if (wb_sel_i[3]) runcfg[8 +: 4] <= wb_dat_i[24 +: 4];
