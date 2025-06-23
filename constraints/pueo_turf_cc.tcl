@@ -331,3 +331,5 @@ set_cc_paths $sys_clk $gbeclk $clktypelist
 set_cc_paths $gbeclk $sys_clk $clktypelist
 
 set_mc_paths TRIG_META
+set_mc_paths TRIG_DEAD
+set_mc_paths TRIG_HELDOFF
