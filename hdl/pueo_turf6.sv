@@ -820,7 +820,8 @@ module pueo_turf6 #(parameter IDENT="TURF",
                            .probe14(UART_MISO),
                            .probe15(UART_CS_B),
                            .probe16(UART_IRQ_B),
-                           .probe17({GPS_TIMEPULSE[1],pps_dbg}));
+                           .probe17({GPS_TIMEPULSE[1],pps_dbg}),
+                           .probe18(gp_in));
         end
     endgenerate
     
