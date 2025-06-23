@@ -13,7 +13,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="A",
                     parameter [3:0] VER_MAJOR=4'd0,
                     parameter [3:0] VER_MINOR=4'd7,
-                    parameter [7:0] VER_REV=8'd3,
+                    parameter [7:0] VER_REV=8'd4,
                     parameter [15:0] FIRMWARE_DATE = {16{1'b0}})                    
                     (
 
@@ -672,8 +672,12 @@ module pueo_turf6 #(parameter IDENT="TURF",
     wire [31:0] cur_time;
     wire [31:0] last_pps;
     wire [31:0] llast_pps;
-    pueo_time_wrap #(.WBCLKTYPE("PSCLK"),
-                     .SYSCLKTYPE("SYSCLK"))
+    wire [31:0] cur_dead;
+    wire [31:0] last_dead;
+    wire [31:0] llast_dead;
+    wire trigger_dead;
+    pueo_time_wrap_v2 #(.WBCLKTYPE("PSCLK"),
+                        .SYSCLKTYPE("SYSCLK"))
                      u_time(.wb_clk_i(ps_clk),
                             .wb_rst_i(1'b0),
                             `CONNECT_WBS_IFM( wb_ , time_ ),
@@ -681,17 +685,28 @@ module pueo_turf6 #(parameter IDENT="TURF",
                             .pps_i(GPS_TIMEPULSE[0]),
                             .pps_dbg_o(pps_dbg),
                             .runrst_i(runrst),
+                            
+                            .trig_dead_i(trigger_dead),
+                            
                             .pps_flag_o(pps),
                             .pps_pulse_o(pps_pulse),
                             .cur_sec_o(cur_sec),
                             .cur_time_o(cur_time),
                             .last_pps_o(last_pps),
-                            .llast_pps_o(llast_pps));
+                            .llast_pps_o(llast_pps),
+                            .cur_dead_o(cur_dead),
+                            .last_dead_o(last_dead),
+                            .llast_dead_o(llast_dead));
 
     `DEFINE_AXI4S_MIN_IF( turfhdr_ , 64 );
     wire turfhdr_tlast;
     wire [3:0] tio_mask;
     wire [11:0] runcfg;
+
+    wire evin_complete_aclk;
+    wire evin_complete_sysclk;
+    flag_sync u_evin_complete_sync(.in_clkA(evin_complete_aclk),.out_clkB(evin_complete_sysclk),
+                                   .clkA(aclk),.clkB(sys_clk));
                                
     event_pueo_wrap_v2  #(.WBCLKTYPE("PSCLK"),
                           .ETHCLKTYPE("GBECLK"),
@@ -720,6 +735,8 @@ module pueo_turf6 #(parameter IDENT="TURF",
                              .tio_mask_o(tio_mask),
                              .runcfg_o(runcfg),
                              
+                             .evin_complete_o(evin_complete_aclk),
+                             
                              .ethclk(gbe_sysclk),
                              .event_open_i(event_open),
                              `CONNECT_AXI4S_MIN_IF( s_ack_ , ack_ ),
@@ -728,9 +745,9 @@ module pueo_turf6 #(parameter IDENT="TURF",
                              `CONNECT_AXI4S_MIN_IF( m_ev_ctrl_ , ev_ctrl_ ));
     
     
-    trig_pueo_wrap #(.WBCLKTYPE("PSCLK"),
-                     .SYSCLKTYPE("SYSCLK"),
-                     .MEMCLKTYPE("DDRCLK0"))
+    trig_pueo_wrap_v3 #(.WBCLKTYPE("PSCLK"),
+                        .SYSCLKTYPE("SYSCLK"),
+                        .MEMCLKTYPE("DDRCLK0"))
                    u_trig( .wb_clk_i(ps_clk),
                            .wb_rst_i(1'b0),
                            `CONNECT_WBS_IFM( wb_ , trig_ ),
@@ -746,11 +763,17 @@ module pueo_turf6 #(parameter IDENT="TURF",
                            .tio_mask_i(tio_mask),
                            .runcfg_i(runcfg),
                            .runrst_o(runrst),
+                           
+                           .event_complete_i(evin_complete_sysclk),
+                           .dead_o(trigger_dead),
 
                            .cur_sec_i(cur_sec),
                            .cur_time_i(cur_time),
                            .last_pps_i(last_pps),
-                           .llast_pps_i(llast_pps),                           
+                           .llast_pps_i(llast_pps),
+                           .cur_dead_i(cur_dead),
+                           .last_dead_i(last_dead),
+                           .llast_dead_i(llast_dead),
                            
                            .trig_dat_i( { turfiod_trigger, turfioc_trigger,
                                           turfiob_trigger, turfioa_trigger } ),
