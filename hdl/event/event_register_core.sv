@@ -22,6 +22,8 @@ module event_register_core #(parameter WBCLKTYPE="NONE",
         output event_reset_memclk_o,
         output event_reset_ethclk_o,
         
+        output ddr_reset_memclk_o,
+        
         // in aclk space
         input aclk,
         input [3:0] aurora_tvalid,
@@ -37,6 +39,26 @@ module event_register_core #(parameter WBCLKTYPE="NONE",
     wire [31:0] out_qwords;
     wire [31:0] event_dwords[3:0];   
 
+    (* CUSTOM_CC_SRC = WBCLKTYPE *)    
+    reg ddr_reset = 0;
+    (* CUSTOM_CC_DST = MEMCLKTYPE *)
+    reg [1:0] ddr_reset_resync = {2{1'b0}};
+    wire ddr_reset_delay;
+    reg final_ddr_reset = 0;
+    SRL16E #(.INIT(16'hFFF0))
+        u_rst_dly(.D(ddr_reset_resync[1]),
+                  .CE(1'b1),
+                  .CLK(memclk),
+                  .A0(1'b1),
+                  .A1(1'b1),
+                  .A2(1'b1),
+                  .A3(1'b1),
+                  .Q(ddr_reset_delay));
+    always @(posedge memclk) begin
+        final_ddr_reset <= ddr_reset_delay;
+        ddr_reset_resync <= { ddr_reset_resync[0], ddr_reset };        
+    end
+    
     reg event_force_reset = 0;
     (* CUSTOM_CC_SRC = WBCLKTYPE *)
     reg event_reset = 0;
@@ -66,7 +88,7 @@ module event_register_core #(parameter WBCLKTYPE="NONE",
     
     wire [31:0] glob_event_reg = { {4{1'b0}}, runcfg,           // 16
                                    track_err_wbclk, tio_mask,         // 8
-                                   {6{1'b0}}, event_reset, event_force_reset};    // 8
+                                   {5{1'b0}}, ddr_reset, event_reset, event_force_reset};    // 8
     
     reg ack = 0;
     wire [3:0] reg_addr = wb_adr_i[2 +: 4];
@@ -102,7 +124,10 @@ module event_register_core #(parameter WBCLKTYPE="NONE",
         ack <= wb_cyc_i && wb_stb_i;
         if (wb_cyc_i && wb_stb_i && wb_ack_o && wb_we_i) begin
             if (reg_addr == 4'h0) begin
-                if (wb_sel_i[0]) event_force_reset <= wb_dat_i[0];
+                if (wb_sel_i[0]) begin
+                    event_force_reset <= wb_dat_i[0];
+                    ddr_reset <= wb_dat_i[2];
+                end
                 if (wb_sel_i[1]) tio_mask <= wb_dat_i[8 +: 4];
                 if (wb_sel_i[2]) runcfg[0 +: 8] <= wb_dat_i[16 +: 8];
                 if (wb_sel_i[3]) runcfg[8 +: 4] <= wb_dat_i[24 +: 4];
@@ -154,6 +179,8 @@ module event_register_core #(parameter WBCLKTYPE="NONE",
                                                     event_dwords[0]}));
 
     assign runcfg_o = runcfg;
+    
+    assign ddr_reset_memclk_o = final_ddr_reset;
     
     assign event_reset_o = event_reset;
     assign event_reset_aclk_o = event_reset_aclk[1];

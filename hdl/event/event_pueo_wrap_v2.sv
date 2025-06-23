@@ -75,7 +75,7 @@ module event_pueo_wrap_v2(
     (* CUSTOM_CC_DST = WBCLKTYPE *)
     reg [1:0] event_open_wbclk = {2{1'b0}};
     
-    always @(posedge wb_clk_i) event_open_wbclk <= { event_open_wbclk[0], event_open };
+    always @(posedge wb_clk_i) event_open_wbclk <= { event_open_wbclk[0], event_open_i };
     
     wire event_reset_wbclk;
     wire event_reset_aclk;
@@ -91,6 +91,8 @@ module event_pueo_wrap_v2(
 
 
     wire [3:0] track_err;
+    
+    wire ddr_reset;
     
     event_register_core #(.WBCLKTYPE(WBCLKTYPE),
                           .ACLKTYPE(ACLKTYPE),
@@ -111,6 +113,8 @@ module event_pueo_wrap_v2(
                     .event_reset_aclk_o(event_reset_aclk),
                     .event_reset_memclk_o(event_reset_memclk),
                     .event_reset_ethclk_o(event_reset_ethclk),
+                    
+                    .ddr_reset_memclk_o(ddr_reset),
                     
                     .aclk(aclk),
                     .aurora_tvalid( { s_aurora3_tvalid,
@@ -331,7 +335,7 @@ module event_pueo_wrap_v2(
                    .any_err_o( readout_err ));
     
     // and now the interconnect
-    // NOW WITH TOTAL INSANITY
+    // NOW WITH TOTAL INSANITY    
     ddr_intercon_wrapper #(.DEBUG("FALSE"))
         u_intercon( .aclk(memclk),
                     .aresetn(memresetn),
@@ -346,7 +350,10 @@ module event_pueo_wrap_v2(
     
         
     // no WID, xbars don't do write reording.
-    ddr4_mig u_mig( .sys_rst(!memresetn),
+    // the MIG *** cannot *** be put into reset like this!!
+    // it needs to actually, y'know, RUN occasionally.
+    // So we siphon off its reset.
+    ddr4_mig u_mig( .sys_rst(ddr_reset),
                     .c0_sys_clk_p(DDR_CLK_P),
                     .c0_sys_clk_n(DDR_CLK_N),
                     .c0_init_calib_complete(init_calib_complete),
