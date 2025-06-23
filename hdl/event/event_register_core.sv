@@ -13,6 +13,9 @@ module event_register_core #(parameter WBCLKTYPE="NONE",
         output [3:0] tio_mask_memclk_o,
 
         output [11:0] runcfg_o,
+        
+        input [3:0] track_err_i,
+        
         input  event_open_i,
         output event_reset_o,
         output event_reset_aclk_o,
@@ -58,8 +61,11 @@ module event_register_core #(parameter WBCLKTYPE="NONE",
     wire update_tio_mask_aclk;
     wire update_tio_mask_memclk;    
     
+    (* CUSTOM_CC_DST = WBCLKTYPE *)
+    reg [3:0] track_err_wbclk = {4{1'b0}};
+    
     wire [31:0] glob_event_reg = { {4{1'b0}}, runcfg,           // 16
-                                   {4{1'b0}}, tio_mask,         // 8
+                                   track_err_wbclk, tio_mask,         // 8
                                    {6{1'b0}}, event_reset, event_force_reset};    // 8
     
     reg ack = 0;
@@ -86,6 +92,8 @@ module event_register_core #(parameter WBCLKTYPE="NONE",
     assign event_regs[15] = event_regs[7];
     
     always @(posedge wb_clk_i) begin
+        track_err_wbclk <= track_err_i;
+        
         event_reset <= event_force_reset || !event_open_i;
     
         if (wb_cyc_i && wb_stb_i && !wb_we_i && !ack) begin

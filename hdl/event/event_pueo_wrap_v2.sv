@@ -35,6 +35,9 @@ module event_pueo_wrap_v2(
         output [3:0] tio_mask_o,
         output [11:0] runcfg_o,
         
+        // flag that an event has been fully received in aclk
+        output evin_complete_o,
+        
         input ethclk,
         input event_open_i,
         // acking path
@@ -85,6 +88,9 @@ module event_pueo_wrap_v2(
     
     wire out_qword = m_ev_data_tvalid && m_ev_data_tready;
     wire out_event = out_qword && m_ev_data_tlast;
+
+
+    wire [3:0] track_err;
     
     event_register_core #(.WBCLKTYPE(WBCLKTYPE),
                           .ACLKTYPE(ACLKTYPE),
@@ -96,6 +102,8 @@ module event_pueo_wrap_v2(
                     .tio_mask_aclk_o(tio_mask_aclk),
                     .tio_mask_memclk_o(tio_mask_memclk),
                     .runcfg_o(runcfg_o),
+                    
+                    .track_err_i(track_err),
                     
                     .event_open_i(event_open_wbclk[1]),
                     
@@ -217,6 +225,23 @@ module event_pueo_wrap_v2(
                    `CONNECT_AXI4S_MIN_IFV( m_t2addr_ , addr_ , [2] ),
                    `CONNECT_AXI4S_MIN_IFV( m_t3addr_ , addr_ , [3] ),
                    `CONNECT_AXI4S_MIN_IFV( m_hdraddr_ , addr_ , [4] ));
+    // next, the completion tracker. For this we need to revectorize the aurora inputs.
+    // because they're vectors, not arrays (e.g. wire bit[3:0] not wire [3:0] bit)
+    wire [3:0] track_tvalid = { aur_tvalid[3], aur_tvalid[2], aur_tvalid[1], aur_tvalid[0] };
+    wire [3:0] track_tlast =  { aur_tlast[3],  aur_tlast[2],  aur_tlast[1],  aur_tlast[0]  };
+    wire [3:0] track_tready = { aur_tready[3], aur_tready[2], aur_tready[1], aur_tready[0] };
+    
+    event_completion_tracker #(.ACLKTYPE(ACLKTYPE)) 
+        u_tracker(.aclk(aclk),
+                  .aresetn(aresetn),
+                  .s_axis_tlast(track_tlast),
+                  .s_axis_tvalid(track_tvalid),
+                  .s_axis_tready(track_tready),
+                  .complete_o(evin_complete_o),
+                  .tio_mask_i(tio_mask_aclk),
+                  .err_o(track_err));
+                  
+    
     // now the TURFIOs...
     generate
         genvar i;
@@ -280,7 +305,7 @@ module event_pueo_wrap_v2(
                                .memresetn(memresetn),
                                `CONNECT_AXIM_DW( m_axi_ , hdraxi_ , 64 ));
     
-    // and the readout generator
+    // and the readout generator.
     event_readout_generator #(.MEMCLKTYPE(MEMCLKTYPE),
                               .ACLKTYPE(ETHCLKTYPE),
                               .START_OFFSET(EVENT_BASE_ADDR))
