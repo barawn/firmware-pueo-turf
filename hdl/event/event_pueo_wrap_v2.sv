@@ -35,6 +35,8 @@ module event_pueo_wrap_v2(
         output [3:0] tio_mask_o,
         output [11:0] runcfg_o,
         
+        // indicates we should start watching for events
+        input  track_events_i,
         // flag that an event has been fully received in aclk
         output evin_complete_o,
         
@@ -74,7 +76,8 @@ module event_pueo_wrap_v2(
     reg event_open_ethclk = 0;
     (* CUSTOM_CC_DST = WBCLKTYPE *)
     reg [1:0] event_open_wbclk = {2{1'b0}};
-    
+
+    always @(posedge ethclk) event_open_ethclk <= event_open_i;
     always @(posedge wb_clk_i) event_open_wbclk <= { event_open_wbclk[0], event_open_ethclk };
     
     wire event_reset_wbclk;
@@ -93,6 +96,11 @@ module event_pueo_wrap_v2(
     wire [3:0] track_err;
     
     wire ddr_reset;
+    
+    wire turf_complete_memclk = s_turfhdr_tvalid && s_turfhdr_tready && s_turfhdr_tlast;
+    wire turf_complete_aclk;
+    flag_sync u_turf_complete_sync(.in_clkA(turf_complete_memclk),.out_clkB(turf_complete_aclk),
+                                   .clkA(memclk),.clkB(aclk));
     
     event_register_core #(.WBCLKTYPE(WBCLKTYPE),
                           .ACLKTYPE(ACLKTYPE),
@@ -138,8 +146,6 @@ module event_pueo_wrap_v2(
     `DEFINE_AXI4S_MIN_IF( hdrcmpl_ , 24 ); // header completion
     
     // transfer event open over to aclk
-    (* CUSTOM_CC_SRC = ETHCLKTYPE *)
-    reg event_open_ethclk = 0;
     (* CUSTOM_CC_DST = ACLKTYPE, ASYNC_REG = "TRUE" *)
     reg [1:0] event_open_aclk_sync = {2{1'b0}};
     wire event_open_aclk = event_open_aclk_sync[1];
@@ -235,6 +241,8 @@ module event_pueo_wrap_v2(
     event_completion_tracker #(.ACLKTYPE(ACLKTYPE)) 
         u_tracker(.aclk(aclk),
                   .aresetn(aresetn),
+                  .enable_i(track_events_i),
+                  .turf_complete_i(turf_complete_aclk),
                   .s_axis_tlast(track_tlast),
                   .s_axis_tvalid(track_tvalid),
                   .s_axis_tready(track_tready),
