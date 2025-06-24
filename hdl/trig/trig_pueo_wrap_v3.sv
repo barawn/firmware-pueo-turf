@@ -215,17 +215,13 @@ module trig_pueo_wrap_v3 #(parameter WBCLKTYPE = "NONE",
                       `CONNECT_AXI4S_MIN_IF(turf_hdr_ , turfhdr_ ),
                       .turf_hdr_tlast(turfhdr_tlast));
 
-    // just grab phase and valid right now to time them up
     generate
         genvar i;
-        for (i=0;i<4;i=i+1) begin
-            assign real_trigin[REAL_SURFS_PER_TIO*16*i +: REAL_SURFS_PER_TIO*16] =
-                trig_dat_i[8*16*i +: REAL_SURFS_PER_TIO*16];
-        end
         if (DEBUG == "TRUE") begin : DBG
             trig_ila u_ila(.clk(sysclk_i),
-                           .probe0(trig_dat_valid_i),
-                           .probe1(sysclk_phase_i));
+                           .probe0(turf_soft_valid),
+                           .probe1(turf_pps_valid),
+                           .probe2(turf_ext_valid));
         end
     endgenerate    
     // our wb space here is 8 bits = 64 registers
