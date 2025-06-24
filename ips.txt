@@ -12,6 +12,7 @@ ip/event/axis_32to64/axis_32to64.xci
 ip/eth/axis_8to64/axis_8to64.xci
 ip/fifo/axis_ccfifo64_tlast/axis_ccfifo64_tlast.xci
 ip/fifo/axis_ccfifo64_tuser4_tlast/axis_ccfifo64_tuser4_tlast.xci
+ip/debug/buffer_track_ila/buffer_track_ila.xci
 ip/fifo/ccfifo65/ccfifo65.xci
 ip/fifo/ccfifo69/ccfifo69.xci
 ip/debug/cin_parallel_ila/cin_parallel_ila.xci
