@@ -14,7 +14,8 @@
 // sync'd to the second you're reading. I don't think occupancy
 // is helpful for anything other than monitoring, so it's just free.
 module trig_buffer_track #(parameter SYSCLKTYPE = "NONE",
-                           parameter WBCLKTYPE = "NONE")(
+                           parameter WBCLKTYPE = "NONE",
+                           parameter DEBUG = "TRUE")(
         input sys_clk_i,
         input pps_i,
 
@@ -113,6 +114,17 @@ module trig_buffer_track #(parameter SYSCLKTYPE = "NONE",
         surf_err_wbclk <= { surf_err_wbclk[0], surf_err };
         turf_err_wbclk <= { turf_err_wbclk[0], turf_err };                   
     end
+    
+    generate
+        if (DEBUG == "TRUE" ) begin : ILA
+            buffer_track_ila u_ila(.clk(sys_clk_i),
+                                   .probe0(buffers_held),
+                                   .probe1(trig_i),
+                                   .probe2(last_flag_i),
+                                   .probe3(dead_o),
+                                   .probe4(running));
+        end
+    endgenerate
     
     assign dead_o = dead;
     assign surf_err_o = surf_err_wbclk[1];
