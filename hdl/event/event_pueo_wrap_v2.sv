@@ -71,11 +71,11 @@ module event_pueo_wrap_v2(
     wire [3:0] tio_mask_memclk;
     
     (* CUSTOM_CC_SRC = ETHCLKTYPE *)
-    reg event_open = 0;
+    reg event_open_ethclk = 0;
     (* CUSTOM_CC_DST = WBCLKTYPE *)
     reg [1:0] event_open_wbclk = {2{1'b0}};
     
-    always @(posedge wb_clk_i) event_open_wbclk <= { event_open_wbclk[0], event_open_i };
+    always @(posedge wb_clk_i) event_open_wbclk <= { event_open_wbclk[0], event_open_ethclk };
     
     wire event_reset_wbclk;
     wire event_reset_aclk;
@@ -144,9 +144,6 @@ module event_pueo_wrap_v2(
     reg [1:0] event_open_aclk_sync = {2{1'b0}};
     wire event_open_aclk = event_open_aclk_sync[1];
     
-    always @(posedge ethclk) begin
-        event_open_ethclk <= event_open_i;
-    end
     always @(posedge aclk) begin
         event_open_aclk_sync <= { event_open_aclk_sync[0],event_open_ethclk };
     end                
