@@ -11,6 +11,8 @@
 module event_completion_tracker #(parameter ACLKTYPE = "NONE")(
         input aclk,
         input aresetn,
+        input enable_i,
+        input turf_complete_i,
         input [3:0] s_axis_tlast,
         input [3:0] s_axis_tvalid,
         input [3:0] s_axis_tready,
@@ -19,10 +21,16 @@ module event_completion_tracker #(parameter ACLKTYPE = "NONE")(
         output complete_o,
         output [3:0] err_o
     );
+
+    (* CUSTOM_CC_DST = ACLKTYPE *)
+    reg [2:0] enable_rereg = {3{1'b0}};    
+
+    // we only use the TURF if zero turfios are enabled.
     
     reg [3:0] complete_seen = 4'h0;
     reg [3:0] active_turfio = 4'h0;
-    
+    reg       any_turfio = 0;
+        
     reg complete = 0;
     
     wire [3:0] err_in;
@@ -43,9 +51,14 @@ module event_completion_tracker #(parameter ACLKTYPE = "NONE")(
         
     integer i;
     always @(posedge aclk) begin
-        active_turfio <= ~tio_mask_i;
-    
-        complete <= active_turfio == complete_seen;
+        enable_rereg <= { enable_rereg[1:0], enable_i };
+        
+        if (enable_rereg[1] && !enable_rereg[2]) begin
+            active_turfio <= ~tio_mask_i;
+            any_turfio <= tio_mask_i != 4'hF;
+        end
+            
+        complete <= enable_rereg[2] && (any_turfio ? active_turfio == complete_seen : turf_complete_i);
     
         if (!aresetn) err_has_been_seen <= 0;
         else if (err_any) err_has_been_seen <= 1;
