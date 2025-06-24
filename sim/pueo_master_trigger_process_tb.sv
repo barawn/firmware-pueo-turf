@@ -190,6 +190,8 @@ module pueo_master_trigger_process_tb;
         end
     endtask                       
 
+    integer j;
+
     initial begin
         #1000;
         // latency
@@ -237,6 +239,7 @@ module pueo_master_trigger_process_tb;
         @(posedge sys_clk);
         #1 pps = 0;        
         #1000;
+        
     end        
 
 endmodule
