@@ -197,11 +197,14 @@ module pueo_master_trigger_process_tb;
         // enable PPS trigger with an offset of 100.
         #100;
         wb_write( 32'h108, 32'h00640001);
+        // enable ext trigger with a select of 1
+        #100;
+        wb_write( 32'h10C, 32'h00640101);
         // unmask surf 0
         #100;
         wb_write( 32'h100, 32'h0FFF_FFFE );
         #100;
-        wb_write( 32'h000, 32'd2 );        
+//        wb_write( 32'h000, 32'd2 );        
         #1000;
         // soft trig
         wb_write( 32'h110, 32'd1 );
@@ -225,14 +228,15 @@ module pueo_master_trigger_process_tb;
         wb_write( 32'h110, 32'd1 );
         #1000;
         @(posedge sys_clk);
-        #1 pps_trig = 1;
+        #1 ext_trig = 6'h1;
         @(posedge sys_clk);
-        #1 pps_trig = 0;
+        #1 ext_trig = 6'h0;
         #500;
         @(posedge sys_clk);
         #1 pps = 1;
         @(posedge sys_clk);
         #1 pps = 0;        
+        #1000;
     end        
 
 endmodule
