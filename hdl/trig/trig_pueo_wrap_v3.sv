@@ -33,6 +33,7 @@ module trig_pueo_wrap_v3 #(parameter WBCLKTYPE = "NONE",
         input [31:0] last_dead_i,
         input [31:0] llast_dead_i,
         
+        output track_events_o,
         input event_complete_i,
         output dead_o,
         
@@ -200,6 +201,7 @@ module trig_pueo_wrap_v3 #(parameter WBCLKTYPE = "NONE",
                       .dead_o(dead_o),
                       
                       .wb_clk_i(wb_clk_i),
+                      .event_complete_i(event_complete_i),
                       .occupancy_o(occupancy),
                       .surf_err_o(surf_err),
                       .turf_err_o(turf_err),
@@ -352,4 +354,5 @@ module trig_pueo_wrap_v3 #(parameter WBCLKTYPE = "NONE",
                                  .command67_o(command67_o),
                                  .command68_o(command68_o));
     assign runrst_o = runrst;
+    assign track_events_o = running;
 endmodule
