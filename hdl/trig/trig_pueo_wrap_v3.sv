@@ -35,6 +35,7 @@ module trig_pueo_wrap_v3 #(parameter WBCLKTYPE = "NONE",
         
         output track_events_o,
         input event_complete_i,
+        input panic_i,
         output dead_o,
         
         
@@ -108,6 +109,11 @@ module trig_pueo_wrap_v3 #(parameter WBCLKTYPE = "NONE",
                     .A3(VALID_OFFSET_2[3]),
                     .Q(phase_delayed_2));
     always @(posedge sysclk_i) trigger_valid <= phase_delayed || phase_delayed_2;
+
+    (* CUSTOM_CC_DST = SYSCLKTYPE *)
+    reg [1:0] panic_sysclk = {2{1'b0}};
+    always @(posedge sysclk_i) panic_sysclk <= { panic_sysclk[0], panic_i };
+    wire panic_in_sysclk = panic_sysclk[1];
     
     // probably add more here or something, or maybe split off
     `DEFINE_AXI4S_MIN_IF( trig_ , 16 );
@@ -140,7 +146,7 @@ module trig_pueo_wrap_v3 #(parameter WBCLKTYPE = "NONE",
     wire [11:0] cur_addr;
     wire        running;
     
-    wire        event_flag;
+    wire        trig_event_flag;
     
     wire [31:0] scal_trig;
 
@@ -148,7 +154,7 @@ module trig_pueo_wrap_v3 #(parameter WBCLKTYPE = "NONE",
     wire [31:0] occupancy;
     wire surf_err;
     wire turf_err;
-    
+        
     pueo_master_trig_process_v3 #(.SYSCLKTYPE(SYSCLKTYPE),
                                .MEMCLKTYPE(MEMCLKTYPE),
                                .WBCLKTYPE(WBCLKTYPE),
@@ -199,9 +205,11 @@ module trig_pueo_wrap_v3 #(parameter WBCLKTYPE = "NONE",
                       .last_dead_i(last_dead_i),
                       .llast_dead_i(llast_dead_i),
                       .dead_o(dead_o),
+                      .pps_i(pps_i),
                       
                       .wb_clk_i(wb_clk_i),
                       .event_complete_i(event_complete_i),
+                      .panic_i(panic_in_sysclk),
                       .occupancy_o(occupancy),
                       .surf_err_o(surf_err),
                       .turf_err_o(turf_err),
@@ -209,7 +217,7 @@ module trig_pueo_wrap_v3 #(parameter WBCLKTYPE = "NONE",
                       .tio_mask_i(tio_mask_i),
                       .runcfg_i(runcfg_i),
 
-                      .event_o(event_flag),
+                      .event_o(trig_event_flag),
                                             
                       `CONNECT_AXI4S_MIN_IF(trigout_ , trig_ ),
                       
@@ -321,6 +329,8 @@ module trig_pueo_wrap_v3 #(parameter WBCLKTYPE = "NONE",
                                   .turf_ext_trig_o(turf_ext_trig),
                                   .turf_ext_metadata_o(turf_ext_metadata),
                                   .turf_ext_valid_o(turf_ext_valid),
+                                  
+                                  .event_i(trig_event_flag),
                                   
                                   .cur_addr_i(cur_addr),
                                   .running_i(running),
