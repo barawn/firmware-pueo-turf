@@ -16,6 +16,7 @@ ip/debug/buffer_track_ila/buffer_track_ila.xci
 ip/fifo/ccfifo65/ccfifo65.xci
 ip/fifo/ccfifo69/ccfifo69.xci
 ip/debug/cin_parallel_ila/cin_parallel_ila.xci
+ip/fifo/cmpl_fifo/cmpl_fifo.xci
 ip/ddr/ddr4_mig/ddr4_mig.xci
 ip/event/doneaddr_broadcast/doneaddr_broadcast.xci
 ip/debug/drp_ila/drp_ila.xci
@@ -26,6 +27,7 @@ ip/eth/eth_xcvr_gt_channel/eth_xcvr_gt_channel.xci
 ip/eth/eth_xcvr_gt_full/eth_xcvr_gt_full.xci
 ip/event/event_chunk_fifo/event_chunk_fifo.xci
 ip/event/event_cmpl_fifo/event_cmpl_fifo.xci
+ip/event/event_collecter_slice/event_collecter_slice.xci
 ip/debug/event_ctrl_ila/event_ctrl_ila.xci
 ip/debug/event_ctrl_vio/event_ctrl_vio.xci
 ip/event/event_datamover/event_datamover.xci
@@ -50,6 +52,7 @@ ip/event/nack_ccfifo/nack_ccfifo.xci
 ip/debug/raw_event_ila/raw_event_ila.xci
 ip/debug/register_bridge_ila/register_bridge_ila.xci
 ip/event/surf_fifo/surf_fifo.xci
+ip/fifo/tio_cmpl_fifo/tio_cmpl_fifo.xci
 ip/debug/trig_ila/trig_ila.xci
 ip/trigger/trigger_fifo/trigger_fifo.xci
 ip/fifo/turf_evhdr_fifo/turf_evhdr_fifo.xci
