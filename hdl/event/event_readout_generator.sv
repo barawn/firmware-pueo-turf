@@ -41,6 +41,8 @@ module event_readout_generator(
         `TARGET_NAMED_PORTS_AXI4S_MIN_IF( s_nack_ , 48 ),
         // FLAG IN MEMCLK
         input allow_i,
+        // FOR MONITORING
+        output [12:0] allow_count_o,
         // THIS IS ETHCLK NOT AURORA CLOCK
         input aclk,
         input aresetn,
@@ -78,6 +80,9 @@ module event_readout_generator(
     reg [18:0] event_lower_addr = {19{1'b0}};
     // we can handle as many events in flight as possible
     reg [12:0] allow_counter = {13{1'b0}};
+    assign allow_count_o = allow_counter;
+    
+    
     // pipeline the comparison. there's no race here because we can't *decrease*
     // until we pass the gate, and once we pass the gate it will take much longer than 1 clock
     // to recheck it.
@@ -153,6 +158,7 @@ module event_readout_generator(
     assign m_ctrl_tdata = { upper_addr_aclk[11:0], 1'b0, event_bytes_aclk };
     assign m_ctrl_tvalid = control_valid_aclk;
     
+    (* CUSTOM_CC_SRC = MEMCLKTYPE *)
     reg any_error_seen = 0;
     assign any_err_o = any_error_seen;
     // TURFIO completion indicators are awkward so pipeline it

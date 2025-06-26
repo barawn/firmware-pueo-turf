@@ -193,6 +193,7 @@ module hdr_accumulator(
     // stream_last_beat = 5
     // tiofifo_tvalid = 4
     // thdr_tvalid = 1
+    wire s2mm_err;
     generate
         if (DEBUG == "TRUE") begin : ILA
             wire [3:0] tiofifo_tvalid_vec = { tiofifo_tvalid[3],
@@ -213,7 +214,11 @@ module hdr_accumulator(
                                 .probe6(thdrfifo_tready),                                
                                 .probe7(tothdr_tvalid),
                                 .probe8(tothdr_tready),
-                                .probe9(tothdr_tlast)
+                                .probe9(tothdr_tlast),
+                                .probe10(stat_tvalid),
+                                .probe11(stat_tready),
+                                .probe12(stat_tdata),
+                                .probe13(s2mm_err)
                                 );
             
         end
@@ -301,7 +306,8 @@ module hdr_accumulator(
                            `CONNECT_AXI4S_IF( s_axis_s2mm_ , tothdr_ ),
                            `CONNECT_AXI4S_MIN_IF( s_axis_s2mm_cmd_ , cmd_ ),
                            `CONNECT_AXI4S_MIN_IF( m_axis_s2mm_sts_ , stat_ ),
-                           `CONNECT_AXIM_W_DW( m_axi_s2mm_ , m_axi_ , 64));
+                           `CONNECT_AXIM_W_DW( m_axi_s2mm_ , m_axi_ , 64),
+                           .s2mm_err(s2mm_err));
     `AXIM_NO_READS(m_axi_);
 
     // we pass through 4 bits of the memaddr in the tag:
