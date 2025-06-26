@@ -414,7 +414,11 @@ sim_mem_wrapper u_mem(
         #1 allow = 1;
         @(posedge memclk);
         #1 allow = 0;
-        #70000;
+        #170000;
+        @(posedge aclk);
+        #1 start = 1;
+        @(posedge aclk);
+        #1 start = 0;
     end                                  
 
 endmodule
