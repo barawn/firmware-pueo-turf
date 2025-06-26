@@ -5,7 +5,8 @@
 // we don't really have to worry about the clock
 // not running since it's basically guaranteed.
 module pueo_time_wrap_v2 #(parameter SYSCLKTYPE = "NONE",
-                        parameter WBCLKTYPE = "NONE")(
+                        parameter WBCLKTYPE = "NONE",
+                        parameter MEMCLKTYPE = "NONE")(
         input wb_clk_i,
         input wb_rst_i,
         `TARGET_NAMED_PORTS_WB_IF( wb_ , 13, 32 ),
@@ -15,6 +16,10 @@ module pueo_time_wrap_v2 #(parameter SYSCLKTYPE = "NONE",
         input runrst_i,
         
         input trig_dead_i,
+        
+        input [3:0] panic_count_i,
+        input panic_count_ce_i,
+        input memclk_i,
         
         output pps_pulse_o,
         
@@ -76,12 +81,33 @@ module pueo_time_wrap_v2 #(parameter SYSCLKTYPE = "NONE",
     reg [31:0]  cur_dead = {32{1'b0}};
     reg [31:0]  last_dead = {32{1'b0}};
     reg [31:0]  llast_dead = {32{1'b0}};
-    
+
+    (* USE_DSP = "TRUE" *)
+    reg [31:0]  cur_panic = {32{1'b0}};
+    reg [31:0]  last_panic = {32{1'b0}};
+    (* CUSTOM_CC_DST = SYSCLKTYPE, KEEP = "TRUE" *)
+    reg [3:0]   cur_count_sysclk = {4{1'b0}};
+    reg [3:0]   cur_count_sysclk_sync = {4{1'b0}};
+    reg [1:0]   count_sysclk_rereg = {2{1'b0}};
+    wire count_sysclk;
+    flag_sync u_sync_count(.in_clkA(panic_count_ce_i),.out_clkB(count_sysclk),
+                           .clkA(memclk_i),.clkB(sys_clk_i));
+        
     (* CUSTOM_CC_DST = WBCLKTYPE *)
     reg [1:0] pps_dbg_wbclk = {2{1'b0}};
     always @(posedge wb_clk_i) pps_dbg_wbclk <= { pps_dbg_wbclk[0], pps_reg };
     
     always @(posedge sys_clk_i) begin
+        count_sysclk_rereg <= { count_sysclk_rereg[0], count_sysclk };
+
+        if (count_sysclk) cur_count_sysclk <= panic_count_i;
+        if (count_sysclk_rereg[0]) cur_count_sysclk_sync <= cur_count_sysclk;
+        
+        if (pps_flag) cur_panic <= {32{1'b0}};
+        else if (count_sysclk_rereg[1]) cur_panic <= cur_panic + cur_count_sysclk_sync;
+        
+        if (pps_flag) last_panic <= cur_panic;
+         
         // you HAVE to leave it running because you want
         // a posedge no matter what. The holdoff just prevents
         // the flag assertion.
@@ -146,7 +172,8 @@ module pueo_time_wrap_v2 #(parameter SYSCLKTYPE = "NONE",
                    .last_pps_i(last_pps),
                    .llast_pps_i(llast_pps),
                    .last_dead_i(last_dead),
-                   .llast_dead_i(llast_dead));    
+                   .llast_dead_i(llast_dead),
+                   .last_panic_i(last_panic));    
 
     assign cur_sec_o = cur_second;
     assign cur_time_o = cur_time;
