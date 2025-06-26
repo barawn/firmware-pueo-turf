@@ -16,6 +16,10 @@ module event_register_core #(parameter WBCLKTYPE="NONE",
         
         input [3:0] track_err_i,
         
+        input [31:0] full_aclk_err_i,
+        input [31:0] full_memclk_err_i,
+        input [31:0] full_readout_err_i,
+        
         input  event_open_i,
         output event_reset_o,
         output event_reset_aclk_o,
@@ -31,8 +35,11 @@ module event_register_core #(parameter WBCLKTYPE="NONE",
         input ethclk,
         input eth_tx_qword_i,
         input eth_tx_event_i,
+        input [11:0] ack_count_i,
         // used for tio mask
-        input memclk
+        input memclk,
+        input [12:0] cmpl_count_i,
+        input [12:0] allow_count_i
     );
     
     wire [31:0] out_events;
@@ -79,6 +86,36 @@ module event_register_core #(parameter WBCLKTYPE="NONE",
     (* CUSTOM_CC_DST = MEMCLKTYPE *)
     reg [3:0] tio_mask_memclk = {4{1'b0}};
     
+    // just use an async reg right now:
+    // if we need to do this for more than 1 in each domain refactor
+    wire [11:0] ack_count_wbclk;
+    async_register #(.WIDTH(12),
+                     .UPDATE_PERIOD(6),
+                     .CLKATYPE(ETHCLKTYPE),
+                     .CLKBTYPE(WBCLKTYPE))
+        u_ack_count_reg(.clkA(ethclk),
+                          .in_clkA(ack_count_i),
+                          .clkB(wb_clk_i),
+                          .out_clkB(ack_count_wbclk));
+    wire [12:0] allow_count_wbclk;
+    async_register #(.WIDTH(13),
+                     .UPDATE_PERIOD(12),
+                     .CLKATYPE(MEMCLKTYPE),
+                     .CLKBTYPE(WBCLKTYPE))
+        u_allow_count_reg(.clkA(memclk),
+                          .in_clkA(allow_count_i),
+                          .clkB(wb_clk_i),
+                          .out_clkB(allow_count_wbclk));                     
+    wire [12:0] cmpl_count_wbclk;
+    async_register #(.WIDTH(13),
+                     .UPDATE_PERIOD(12),
+                     .CLKATYPE(MEMCLKTYPE),
+                     .CLKBTYPE(WBCLKTYPE))
+        u_cmpl_count_reg(.clkA(memclk),
+                         .in_clkA(cmpl_count_i),
+                         .clkB(wb_clk_i),
+                         .out_clkB(cmpl_count_wbclk));                                                          
+                            
     reg update_tio_mask = 0;
     wire update_tio_mask_aclk;
     wire update_tio_mask_memclk;    
@@ -93,6 +130,13 @@ module event_register_core #(parameter WBCLKTYPE="NONE",
     reg ack = 0;
     wire [3:0] reg_addr = wb_adr_i[2 +: 4];
 
+    (* CUSTOM_CC_DST = WBCLKTYPE *)
+    reg [31:0] aclk_err_reg = {32{1'b0}};
+    (* CUSTOM_CC_DST = WBCLKTYPE *)
+    reg [31:0] memclk_err_reg = {32{1'b0}};
+    (* CUSTOM_CC_DST = WBCLKTYPE *)
+    reg [31:0] readout_err_reg = {32{1'b0}};
+
     reg [31:0] dat_reg = {32{1'b0}};    
     wire [31:0] event_regs[15:0];
     assign event_regs[0] = glob_event_reg;
@@ -106,14 +150,20 @@ module event_register_core #(parameter WBCLKTYPE="NONE",
     // fully shadow the top bit decode
     assign event_regs[8] = out_qwords;
     assign event_regs[9] = out_events;
-    assign event_regs[10] = event_regs[2];
-    assign event_regs[11] = event_regs[3];
-    assign event_regs[12] = event_regs[4];
-    assign event_regs[13] = event_regs[5];
-    assign event_regs[14] = event_regs[6];
+    // bits 11:0 ack_count (12 bits starting at bit 0)
+    // bits 28:16 allow_count (13 bits starting at bit 16)
+    assign event_regs[10] = {{3{1'b0}},allow_count_wbclk,{4{1'b0}},ack_count_wbclk};
+    assign event_regs[11] = aclk_err_reg;
+    assign event_regs[12] = memclk_err_reg;
+    assign event_regs[13] = readout_err_reg;
+    assign event_regs[14] = { {16{1'b0}}, {3{1'b0}}, cmpl_count_wbclk };
     assign event_regs[15] = event_regs[7];
     
     always @(posedge wb_clk_i) begin
+        aclk_err_reg <= full_aclk_err_i;
+        memclk_err_reg <= full_memclk_err_i;
+        readout_err_reg <= full_readout_err_i;
+    
         track_err_wbclk <= track_err_i;
         
         event_reset <= event_force_reset || !event_open_i;
