@@ -119,6 +119,7 @@ module pueo_turfio_event_req_gen(
     );
     
     parameter DEBUG = "TRUE";
+    parameter MEMCLKTYPE = "NONE";
     // Our base addresses are either spaced in 4k*4*7 or 3k*4*7 increments.
     // EITHER WAY it's 4k (0x1000) spaced - either 28 (0x1C) or 21 (0x15), and
     // we start at 0x4000 to make sure we page-align.
@@ -278,6 +279,7 @@ module pueo_turfio_event_req_gen(
     wire dm_cmd_reset = (reset_counter != {4{1'b0}});
     
     // error sticky
+    (* CUSTOM_CC_SRC = MEMCLKTYPE *)
     reg [3:0] cmd_err_full = 4'h0;
  
     // address storage
