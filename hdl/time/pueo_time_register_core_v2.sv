@@ -18,7 +18,8 @@ module pueo_time_register_core_v2 #(parameter WBCLKTYPE = "NONE",
         input [31:0] last_pps_i,
         input [31:0] llast_pps_i,
         input [31:0] last_dead_i,
-        input [31:0] llast_dead_i
+        input [31:0] llast_dead_i,
+        input [31:0] last_panic_i
     );
 
     localparam [7:0] CTRL_ADDR = 8'h00;
@@ -28,6 +29,7 @@ module pueo_time_register_core_v2 #(parameter WBCLKTYPE = "NONE",
     localparam [7:0] LLASTPPS_ADDR = 8'h10;
     localparam [7:0] LASTDEAD_ADDR = 8'h14;
     localparam [7:0] LLASTDEAD_ADDR = 8'h18;
+    localparam [7:0] LASTPANIC_ADDR = 8'h1C;
 
     wire capture_req;
     wire capture_req_sysclk;
@@ -45,7 +47,8 @@ module pueo_time_register_core_v2 #(parameter WBCLKTYPE = "NONE",
     reg [31:0] last_dead_holding = {32{1'b0}};
     (* CUSTOM_CC_SRC = SYSCLKTYPE *)
     reg [31:0] llast_dead_holding = {32{1'b0}};
-    
+    (* CUSTOM_CC_SRC = SYSCLKTYPE *)
+    reg [31:0] last_panic_holding = {32{1'b0}};
     
     (* CUSTOM_CC_SRC = WBCLKTYPE *)
     reg [15:0] pps_holdoff = {16{1'b0}};
@@ -69,6 +72,7 @@ module pueo_time_register_core_v2 #(parameter WBCLKTYPE = "NONE",
             llast_pps_holding <= llast_pps_i;
             last_dead_holding <= last_dead_i;
             llast_dead_holding <= llast_dead_i;
+            last_panic_holding <= last_panic_i;
         end
         // this is _actually_ a flag.
         ack_sysclk <= (capture_req_sysclk || update_pps_trim_o || load_sec_o);
@@ -132,7 +136,9 @@ module pueo_time_register_core_v2 #(parameter WBCLKTYPE = "NONE",
             else if (wb_adr_i == LASTDEAD_ADDR)
                 dat_reg <= last_dead_holding;
             else if (wb_adr_i == LLASTDEAD_ADDR)
-                dat_reg <= llast_dead_holding;                                
+                dat_reg <= llast_dead_holding;
+            else if (wb_adr_i == LASTPANIC_ADDR)
+                dat_reg <= last_panic_holding;
         end
     end
         
