@@ -40,6 +40,11 @@ module event_pueo_wrap_v2(
         // flag that an event has been fully received in aclk
         output evin_complete_o,
         
+        // please stop bitcoin mining, cosmin
+        output panic_o,
+        output [3:0] panic_count_o,
+        output panic_count_ce_o,
+
         input ethclk,
         input event_open_i,
         // acking path
@@ -101,6 +106,13 @@ module event_pueo_wrap_v2(
     wire turf_complete_aclk;
     flag_sync u_turf_complete_sync(.in_clkA(turf_complete_memclk),.out_clkB(turf_complete_aclk),
                                    .clkA(memclk),.clkB(aclk));
+
+    wire [11:0] ack_count;
+    wire [12:0] allow_count;    
+    wire [31:0] full_aclk_err;
+    wire [31:0] full_memclk_err;
+    wire [31:0] full_readout_err;
+    wire [12:0] cmpl_count;
     
     event_register_core #(.WBCLKTYPE(WBCLKTYPE),
                           .ACLKTYPE(ACLKTYPE),
@@ -114,6 +126,10 @@ module event_pueo_wrap_v2(
                     .runcfg_o(runcfg_o),
                     
                     .track_err_i(track_err),
+
+                    .full_aclk_err_i(full_aclk_err),
+                    .full_memclk_err_i(full_memclk_err),
+                    .full_readout_err_i(full_readout_err),
                     
                     .event_open_i(event_open_wbclk[1]),
                     
@@ -132,8 +148,10 @@ module event_pueo_wrap_v2(
                     .ethclk(ethclk),
                     .eth_tx_qword_i( out_qword ),
                     .eth_tx_event_i( out_event ),
-                    
-                    .memclk(memclk));                        
+                    .ack_count_i( ack_count ),
+                    .memclk(memclk),
+                    .cmpl_count_i( cmpl_count ),
+                    .allow_count_i( allow_count) );                        
     
     
     // OK OK OK HERE WE GO
@@ -209,20 +227,28 @@ module event_pueo_wrap_v2(
     wire memaxi_awlock = 1'b0;
     
     // whatever, do something eventually with these
-    localparam ACLK_ERR_SIZE = 2;
-    localparam MEMCLK_ERR_SIZE = 5;
-    wire [4*ACLK_ERR_SIZE-1:0] tio_errdet_aclk;
-    wire [4*MEMCLK_ERR_SIZE-1:0] tio_errdet_memclk;    
-    wire readout_err;
     
+    localparam ACLK_ERR_SIZE = 3;
+    localparam MEMCLK_ERR_SIZE = 4;
+    // 1 bit - this goes into its own.
+    wire readout_err;
+    assign full_readout_err = { {31{1'b0}}, readout_err };        
     // first let's put the ack_done_generator.
-    ack_done_generator
+    // ack count in ethclk
+    ack_done_generator #(.MEMCLKTYPE(MEMCLKTYPE))
         u_donegen( .aclk( ethclk ),
                    .aresetn( ethresetn ),
                    `CONNECT_AXI4S_MIN_IF( s_ack_ , s_ack_ ),
                    `CONNECT_AXI4S_MIN_IF( s_nack_ , s_nack_ ),
+                   
+                   .ack_count_o(ack_count),
+                   
                    .memclk(memclk),
                    .memresetn(memresetn),
+                   .panic_o(panic_o),
+                   .panic_count_o(panic_count_o),
+                   .panic_count_ce_o(panic_count_ce_o),
+                   
                    // needs the TIO mask to fake eat the addrs.
                    .tio_mask_i(tio_mask_memclk),
                    `CONNECT_AXI4S_MIN_IF( m_nack_ , nack_mem_ ),
@@ -253,7 +279,7 @@ module event_pueo_wrap_v2(
     
     // now the TURFIOs...
     generate
-        genvar i;
+        genvar i,j,k;
         for (i=0;i<4;i=i+1) begin : TIO
             // we need an accumulator->reqgen path
             wire [63:0] payload;
@@ -262,7 +288,22 @@ module event_pueo_wrap_v2(
             wire        payload_last;
             wire        payload_has_space;
             // event accumulator. builds up chunks
-            turfio_event_accumulator #(.DEBUG(i == 0 ? "TRUE" : "FALSE"))
+            wire [ACLK_ERR_SIZE-1:0] aclk_err;
+            wire [MEMCLK_ERR_SIZE-1:0] memclk_err;
+            // remap: instead of 4 concatenated vectors
+            // of ACLK_ERR_SIZE size, we have ACLK_ERR_SIZE
+            // vectors of size 4.
+            // This way the mapping stays consistent from version
+            // to version.
+            for (j=0;j<ACLK_ERR_SIZE;j=j+1) begin : ALP            
+                assign full_aclk_err[4*j + i] = aclk_err[j];
+            end
+            for (k=0;k<MEMCLK_ERR_SIZE;k=k+1) begin : MLP
+                assign full_memclk_err[4*k + i] = memclk_err[k];
+            end
+            turfio_event_accumulator #(.DEBUG(i == 0 ? "TRUE" : "FALSE"),
+                                       .ACLKTYPE(ACLKTYPE),
+                                       .MEMCLKTYPE(MEMCLKTYPE))
                 u_accum( .aclk( aclk ),
                          .aresetn( aresetn ),
                          `CONNECT_AXI4S_MIN_IFV( s_axis_ , aur_ , [i] ),
@@ -276,10 +317,11 @@ module event_pueo_wrap_v2(
                          .payload_valid_o(payload_valid),
                          .payload_last_o(payload_last),
                          .payload_has_space_i(payload_has_space),
-                         .errdet_aclk_o( tio_errdet_aclk[ ACLK_ERR_SIZE*i +: ACLK_ERR_SIZE ] ),
-                         .errdet_memclk_o(tio_errdet_memclk[ MEMCLK_ERR_SIZE*i +: 1 ] ));
+                         .errdet_aclk_o( aclk_err ));
             // now the req gen. transfers chunks to memory
-            pueo_turfio_event_req_gen #(.BASE_ADDRESS_4KB(4 + 28*i),.DEBUG(i==0 ? "TRUE" : "FALSE"))
+            pueo_turfio_event_req_gen #(.BASE_ADDRESS_4KB(4 + 28*i),
+                                        .MEMCLKTYPE(MEMCLKTYPE),
+                                        .DEBUG(i==0 ? "TRUE" : "FALSE"))
                 u_reqgen( .memclk(memclk),
                           .memresetn(memresetn),
                           .payload_i( payload ),
@@ -290,7 +332,7 @@ module event_pueo_wrap_v2(
                           `CONNECT_AXIM_VEC( m_axi_ , tioaxi_ , i ),
                           `CONNECT_AXI4S_MIN_IFV( s_done_ , addr_ , [i] ),
                           `CONNECT_AXI4S_MIN_IFV( m_cmpl_ , cmpl_ , [i] ),
-                          .cmd_err_o( tio_errdet_memclk[ MEMCLK_ERR_SIZE*i + 1 +: 4 ] ));
+                          .cmd_err_o( memclk_err ));
         end
     endgenerate
     
@@ -315,7 +357,7 @@ module event_pueo_wrap_v2(
                                `CONNECT_AXIM_DW( m_axi_ , hdraxi_ , 64 ));
     
     // and the readout generator.
-    event_readout_generator #(.MEMCLKTYPE(MEMCLKTYPE),
+    event_readout_generator_v2 #(.MEMCLKTYPE(MEMCLKTYPE),
                               .ACLKTYPE(ETHCLKTYPE),
                               .START_OFFSET(EVENT_BASE_ADDR))
         u_readout( .memclk(memclk),
@@ -332,6 +374,8 @@ module event_pueo_wrap_v2(
                    // axim
                    `CONNECT_AXIM( m_axi_ , outaxi_ ),
                    .allow_i(incr_allow),
+                   .allow_count_o(allow_count),
+                   .cmpl_count_o(cmpl_count),
                    // ethclk
                    .aclk(ethclk),
                    .aresetn(ethresetn),
