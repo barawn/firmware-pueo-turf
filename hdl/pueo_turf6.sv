@@ -13,7 +13,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="A",
                     parameter [3:0] VER_MAJOR=4'd0,
                     parameter [3:0] VER_MINOR=4'd7,
-                    parameter [7:0] VER_REV=8'd7,
+                    parameter [7:0] VER_REV=8'd16,
                     parameter [15:0] FIRMWARE_DATE = {16{1'b0}})                    
                     (
 
@@ -676,8 +676,12 @@ module pueo_turf6 #(parameter IDENT="TURF",
     wire [31:0] last_dead;
     wire [31:0] llast_dead;
     wire trigger_dead;
+    wire [3:0] panic_count;
+    wire panic_count_ce;                  
+
     pueo_time_wrap_v2 #(.WBCLKTYPE("PSCLK"),
-                        .SYSCLKTYPE("SYSCLK"))
+                        .SYSCLKTYPE("SYSCLK"),
+                        .MEMCLKTYPE("DDRCLK0"))
                      u_time(.wb_clk_i(ps_clk),
                             .wb_rst_i(1'b0),
                             `CONNECT_WBS_IFM( wb_ , time_ ),
@@ -687,6 +691,9 @@ module pueo_turf6 #(parameter IDENT="TURF",
                             .runrst_i(runrst),
                             
                             .trig_dead_i(trigger_dead),
+                            .panic_count_i(panic_count),
+                            .panic_count_ce_i(panic_count_ce),
+                            .memclk_i(ddr_clk[0]),
                             
                             .pps_flag_o(pps),
                             .pps_pulse_o(pps_pulse),
@@ -707,7 +714,9 @@ module pueo_turf6 #(parameter IDENT="TURF",
     wire evin_complete_sysclk;
     flag_sync u_evin_complete_sync(.in_clkA(evin_complete_aclk),.out_clkB(evin_complete_sysclk),
                                    .clkA(aclk),.clkB(sys_clk));
-                               
+
+    wire track_events;
+    wire panic;             
     event_pueo_wrap_v2  #(.WBCLKTYPE("PSCLK"),
                           .ETHCLKTYPE("GBECLK"),
                           .ACLKTYPE("USERCLK"),
@@ -735,7 +744,12 @@ module pueo_turf6 #(parameter IDENT="TURF",
                              .tio_mask_o(tio_mask),
                              .runcfg_o(runcfg),
                              
+                             .track_events_i(track_events),
                              .evin_complete_o(evin_complete_aclk),
+                             
+                             .panic_o(panic),
+                             .panic_count_o(panic_count),
+                             .panic_count_ce_o(panic_count_ce),
                              
                              .ethclk(gbe_sysclk),
                              .event_open_i(event_open),
@@ -764,7 +778,9 @@ module pueo_turf6 #(parameter IDENT="TURF",
                            .runcfg_i(runcfg),
                            .runrst_o(runrst),
                            
+                           .track_events_o(track_events),
                            .event_complete_i(evin_complete_sysclk),
+                           .panic_i(panic),
                            .dead_o(trigger_dead),
 
                            .cur_sec_i(cur_sec),
