@@ -12,14 +12,21 @@
 // We peel off the constant values just to simplify
 // the route, it's not smart enough.
 // So this means it's actually 32 + 11 + 1 = 44 bits.
-module ack_done_generator(
+module ack_done_generator #(parameter MEMCLKTYPE = "NONE")(
         // this is ethclk!!!
         input aclk,
         input aresetn,
         `TARGET_NAMED_PORTS_AXI4S_MIN_IF( s_ack_ , 48 ),
         `TARGET_NAMED_PORTS_AXI4S_MIN_IF( s_nack_ , 48 ),
+        
+        output [11:0] ack_count_o,     
+                
         input memclk,
         input memresetn,
+        output panic_o,
+        output [3:0] panic_count_o,
+        output panic_count_ce_o,
+        
         `HOST_NAMED_PORTS_AXI4S_MIN_IF( m_nack_ , 48 ),
         output allow_o,
         // Need to accept the TIO mask because if it's masked,
@@ -69,12 +76,42 @@ module ack_done_generator(
     assign tio_addr_tready[2] = m_t2addr_tready || tio_mask_i[2];
     assign tio_addr_tready[3] = m_t3addr_tready || tio_mask_i[3];
 
+    wire [11:0] ack_count;
+
+    // wbclk is 100 MHz
+    // memclk is 300 MHz
+    // divide down by 12.
+    wire ack_fifo_low_water;
+    (* CUSTOM_CC_SRC = MEMCLKTYPE *)
+    reg panic = 0;
+    reg [3:0] panic_memclk_count = {4{1'b0}};
+    (* CUSTOM_CC_SRC = MEMCLKTYPE *)
+    reg [3:0] panic_memclk_hold = {4{1'b0}};
+    wire      panic_ce_memclk;
+    clk_div_ce #(.CLK_DIVIDE(11))
+            u_panic_count_ce(.clk(memclk),
+                             .ce(panic_ce_memclk));
+    always @(posedge memclk) begin
+        panic <= ack_fifo_low_water;
+
+        if (panic_ce_memclk) begin
+            panic_memclk_count <= 4'h0 + panic_o;
+        end else begin
+            panic_memclk_count <= panic_memclk_count + panic_o;
+        end
+        if (panic_ce_memclk)
+            panic_memclk_hold <= panic_memclk_count;                     
+    end
+
+        
     ack_ccfifo u_ackfifo( .wr_clk( aclk ),
-                          .srst( !aresetn ),
+                          .wr_data_count( ack_count ),
+                          .rst( !aresetn ),
                           .din( ack_din ),
                           .full( ack_full ),
                           .wr_en( s_ack_tvalid && s_ack_tready ),
                           .rd_clk( memclk ),
+                          .prog_empty(ack_fifo_low_water),
                           .dout( ack_dout ),
                           .rd_en( ackfifo_tvalid && ackfifo_tready),
                           .valid( ackfifo_tvalid ) );
@@ -98,5 +135,11 @@ module ack_done_generator(
                            .out_clkB( allow_o ),
                            .clkA( aclk ),
                            .clkB( memclk ));
+
+    assign ack_count_o = ack_count;
+
+    assign panic_o = panic;
+    assign panic_count_o = panic_memclk_hold;
+    assign panic_count_ce_o = panic_ce_memclk;
                                              
 endmodule
