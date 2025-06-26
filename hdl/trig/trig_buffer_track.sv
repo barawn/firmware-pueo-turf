@@ -28,7 +28,8 @@ module trig_buffer_track #(parameter SYSCLKTYPE = "NONE",
         
         // flag indicating that an event is complete and in RAM
         input last_flag_i,
-
+        // wtf
+        input panic_i,
         // no more triggers, yo
         output dead_o,
         // wtf you doin'
@@ -94,7 +95,7 @@ module trig_buffer_track #(parameter SYSCLKTYPE = "NONE",
         if (runrst_i) turf_err <= 0;
         else if (trig_i && buffers_held == 4 && running) turf_err <= 1;
         
-        dead <= (buffers_held == 4) && running;
+        dead <= ((buffers_held == 4) || panic_i) && running;
 
         sync_wbclk_was_busy <= sync_wbclk_busy;        
         if (sync_wbclk_was_busy && !sync_wbclk_busy)
