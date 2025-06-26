@@ -66,11 +66,13 @@ module turfio_event_accumulator(
         input         payload_has_space_i,
 
         // error tracks
-        output [1:0] errdet_aclk_o,
-        output [0:0] errdet_memclk_o
+        output [2:0] errdet_aclk_o
     );
 
     parameter DEBUG = "TRUE";        
+    parameter ACLKTYPE = "NONE";
+    parameter MEMCLKTYPE = "NONE";
+    
     // first expand to 64 bits. This will always work because on the
     // TURFIO side we bounce between S0/S3 and S4/S6+TIO so we ALWAYS
     // have an even set of words. 
@@ -83,6 +85,7 @@ module turfio_event_accumulator(
     // this is BEFORE the mux. we combine with the header tlast.
     wire in64_tlast_premux;
     wire indata_width_err = (in64_tkeep[4] != in64_tkeep[0]) && in64_tvalid && in64_tready;
+    (* CUSTOM_CC_SRC = ACLKTYPE *)
     reg indata_width_err_seen = 0;
 
     // axi spec is LSB first so this does what we want:
@@ -111,11 +114,18 @@ module turfio_event_accumulator(
     // 12,292 so need a 14 bit counter
     reg [13:0] indata_length_counter = 0;
     reg indata_target = 0;
+    (* CUSTOM_CC_SRC = ACLKTYPE *)
     reg indata_length_err_seen = 0;
     
+    (* CUSTOM_CC_SRC = ACLKTYPE *)
+    reg fifo_overflow_seen = 0;
 
     always @(posedge aclk) begin
-        if (in64_tvalid && in64_tready) begin
+        if (!aresetn) begin
+            in_payload <= `DLYFF 0;
+            header_counter <= `DLYFF 0;
+            indata_length_counter <= {14{1'b0}};
+        end else if (in64_tvalid && in64_tready) begin
             if (in64_tlast_premux) in_payload <= `DLYFF 0;
             else if (header_counter == 3) in_payload <= `DLYFF 1;
             
@@ -137,6 +147,13 @@ module turfio_event_accumulator(
             if (indata_width_err)
                 indata_width_err_seen <= `DLYFF 1'b1;
         end
+        
+        if (!aresetn) begin
+            fifo_overflow_seen <= 1'b0;
+        end else begin
+            if (|surf_fifo_full && data64_tvalid)
+                fifo_overflow_seen <= 1'b1;
+        end            
     end
 
     // splice in the tdest
@@ -270,8 +287,6 @@ module turfio_event_accumulator(
     // these indicate that the bank should be cleared
     reg [1:0]   uram_bank_clear = {2{1'b0}};
     
-    // overflow indicator    
-    reg         uram_read_overflow_seen = 0;
     
     localparam FSM_BITS = 4;
     localparam [FSM_BITS-1:0] IDLE = 0;
@@ -362,18 +377,15 @@ module turfio_event_accumulator(
                      (surf_tvalid[0] && surf_tvalid[1] && surf_tvalid[2] &&
                       surf_tvalid[3] && surf_tvalid[4] && surf_tvalid[5] &&
                       !surf_fifo_almost_empty[6]);
-                      
-    always @(posedge memclk) begin    
-        if (!memresetn) uram_read_overflow_seen <= `DLYFF 0;
-        else begin
-            // read overflows happen when the SURF fifo fills up. Capture
-            // that here.
-        end
 
+    always @(posedge memclk) begin
         // the order here doesn't matter, it won't start until one's clear anyway.
-        if (uram_bank_clear[0]) uram_bank_is_full[0] <= 1'b0;
+        if (!memresetn) uram_bank_is_full[0] <= 1'b0;
+        else if (uram_bank_clear[0]) uram_bank_is_full[0] <= 1'b0;
         else if (!write_chunk_counter[0] && uram_en_write) uram_bank_is_full[0] <= 1'b1;
-        if (uram_bank_clear[1]) uram_bank_is_full[1] <= 1'b0;
+
+        if (!memresetn) uram_bank_is_full[1] <= 1'b0;
+        else if (uram_bank_clear[1]) uram_bank_is_full[1] <= 1'b0;
         else if (write_chunk_counter[0] && uram_en_write) uram_bank_is_full[1] <= 1'b1;        
         
         if (!memresetn) state <= `DLYFF IDLE;
@@ -626,6 +638,5 @@ module turfio_event_accumulator(
     assign payload_last_o = uram_delay_reg[1];
     assign payload_ident_o = uram_delay_reg[2 +: 5];
     
-    assign errdet_aclk_o = { indata_length_err_seen, indata_width_err_seen };
-    assign errdet_memclk_o = { uram_read_overflow_seen };    
+    assign errdet_aclk_o = { fifo_overflow_seen, indata_length_err_seen, indata_width_err_seen };
 endmodule
