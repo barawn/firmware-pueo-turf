@@ -13,7 +13,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="A",
                     parameter [3:0] VER_MAJOR=4'd0,
                     parameter [3:0] VER_MINOR=4'd7,
-                    parameter [7:0] VER_REV=8'd18,
+                    parameter [7:0] VER_REV=8'd19,
                     parameter [15:0] FIRMWARE_DATE = {16{1'b0}})                    
                     (
 
@@ -631,6 +631,10 @@ module pueo_turf6 #(parameter IDENT="TURF",
     wire [3:0] sfp_led;
     wire [31:0] cur_sec;
     wire pps;
+    
+    wire emergency_stop;
+    wire event_stopped;
+
     turf_udp_wrap #(.WBCLKTYPE("PSCLK"),
                     .ETHCLKTYPE("GBECLK"))
           u_ethernet(
@@ -655,6 +659,9 @@ module pueo_turf6 #(parameter IDENT="TURF",
             `CONNECT_AXI4S_MIN_IF( m_ack_ , ack_ ),
             `CONNECT_AXI4S_MIN_IF( m_nack_ , nack_ ),
             .event_open_o(event_open),
+            .emergency_stop_o(emergency_stop),
+            .stopped_i(event_stopped),
+            
             `CONNECT_AXI4S_MIN_IF( s_ev_ctrl_ , ev_ctrl_ ),
             `CONNECT_AXI4S_IF( s_ev_data_ , ev_data_ ),
             
@@ -753,6 +760,8 @@ module pueo_turf6 #(parameter IDENT="TURF",
                              
                              .ethclk(gbe_sysclk),
                              .event_open_i(event_open),
+                             .emergency_stop_i(emergency_stop),
+                             .stopped_o(event_stopped),
                              `CONNECT_AXI4S_MIN_IF( s_ack_ , ack_ ),
                              `CONNECT_AXI4S_MIN_IF( s_nack_ , nack_ ),
                              `CONNECT_AXI4S_IF( m_ev_data_ , ev_data_ ),
@@ -771,6 +780,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                            .sysclk_x2_i(sys_clk_x2),
                            .sysclk_x2_ce_i(sys_clk_x2_ce),
                            .pps_i(pps),
+                           .pps_trig_i(GPS_TIMEPULSE[1]),
                            
                            .gp_in_i(gp_in),
                            
