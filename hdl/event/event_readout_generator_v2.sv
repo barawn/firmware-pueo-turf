@@ -53,6 +53,8 @@ module event_readout_generator_v2(
         // THIS IS ETHCLK NOT AURORA CLOCK
         input aclk,
         input aresetn,
+        input emergency_stop_i,
+        output stopped_o,
         `HOST_NAMED_PORTS_AXI4S_MIN_IF( m_ctrl_ , 32 ),
         `HOST_NAMED_PORTS_AXI4S_IF( m_data_ , 64 ),
         output any_err_o,
@@ -168,7 +170,21 @@ module event_readout_generator_v2(
     assign m_ctrl_tdata = { upper_addr_aclk[11:0], 1'b0, event_bytes_aclk };
     assign m_ctrl_tvalid = control_valid_aclk;
 
+    (* CUSTOM_CC_DST = MEMCLKTYPE *)
+    reg [1:0] emergency_stop_memclk = {2{1'b0}};    
+
+    (* CUSTOM_CC_SRC = MEMCLKTYPE *)
+    reg stopped = 0;
+    
+    (* CUSTOM_CC_DST = ACLKTYPE *)
+    reg [1:0] stopped_ethclk = {2{1'b0}};
+    
     always @(posedge memclk) begin
+        emergency_stop_memclk <= { emergency_stop_memclk[0], emergency_stop_i };
+        
+        if (!memresetn) stopped <= 0;
+        else if (state == IDLE && emergency_stop_memclk[1]) stopped <= 1;
+        
         if (!memresetn) begin
             allow_counter <= {13{1'b0}};
         end else begin
@@ -213,7 +229,7 @@ module event_readout_generator_v2(
         if (!memresetn) state <= IDLE;
         else begin
             case(state)
-                IDLE: if (s_nack_tvalid || (cmpl_tvalid && is_allowed))
+                IDLE: if ((s_nack_tvalid || (cmpl_tvalid && is_allowed)) && !emergency_stop_memclk[1])
                     state <= ISSUE_CMD;
                 ISSUE_CMD: if (cmd_tready) state <= ISSUE_CONTROL;
                 ISSUE_CONTROL: if (control_complete_memclk) state <= DONE;
@@ -226,6 +242,8 @@ module event_readout_generator_v2(
     end
     
     always @(posedge aclk) begin
+        stopped_ethclk <= { stopped_ethclk[0], stopped };
+    
         if (issue_control_aclk) upper_addr_aclk <= upper_addr;
         if (issue_control_aclk) event_bytes_aclk <= event_bytes;
         
@@ -324,4 +342,5 @@ module event_readout_generator_v2(
                               .valid(evfifo_valid));
                 
     
+    assign stopped_o = stopped_ethclk[1];
 endmodule

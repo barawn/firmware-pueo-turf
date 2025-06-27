@@ -12,7 +12,8 @@ module turf_event_ctrl_port #(
         parameter MAX_FRAGSRCMASK = 6,
         // holdoff in clock cycles
         parameter [4:0] HOLDOFF_DELAY = 31,
-        // debug
+        parameter ACLKTYPE = "NONE",
+        // debug        
         parameter DEBUG = "TRUE"
         )
         (
@@ -33,12 +34,15 @@ module turf_event_ctrl_port #(
         output [31:0] fragment_holdoff_o,
         output [31:0] event_ip_o,
         output [15:0] event_port_o,
-        output        event_open_o
+        output        event_open_o,
+        output        emergency_stop_o,
+        input         stopped_i
     );
     localparam [15:0] MAX_FRAGSRCMASK_BITS = { {(16-MAX_FRAGSRCMASK){1'b0}}, {MAX_FRAGSRCMASK{1'b1}} };
-    localparam NUM_CMDS = 6;
+    localparam NUM_CMDS = 7;
     localparam [16*NUM_CMDS-1:0] CMD_TABLE =
-        { "PX",
+        { "ES",
+          "PX",
           "PW",
           "PR",
           "ID",
@@ -46,6 +50,7 @@ module turf_event_ctrl_port #(
           "OP" };
     localparam [NUM_CMDS-1:0] needs_holdoff =
         { 1'b0,
+          1'b0,
           1'b0,
           1'b0,
           1'b1,
@@ -58,7 +63,8 @@ module turf_event_ctrl_port #(
     localparam PR_CMD = 3;
     localparam PW_CMD = 4;
     localparam PX_CMD = 5;
-
+    localparam ES_CMD = 6;
+    
     // break up into command and payload
     wire [15:0] command = s_udpdata_tdata[15:0];
     wire [47:0] payload = s_udpdata_tdata[16 +: 48];
@@ -89,6 +95,10 @@ module turf_event_ctrl_port #(
     
     reg [MAX_FRAGSRCMASK-1:0] fragsrc_mask = {MAX_FRAGSRCMASK{1'b0}};
 
+    // emergency stop requested
+    (* CUSTOM_CC_SRC = ACLKTYPE *)
+    reg emergency_stop = 0;
+    
     // dumbass holdoff
     reg cur_val = 0;
     wire delay_val;
@@ -113,7 +123,7 @@ module turf_event_ctrl_port #(
     always @(posedge aclk) begin
         // grabbing the top generates garbage for most responses but it eases decode
         if (state == UPDATE_RESPONSE) begin
-            if (cmd_match[OP_CMD] || cmd_match[CL_CMD])
+            if (cmd_match[OP_CMD] || cmd_match[CL_CMD] || cmd_match[ES_CMD] )
                 response <= s_udpdata_tdata;
             else if (cmd_match[ID_CMD])
                 response <= { s_udpdata_tdata[48 +: 16], my_mac_address };
@@ -125,14 +135,21 @@ module turf_event_ctrl_port #(
                 response <= { s_udpdata_tdata[48 +: 16], {16{1'b0}}, fragment_holdoff };
         end
         
-        if (state == PARSE_COMMAND) begin
+        if (emergency_stop && stopped_i) begin
+            event_is_open <= 1'b0;
+            emergency_stop <= 1'b0;
+        end else if (state == PARSE_COMMAND) begin
+            if (cmd_match[ES_CMD])
+                emergency_stop <= 1;
+
             if (cmd_match[OP_CMD]) begin
                 event_is_open <= 1'b1;
                 event_ip <= payload[16 +: 32];
                 event_port <= payload[0 +: 16];
             end else if (cmd_match[CL_CMD])
                 event_is_open <= 1'b0;
-            
+        end                
+        if (state == PARSE_COMMAND) begin
             if (cmd_match[PW_CMD] && !event_is_open) begin
                 // The PW command explicitly says it's payload[47:32].
                 // I should probably parameterize how many bits to store but whatever
@@ -210,4 +227,6 @@ module turf_event_ctrl_port #(
     assign fragsrc_mask_o[15:MAX_FRAGSRCMASK] = {(16-MAX_FRAGSRCMASK){1'b0}};
 
     assign fragment_holdoff_o = fragment_holdoff;    
+    
+    assign emergency_stop_o = emergency_stop;
 endmodule

@@ -34,6 +34,9 @@ module turf_udp_wrap #( parameter NSFP=2,
         `HOST_NAMED_PORTS_AXI4S_MIN_IF( m_nack_ , 48),
         // event open interface
         output event_open_o,        
+        output emergency_stop_o,
+        input stopped_i,
+        
         // event control input
         `TARGET_NAMED_PORTS_AXI4S_MIN_IF( s_ev_ctrl_ , 32),
         // event data input
@@ -479,13 +482,15 @@ module turf_udp_wrap #( parameter NSFP=2,
     // Control port module always responds at its own port
     assign hdrout_tuser[16*TC_PORT +: 16] = OUTBOUND[16*TC_PORT +: 16];
     // An MTU of 9000 means a max fragment len of 8192 should be fine.
-    turf_event_ctrl_port #(.MAX_FRAGMENT_LEN(8191),.MAX_ADDR(4095))
+    turf_event_ctrl_port #(.MAX_FRAGMENT_LEN(8191),.MAX_ADDR(4095),.ACLKTYPE(ETHCLKTYPE))
         u_ctrlport( .aclk(clk156),.aresetn(!clk156_rst),
                     `CONNECT_UDP_INOUT( s_udphdr_ , s_udpdata_ , m_udphdr_ , m_udpdata_ , TC_PORT),
                     .my_mac_address( my_mac_address ),
                     .nfragment_count_o( num_fragment_qwords ),
                     .fragsrc_mask_o(fragsrc_mask),
                     .fragment_holdoff_o(fragment_holdoff),
+                    .emergency_stop_o(emergency_stop_o),
+                    .stopped_i( stopped_i ),
                     .event_ip_o( event_ip ),
                     .event_port_o( event_port ),
                     .event_open_o( event_is_open ));

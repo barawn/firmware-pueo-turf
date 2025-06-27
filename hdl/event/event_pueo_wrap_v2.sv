@@ -47,6 +47,8 @@ module event_pueo_wrap_v2(
 
         input ethclk,
         input event_open_i,
+        input emergency_stop_i,
+        output stopped_o,
         // acking path
         `TARGET_NAMED_PORTS_AXI4S_MIN_IF( s_ack_ , 48),
         // nacking path
@@ -379,6 +381,8 @@ module event_pueo_wrap_v2(
                    // ethclk
                    .aclk(ethclk),
                    .aresetn(ethresetn),
+                   .emergency_stop_i(emergency_stop_i),
+                   .stopped_o(stopped_o),
                    `CONNECT_AXI4S_MIN_IF( m_ctrl_ , m_ev_ctrl_ ),
                    `CONNECT_AXI4S_IF( m_data_ , m_ev_data_ ),
                    .any_err_o( readout_err ));
