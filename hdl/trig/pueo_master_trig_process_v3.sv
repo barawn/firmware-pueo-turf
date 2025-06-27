@@ -473,6 +473,9 @@ module pueo_master_trig_process_v3 #(parameter NSURF=28,
     // and adjust the readout latency I think. The whole thing is going to
     // be very crufty.
     // just... skip going full we're not ever going to fill up.
+    //
+    // Don't really understand how this can fill up but it might???
+    // 
     trigger_fifo u_fifo( .wr_clk(sysclk_x2_i),
                          .din( { 2'b10, trigger_occurred_address, {2{1'b0}} } ),
                          .wr_en( trigger_occurred ),
@@ -480,7 +483,8 @@ module pueo_master_trig_process_v3 #(parameter NSURF=28,
                          .srst(!trig_running),
                          .valid(trigout_tvalid),
                          .rd_en(trigout_tvalid && trigout_tready),
-                         .dout(trigout_tdata));
+                         .dout(trigout_tdata));                         
+                         
     // HEADERY-HEADERS
     turf_header_generator_v3 #(.MEMCLKTYPE(MEMCLKTYPE),
                                .SYSCLKTYPE(SYSCLKTYPE))
