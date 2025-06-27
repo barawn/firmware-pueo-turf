@@ -315,7 +315,7 @@ module pueo_master_trig_process_v3 #(parameter NSURF=28,
     // all this needs to be timed up so that trig_running goes 1
     // in clock 0. therefore trig_latency counter resets itself to 1.
     always @(posedge sysclk_i) begin
-        trigger_is_dead <= trigger_dead && trigger_held_off;
+        trigger_is_dead <= trigger_dead && !trigger_held_off;
 //        if (runrst_i) trig_running <= 1;
 //        else if (runstop_i) trig_running <= 0;
 
