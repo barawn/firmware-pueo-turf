@@ -6,6 +6,9 @@
 // stream, and then the data through the s_data_ port.
 // The tag and length are present in the first 8 bytes along
 // with a constant and the fragment number.
+//
+// NEW NEW NEW: We can use event_open_i to panic-complete a fragment
+// and jump back to idle if it falls apart.
 module turf_fragment_gen(
         input aclk,
         input aresetn,
@@ -61,6 +64,7 @@ module turf_fragment_gen(
     localparam [FSM_BITS-1:0] STREAM = 3;
     localparam [FSM_BITS-1:0] DELAY_HEADER = 4;
     localparam [FSM_BITS-1:0] DELAY_IDLE = 5;
+    localparam [FSM_BITS-1:0] ABANDON_ALL_HOPE = 6;
     reg [FSM_BITS-1:0] state = IDLE;
     
     // fragment delay counter
@@ -99,8 +103,6 @@ module turf_fragment_gen(
     reg [15:0] event_port = {16{1'b0}};
     // reregistered event open, to look for a rising edge
     reg event_was_open = 0;
-    // set high if we EVER get a valid IP
-    reg event_was_ever_open = 0;
 
     // max number of beats we want to send (so min is 1)
     reg [12:0] max_fragment_beats = {13{1'b0}};
@@ -114,8 +116,6 @@ module turf_fragment_gen(
     wire tlast = (USE_TLAST == "TRUE") ? s_data_tlast : tlast_internal;
 
     always @(posedge aclk) begin
-        if (!aresetn) event_was_ever_open <= 1'b0;
-        else if (event_open_i) event_was_ever_open <= 1'b1;
         event_was_open <= event_open_i;
         if (event_open_i && !event_was_open) begin
             event_ip <= event_ip_i;
@@ -125,10 +125,14 @@ module turf_fragment_gen(
         if (!aresetn) state <= IDLE;
         else begin
             case (state)
-                IDLE: if (s_ctrl_tvalid && s_ctrl_tready && event_was_ever_open) state <= HEADER;
+                // OK ! No more free streaming to nonsense world. You HAVE to be open
+                // to get data.
+                IDLE: if (s_ctrl_tvalid && s_ctrl_tready && event_was_open) state <= HEADER;
                 HEADER: if (m_hdr_tvalid && m_hdr_tready) state <= TAG;
                 TAG: if (m_payload_tvalid && m_payload_tready) state <= STREAM;
-                STREAM: if (m_payload_tvalid && m_payload_tready) begin
+                STREAM: if (!event_was_open) begin
+                    state <= ABANDON_ALL_HOPE;
+                end else if (m_payload_tvalid && m_payload_tready) begin
                     // The benefit of using tlast_internal here (USE_TLAST = "FALSE")
                     // is that no matter what we're not going to break the UDP stream.
                     if (last_payload) begin
@@ -138,6 +142,8 @@ module turf_fragment_gen(
                 end
                 DELAY_IDLE: if (fragment_delay_reached) state <= IDLE;
                 DELAY_HEADER: if (fragment_delay_reached) state <= HEADER;
+                ABANDON_ALL_HOPE: if (m_payload_tvalid && m_payload_tready && last_payload)
+                    state <= IDLE;
             endcase
         end
         
@@ -180,7 +186,8 @@ module turf_fragment_gen(
             remaining_length <= remaining_length - (fragment_length - 8);
         
         if (state == HEADER) fragment_beats <= {10{1'b0}};
-        else if (state == STREAM && m_payload_tvalid && m_payload_tready)
+        else if ((state == STREAM || state == ABANDON_ALL_HOPE)
+                && m_payload_tvalid && m_payload_tready)
             fragment_beats <= fragment_beats + 1;
         
         if (state == IDLE && s_ctrl_tvalid && s_ctrl_tready) begin
@@ -217,12 +224,14 @@ module turf_fragment_gen(
     endgenerate
     
     assign m_hdr_tvalid = (state == HEADER);
-    assign m_payload_tvalid = (state == TAG || (state == STREAM && s_data_tvalid));
+    assign m_payload_tvalid = (state == TAG || (state == ABANDON_ALL_HOPE) || 
+                              (state == STREAM && s_data_tvalid));
     assign s_data_tready = (state == STREAM && m_payload_tready);
-    assign s_ctrl_tready = (state == IDLE && event_was_ever_open);
+    assign s_ctrl_tready = (state == IDLE && event_was_open);
     assign m_hdr_tdata = { event_ip, event_port, fragment_length };
     assign m_hdr_tuser = (BASE_PORT & ~fragsrc_mask_i) | (fragment_number & fragsrc_mask_i);
     assign m_payload_tdata = (state == TAG) ? tag : s_data_tdata;
-    assign m_payload_tlast = (state == STREAM && last_payload);
+    assign m_payload_tlast = ((state == STREAM || state == ABANDON_ALL_HOPE) && last_payload);
+    // let's just see if this works, period.
     assign m_payload_tkeep = (state == STREAM) ? s_data_tkeep : 8'hFF;
 endmodule
