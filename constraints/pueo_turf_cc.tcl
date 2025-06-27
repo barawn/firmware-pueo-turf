@@ -335,6 +335,8 @@ set_cc_paths $sys_clk $userclk $clktypelist
 set_cc_paths $ddrclk0 $psclk $clktypelist
 set_cc_paths $ddrclk0 $sys_clk $clktypelist
 
+set_cc_paths $gbeclk $ddrclk0 $clktypelist
+set_cc_paths $ddrclk0 $gbeclk $clktypelist
 
 set_mc_paths TRIG_META
 set_mc_paths TRIG_DEAD
