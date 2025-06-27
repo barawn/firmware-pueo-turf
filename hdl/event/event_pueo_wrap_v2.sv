@@ -112,7 +112,7 @@ module event_pueo_wrap_v2(
     wire [31:0] full_aclk_err;
     wire [31:0] full_memclk_err;
     wire [31:0] full_readout_err;
-    wire [12:0] cmpl_count;
+    wire [13:0] cmpl_count;
     
     event_register_core #(.WBCLKTYPE(WBCLKTYPE),
                           .ACLKTYPE(ACLKTYPE),

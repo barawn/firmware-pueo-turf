@@ -12,7 +12,7 @@ module event_completion_collector #(parameter MEMCLKTYPE="NONE")(
         input memresetn,
         
         output err_any_o,
-        output [12:0] cmpl_count_o,
+        output [13:0] cmpl_count_o,
         
         input [3:0] tio_mask_i,
         `TARGET_NAMED_PORTS_AXI4S_MIN_IF( s_hdr_ , 24 ),

@@ -38,7 +38,7 @@ module event_register_core #(parameter WBCLKTYPE="NONE",
         input [11:0] ack_count_i,
         // used for tio mask
         input memclk,
-        input [12:0] cmpl_count_i,
+        input [13:0] cmpl_count_i,
         input [12:0] allow_count_i
     );
     
@@ -106,8 +106,8 @@ module event_register_core #(parameter WBCLKTYPE="NONE",
                           .in_clkA(allow_count_i),
                           .clkB(wb_clk_i),
                           .out_clkB(allow_count_wbclk));                     
-    wire [12:0] cmpl_count_wbclk;
-    async_register #(.WIDTH(13),
+    wire [13:0] cmpl_count_wbclk;
+    async_register #(.WIDTH(14),
                      .UPDATE_PERIOD(12),
                      .CLKATYPE(MEMCLKTYPE),
                      .CLKBTYPE(WBCLKTYPE))
@@ -156,7 +156,7 @@ module event_register_core #(parameter WBCLKTYPE="NONE",
     assign event_regs[11] = aclk_err_reg;
     assign event_regs[12] = memclk_err_reg;
     assign event_regs[13] = readout_err_reg;
-    assign event_regs[14] = { {16{1'b0}}, {3{1'b0}}, cmpl_count_wbclk };
+    assign event_regs[14] = { {16{1'b0}}, {2{1'b0}}, cmpl_count_wbclk };
     assign event_regs[15] = event_regs[7];
     
     always @(posedge wb_clk_i) begin

@@ -56,7 +56,7 @@ module event_readout_generator_v2(
         `HOST_NAMED_PORTS_AXI4S_MIN_IF( m_ctrl_ , 32 ),
         `HOST_NAMED_PORTS_AXI4S_IF( m_data_ , 64 ),
         output any_err_o,
-        output [12:0] cmpl_count_o  
+        output [13:0] cmpl_count_o  
     );
     
     parameter MEMCLKTYPE = "NONE";
