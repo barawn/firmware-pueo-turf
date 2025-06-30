@@ -8,6 +8,7 @@ module event_register_core #(parameter WBCLKTYPE="NONE",
         input wb_clk_i,
         `TARGET_NAMED_PORTS_WB_IF( wb_ , 13, 32 ),
         
+        input trigger_running_i,
         output [3:0] tio_mask_o,
         output [3:0] tio_mask_aclk_o,
         output [3:0] tio_mask_memclk_o,
@@ -79,6 +80,10 @@ module event_register_core #(parameter WBCLKTYPE="NONE",
     (* CUSTOM_CC_SRC = WBCLKTYPE *)
     reg [11:0] runcfg = {12{1'b0}};
 
+    (* CUSTOM_CC_DST = WBCLKTYPE *)
+    reg [2:0] running_wbclk = {2{1'b0}};    
+
+    reg [3:0] tio_mask_next = {4{1'b0}};
     (* CUSTOM_CC_SRC = WBCLKTYPE *)
     reg [3:0] tio_mask = {4{1'b0}};
     (* CUSTOM_CC_DST = ACLKTYPE *)
@@ -124,8 +129,8 @@ module event_register_core #(parameter WBCLKTYPE="NONE",
     reg [3:0] track_err_wbclk = {4{1'b0}};
     
     wire [31:0] glob_event_reg = { {4{1'b0}}, runcfg,           // 16
-                                   track_err_wbclk, tio_mask,         // 8
-                                   {5{1'b0}}, ddr_reset, event_reset, event_force_reset};    // 8
+                                   track_err_wbclk, tio_mask_next,         // 8
+                                   tio_mask, 1'b0, ddr_reset, event_reset, event_force_reset};    // 8
     
     reg ack = 0;
     wire [3:0] reg_addr = wb_adr_i[2 +: 4];
@@ -160,12 +165,18 @@ module event_register_core #(parameter WBCLKTYPE="NONE",
     assign event_regs[15] = event_regs[7];
     
     always @(posedge wb_clk_i) begin
+        running_wbclk <= {running_wbclk[1:0], trigger_running_i};
+
+        if (!running_wbclk[2] && running_wbclk[1]) begin
+            tio_mask <= tio_mask_next;
+        end
+    
         aclk_err_reg <= full_aclk_err_i;
         memclk_err_reg <= full_memclk_err_i;
         readout_err_reg <= full_readout_err_i;
     
         track_err_wbclk <= track_err_i;
-        
+                
         event_reset <= event_force_reset || !event_open_i;
     
         if (wb_cyc_i && wb_stb_i && !wb_we_i && !ack) begin
@@ -178,12 +189,12 @@ module event_register_core #(parameter WBCLKTYPE="NONE",
                     event_force_reset <= wb_dat_i[0];
                     ddr_reset <= wb_dat_i[2];
                 end
-                if (wb_sel_i[1]) tio_mask <= wb_dat_i[8 +: 4];
+                if (wb_sel_i[1]) tio_mask_next <= wb_dat_i[8 +: 4];
                 if (wb_sel_i[2]) runcfg[0 +: 8] <= wb_dat_i[16 +: 8];
                 if (wb_sel_i[3]) runcfg[8 +: 4] <= wb_dat_i[24 +: 4];
             end
         end
-        update_tio_mask <= (wb_cyc_i && wb_stb_i && wb_ack_o && wb_we_i && wb_sel_i[1]);
+        update_tio_mask <= !running_wbclk[2] && running_wbclk[1];
     end
 
     always @(posedge aclk) begin
