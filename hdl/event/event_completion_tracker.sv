@@ -22,7 +22,7 @@ module event_completion_tracker #(parameter ACLKTYPE = "NONE")(
         output [3:0] err_o
     );
 
-    (* CUSTOM_CC_DST = ACLKTYPE *)
+    (* CUSTOM_CC_DST = ACLKTYPE, ASYNC_REG = "TRUE" *)
     reg [2:0] enable_rereg = {3{1'b0}};    
 
     // we only use the TURF if zero turfios are enabled.
@@ -51,13 +51,11 @@ module event_completion_tracker #(parameter ACLKTYPE = "NONE")(
         
     integer i;
     always @(posedge aclk) begin
+        // we don't need to condition this anymore
+        active_turfio <= ~tio_mask_i;
+        any_turfio <= tio_mask_i != 4'hF;
         enable_rereg <= { enable_rereg[1:0], enable_i };
         
-        if (enable_rereg[1] && !enable_rereg[2]) begin
-            active_turfio <= ~tio_mask_i;
-            any_turfio <= tio_mask_i != 4'hF;
-        end
-            
         complete <= enable_rereg[2] && (any_turfio ? active_turfio == complete_seen : turf_complete_i);
     
         if (!aresetn) err_has_been_seen <= 0;
