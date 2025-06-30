@@ -116,6 +116,8 @@ module event_pueo_wrap_v2(
     wire [31:0] full_readout_err;
     wire [13:0] cmpl_count;
     
+    // moving the trig run architecture to the register core.
+    // doesn't really matter because there's always a trigger latency.
     event_register_core #(.WBCLKTYPE(WBCLKTYPE),
                           .ACLKTYPE(ACLKTYPE),
                           .MEMCLKTYPE(MEMCLKTYPE),
@@ -126,6 +128,10 @@ module event_pueo_wrap_v2(
                     .tio_mask_aclk_o(tio_mask_aclk),
                     .tio_mask_memclk_o(tio_mask_memclk),
                     .runcfg_o(runcfg_o),
+                    // this USED to go in the completion tracker
+                    // to capture turfio mask. Now we update the TURFIO
+                    // mask here.
+                    .trigger_running_i(track_events_i),
                     
                     .track_err_i(track_err),
 
