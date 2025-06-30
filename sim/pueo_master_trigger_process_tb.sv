@@ -109,7 +109,7 @@ module pueo_master_trigger_process_tb;
     reg pps_trig = 0;
     reg [5:0] ext_trig = 0;
     reg pps = 0;
-    trig_pueo_wrap #(.DEBUG("FALSE"))
+    trig_pueo_wrap_v3 #(.DEBUG("FALSE"))
         u_trig( .wb_clk_i(wb_clk),
                 .wb_rst_i(1'b0),
                 `CONNECT_WBS_IFM( wb_ , wb_ ),
@@ -124,7 +124,11 @@ module pueo_master_trigger_process_tb;
                 .cur_time_i(cur_count),
                 .last_pps_i(last_pps),
                 .llast_pps_i(llast_pps),
-                
+                .last_dead_i({32{1'b0}}),
+                .llast_dead_i({32{1'b0}}),
+                .event_complete_i(1'b0),
+                .panic_i(1'b0),
+                                
                 .tio_mask_i(tio_mask),
                 .runcfg_i(runcfg),
 
