@@ -1,4 +1,5 @@
 `timescale 1ns / 1ps
+`define DLYFF #0.1
 module pueo_scaler_core #(parameter SYSCLKTYPE="NONE",
                           parameter WBCLKTYPE="NONE",
                           parameter ETHCLKTYPE="NONE")(
@@ -24,11 +25,35 @@ module pueo_scaler_core #(parameter SYSCLKTYPE="NONE",
     
     // no prescalers right now, I __just__ want to get this working.
     wire [15:0] sysclk_hold[31:0];
+    // this fixes the off-by-one error in the update: we don't need to actually
+    // delay the address, we can just remap the read accesses vs the write
+    wire [15:0] sysclk_hold_remap[31:0];
+        
     // enable if gate_i or if no gate enable is spec'd
     wire [31:0] channel_gate = {32{gate_i}} | ~gate_en_i;
     generate
         genvar i;
         for (i=0;i<32;i=i+1) begin : CHL
+            // the update is registered, which means naively it would be:
+            // clk  updating    updating_wr     update_counter  update_mux_in
+            // 0    0           0               X               X
+            // 1    1           0               X               X
+            // 2    1           1               1               sysclk_hold[0]
+            // 3    1           1               2               sysclk_hold[1]
+            // ..
+            // 31   1           1               30              sysclk_hold[29]
+            // 32   1           1               31              sysclk_hold[30]
+            // 33   1           1               32 (=0)         sysclk_hold[31]
+            // 34   0           0               X               X
+            // etc.
+            // which leads to our off-by-one error. We *could* adjust update_counter
+            // to start at 31 and cycle down... but we use update_counter[5] to detect
+            // termination. So it's a ton easier to just remap the inputs to sysclk_hold
+            // and write scaler 0 at the end. It doesn't cost anything.
+            // so sysclk_hold_remap[0] = sysclk_hold[1]
+            // ..
+            //    sysclk_hold_remap[31] = sysclk_hold[0]    
+            assign sysclk_hold_remap[i] = sysclk_hold[(i+1)%32];
             reg trig_rereg = 0;
             reg [15:0] channel_counter = {16{1'b0}};
             wire [16:0] channel_counter_plus_one = channel_counter + 1;
@@ -86,26 +111,26 @@ module pueo_scaler_core #(parameter SYSCLKTYPE="NONE",
     // 34   0       0           1               0           X
     // 35   0       0           0               0           X               
     always @(posedge sysclk_i) begin
-        if (pps_i) updating <= 1;
-        else if (update_counter[5]) updating <= 0;
+        if (pps_i) updating <= `DLYFF 1;
+        else if (update_counter[5]) `DLYFF updating <= 0;
         
-        if (!updating) update_counter <= {6{1'b0}};
-        else update_counter <= update_counter[4:0] + 1;
+        if (!updating) update_counter <= `DLYFF {6{1'b0}};
+        else update_counter <= `DLYFF update_counter[4:0] + 1;
 
-        if (updating) update_mux_in <= sysclk_hold[update_counter];
+        if (updating) update_mux_in <= `DLYFF sysclk_hold_remap[update_counter[4:0]];
 
-        if (update_counter[5]) update_wr <= 0;
-        else update_wr <= updating;
+        if (update_counter[5]) update_wr <= `DLYFF 0;
+        else update_wr <= `DLYFF updating;
         
-        if (update_counter[5]) active_bank <= ~active_bank;
+        if (update_counter[5]) active_bank <= `DLYFF ~active_bank;
     end
 
     always @(posedge wb_clk_i) begin
-        active_bank_wbclk <= {active_bank_wbclk[0], active_bank };
+        active_bank_wbclk <= `DLYFF {active_bank_wbclk[0], active_bank };
     end
     
     always @(posedge eth_clk_i) begin
-        active_bank_ethclk <= {active_bank_ethclk[0], active_bank };
+        active_bank_ethclk <= `DLYFF {active_bank_ethclk[0], active_bank };
     end        
     
     generate
