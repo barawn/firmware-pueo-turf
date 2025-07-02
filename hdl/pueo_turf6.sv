@@ -13,7 +13,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="A",
                     parameter [3:0] VER_MAJOR=4'd0,
                     parameter [3:0] VER_MINOR=4'd7,
-                    parameter [7:0] VER_REV=8'd23,
+                    parameter [7:0] VER_REV=8'd26,
                     parameter [15:0] FIRMWARE_DATE = {16{1'b0}})                    
                     (
 
@@ -328,24 +328,21 @@ module pueo_turf6 #(parameter IDENT="TURF",
     // Aurora *user* clock (156.25 MHz)
     wire aclk;
 
-//    // this needs to get pushed into the 10GbE core                  
-//    IBUFDS_GTE4 #(.REFCLK_HROW_CK_SEL(2'b00))
-//        u_gclk_ibuf(.I(GBE_CLK_P),.IB(GBE_CLK_N),.CEB(1'b0),.O(gbe_clk[0]), .ODIV2(gbe_clk_ibuf[0]));
-//    // The example design is sooo not helpful here.
-//    BUFG_GT u_gth_internal(.I(gbe_clk_ibuf[0]),
-//                           .O(gbe_sysclk),
-//                           .CE(1'b1),
-//                           .CEMASK(1'b0),
-//                           .CLR(1'b0),
-//                           .CLRMASK(1'b0),
-//                           .DIV(3'b000));
+    // general-purpose output usage select and enable
+    wire [2:0] gpo_select;
+    wire       gpo_en;
 
-    // this needs to get pushed into the DDR core. Might go through
-    // an MMCM. Not sure.
+    wire gpo_sync_ce;
+    wire gpo_sync_d;
+    wire gpo_run_ce;
+    wire gpo_run_d;
+    wire gpo_trig_ce;
+    wire gpo_trig_d;
+    wire gpo_pps_ce;
+    wire gpo_pps_d;
+
     IBUFDS u_ddrclk1_ibuf(.I(DDR_CLK_P[1]),.IB(DDR_CLK_N[1]),.O(ddr_clk[1]));
-
     
-
     localparam INV_MMCM = (PROTOTYPE=="TRUE") ? "TRUE" : "FALSE";
     system_clock_v2 #(.INVERT_MMCM(INV_MMCM))
         u_sysclk(.SYS_CLK_P(SYSCLK_P),
@@ -357,7 +354,8 @@ module pueo_turf6 #(parameter IDENT="TURF",
                  .sysclk_ibuf_o(sys_clk_ibuf),
                  .sysclk_phase_o(sys_clk_phase),
                  .sysclk_sync_o(sys_clk_sync),
-                 .SYNC(TOUT));
+                 .gpo_sync_ce_o(gpo_sync_ce),
+                 .gpo_sync_d_o(gpo_sync_d));
     assign PLGPIO[1] = 1'b0;
     assign PLGPIO[0] = 1'b1;
     // NOTE: we might add in the optional TURFIO I2C controls
@@ -376,6 +374,25 @@ module pueo_turf6 #(parameter IDENT="TURF",
                             .sda0_out(CLK_SDA),
                             .scl1_out(CAL_SCL),
                             .sda1_out(CAL_SDA));    
+    
+    turf_gpo_mux #(.SYSCLKTYPE("SYSCLK"))
+        u_mux(.sysclk_i(sys_clk),
+              .gpo_en_i(gpo_en),
+              .gpo_select_i(gpo_select),
+              
+              .gpo_sync_ce_i(gpo_sync_ce),
+              .gpo_sync_d_i(gpo_sync_d),
+              
+              .gpo_run_ce_i(gpo_run_ce),
+              .gpo_run_d_i(gpo_run_d),
+              
+              .gpo_trig_ce_i(gpo_trig_ce),
+              .gpo_trig_d_i(gpo_trig_d),
+              
+              .gpo_pps_ce_i(gpo_pps_ce),
+              .gpo_pps_d_i(gpo_pps_d),
+              
+              .GPO(TOUT));                    
     
     wire hsk_sclk;
     wire hsk_mosi;
@@ -469,6 +486,9 @@ module pueo_turf6 #(parameter IDENT="TURF",
                   .wb_rst_i(1'b0),
                   `CONNECT_WBS_IFM(wb_ , turf_idctl_ ),
                   .bitcmd_sync_o(bitcmd_sync_req),
+                  
+                  .gpo_en_o(gpo_en),
+                  .gpo_select_o(gpo_select),
 
                   .bridge_type_o(bridge_type),
                   .bridge_timeout_i(bridge_timeout),
@@ -706,6 +726,8 @@ module pueo_turf6 #(parameter IDENT="TURF",
                             
                             .pps_flag_o(pps),
                             .pps_pulse_o(pps_pulse),
+                            .gpo_pps_ce_o(gpo_pps_ce),
+                            .gpo_pps_d_o(gpo_pps_d),
                             .cur_sec_o(cur_sec),
                             .cur_time_o(cur_time),
                             .last_pps_o(last_pps),
@@ -785,6 +807,11 @@ module pueo_turf6 #(parameter IDENT="TURF",
                            .pps_trig_i(GPS_TIMEPULSE[1]),
                            
                            .gp_in_i(gp_in),
+                           
+                           .gpo_run_ce_o(gpo_run_ce),
+                           .gpo_run_d_o(gpo_run_d),
+                           .gpo_trig_ce_o(gpo_trig_ce),
+                           .gpo_trig_d_o(gpo_trig_d),
                            
                            .tio_mask_i(tio_mask),
                            .runcfg_i(runcfg),

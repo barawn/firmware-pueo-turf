@@ -17,7 +17,7 @@ module trig_pueo_command(
         
         // pps needs to be in sysclk domain anyway and it's
         // stretched to be at least 8 clocks long.
-        input pps_i,        
+        input pps_i,
         output runrst_o,
         output runstop_o,        
         // this is really only 15 bits
@@ -42,6 +42,9 @@ module trig_pueo_command(
     // the FWU data. (OMG WE CAN ACTUALLY DO FWU yes it's true)
     (* CUSTOM_CC_SRC = WBCLKTYPE *)    
     reg en_crate_pps = 0;
+    (* CUSTOM_CC_SRC = WBCLKTYPE *)
+    reg [3:0] rundly = {4{1'b0}};
+    
     (* CUSTOM_CC_DST = SYSCLKTYPE, ASYNC_REG = "TRUE" *)
     reg [1:0] en_crate_pps_sysclk = {2{1'b0}};
     reg crate_pps = 0;
@@ -117,6 +120,7 @@ module trig_pueo_command(
         
         if (state == ACK && CONTROL_ADDR && wb_we_i) begin
             if (wb_sel_i[0]) en_crate_pps <= wb_dat_i[0];
+            if (wb_sel_i[1]) rundly <= wb_dat_i[8 +: 4];
         end
         
         // ok so this is dumb but it doesn't friggin matter
@@ -181,17 +185,48 @@ module trig_pueo_command(
                                      .clkA(sysclk_i),.clkB(wb_clk_i));
     flag_sync u_fwu_complete_sync(.in_clkA(fwu_complete),.out_clkB(fwu_complete_wbclk),
                                   .clkA(sysclk_i),.clkB(wb_clk_i));   
+
+    // the way the programmable rundelay works is that it's an
+    // additional delay on top of the 33-clock delay
+    // don't even ASK me where the overall 33-clock delay comes from, I am so confused
+    wire base_runrst = (sysclk_phase_i && runcmd == 2);
+    wire mid_runrst;
+    wire base_runstop = (sysclk_phase_i && runcmd == 3);
+    wire mid_runstop;
+    SRLC32E u_runreset_dlyA(.D(base_runrst),
+                            .CE(1'b1),
+                            .CLK(sysclk_i),
+                            .Q31(mid_runrst));
+    SRLC32E u_runstop_dlyA(.D(base_runstop),
+                           .CE(1'b1),
+                           .CLK(sysclk_i),
+                           .Q31(mid_runstop));
+    (* CUSTOM_CC_DST = SYSCLKTYPE *)
+    SRL16E u_runreset_dlyB(.D(mid_runrst),
+                           .CE(1'b1),
+                           .CLK(sysclk_i),
+                           .A0(rundly[0]),
+                           .A1(rundly[1]),
+                           .A2(rundly[2]),
+                           .A3(rundly[3]),
+                           .Q(runrst_o));
+    (* CUSTOM_CC_DST = SYSCLKTYPE *)
+    SRL16E u_runstop_dlyB(.D(mid_runstop),
+                          .CE(1'b1),
+                          .CLK(sysclk_i),
+                          .A0(rundly[0]),
+                          .A1(rundly[1]),
+                          .A2(rundly[2]),
+                          .A3(rundly[3]),
+                          .Q(runstop_o));
     // ack
     assign wb_ack_o = (state == ACK);
     assign wb_err_o = 1'b0;
     assign wb_rty_o = 1'b0;
-    assign wb_dat_o = { {31{1'b0}}, en_crate_pps };
+    assign wb_dat_o = { {16{1'b0}}, {4{1'b0}}, rundly, {7{1'b0}}, en_crate_pps };
     
     assign s_trig_tready = s_trig_tvalid && sysclk_phase_i;
 
-    assign runrst_o = (sysclk_phase_i && runcmd == 2);
-    assign runstop_o = (sysclk_phase_i && runcmd == 3);
-    
     assign command67_o = command;
     assign command68_o = command;
         
