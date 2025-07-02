@@ -56,6 +56,7 @@ hdl/trig/trig_pueo_command.sv
 hdl/trig/trig_pueo_wrap_v3.sv
 hdl/ethernet/turf_acknack_port.sv
 hdl/ethernet/turf_event_ctrl_port.sv
+hdl/turf_gpo_mux.sv
 hdl/trig/turf_header_generator_v3.sv
 hdl/turf_id_ctrl.sv
 hdl/turf_intercon.sv

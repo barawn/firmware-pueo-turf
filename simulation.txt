@@ -1,3 +1,5 @@
+verilog-library-barawn/sim/tb_rclock.sv
+sim/pueo_master_trigger_process_tb.sv
 sim/ddr4/arch_package.sv
 sim/ddr4/MemoryArray.sv
 sim/ddr4/proj_package.sv
@@ -6,9 +8,7 @@ sim/ddr4/StateTable.sv
 sim/ddr4/ddr4_model.sv
 sim/ddr4/interface.sv
 sim/sim_mem_wrapper.sv
-verilog-library-barawn/sim/tb_rclock.sv
 sim/turfio_event_accumulator_tb.sv
-sim/pueo_master_trigger_process_tb.sv
 sim/axis_8to4_tb.sv
 sim/event_cc_stat_counter_tb.sv
 sim/event_flow_tb.sv
