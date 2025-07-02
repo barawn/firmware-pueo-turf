@@ -46,6 +46,7 @@ module trig_pueo_wrap_v3 #(parameter WBCLKTYPE = "NONE",
         
         input pps_trig_i,
         input [5:0] gp_in_i,
+        output photoshutter_o,
         
         // SOOOOO MANY INPUTS.
         // SURFs send triggers on a 4-clock cycle, even
@@ -74,7 +75,8 @@ module trig_pueo_wrap_v3 #(parameter WBCLKTYPE = "NONE",
     localparam [15:0] DEFAULT_HOLDOFF = 16'd82;
     localparam [15:0] DEFAULT_LATENCY = 16'd100;
     localparam [15:0] DEFAULT_OFFSET = 16'd0;
-        
+    localparam [15:0] DEFAULT_PHOTO_PRESCALE = 16'd100;
+            
     localparam REAL_SURFS_PER_TIO = 7;
     // it's 3 clocks from phase -> trig dat valid.
     // then the *second* trig dat valid comes in 4 clocks later.
@@ -123,6 +125,7 @@ module trig_pueo_wrap_v3 #(parameter WBCLKTYPE = "NONE",
     wire [15:0] trig_offset;
     wire [15:0] trig_latency;
     wire [15:0] trig_holdoff;
+    wire [15:0] photo_prescale;
     
     wire [11:0] turf_soft_trig;
     wire [7:0]  turf_soft_metadata;
@@ -154,13 +157,15 @@ module trig_pueo_wrap_v3 #(parameter WBCLKTYPE = "NONE",
     wire [31:0] occupancy;
     wire surf_err;
     wire turf_err;
-        
+    wire [15:0] photo_prescale;
+    wire photo_en;        
     pueo_master_trig_process_v3 #(.SYSCLKTYPE(SYSCLKTYPE),
                                .MEMCLKTYPE(MEMCLKTYPE),
                                .WBCLKTYPE(WBCLKTYPE),
                                .DEFAULT_OFFSET(DEFAULT_OFFSET),
                                .DEFAULT_LATENCY(DEFAULT_LATENCY),
-                               .DEFAULT_HOLDOFF(DEFAULT_HOLDOFF))
+                               .DEFAULT_HOLDOFF(DEFAULT_HOLDOFF),
+                               .DEFAULT_PHOTO_PRESCALE(DEFAULT_PHOTO_PRESCALE))
         u_master_trig(.sysclk_i(sysclk_i),
                       .sysclk_phase_i(sysclk_phase_i),
                       .sysclk_x2_i(sysclk_x2_i),
@@ -170,6 +175,8 @@ module trig_pueo_wrap_v3 #(parameter WBCLKTYPE = "NONE",
                       .trig_offset_i(trig_offset),
                       .trig_latency_i(trig_latency),
                       .trig_holdoff_i(trig_holdoff),
+                      .photo_prescale_i(photo_prescale),
+                      .photo_en_i(photo_en),
                       
                       .trigin_dat_i(real_trigin),
                       .trigin_dat_valid_i(trigger_valid),
@@ -217,6 +224,8 @@ module trig_pueo_wrap_v3 #(parameter WBCLKTYPE = "NONE",
                       .tio_mask_i(tio_mask_i),
                       .runcfg_i(runcfg_i),
 
+                      .photoshutter_o(photoshutter_o),
+
                       .event_o(trig_event_flag),
                                             
                       `CONNECT_AXI4S_MIN_IF(trigout_ , trig_ ),
@@ -231,7 +240,11 @@ module trig_pueo_wrap_v3 #(parameter WBCLKTYPE = "NONE",
             trig_ila u_ila(.clk(sysclk_i),
                            .probe0(turf_soft_valid),
                            .probe1(turf_pps_valid),
-                           .probe2(turf_ext_valid));
+                           .probe2(turf_ext_valid),
+                           .probe3(turf_ext_trig),
+                           .probe4(cur_addr),
+                           .probe5(trig_tdata),
+                           .probe6(trig_tvalid));
         end
     endgenerate    
     // our wb space here is 8 bits = 64 registers
@@ -312,7 +325,8 @@ module trig_pueo_wrap_v3 #(parameter WBCLKTYPE = "NONE",
                      .SYSCLKTYPE(SYSCLKTYPE),
                      .DEFAULT_LATENCY(DEFAULT_LATENCY),
                      .DEFAULT_HOLDOFF(DEFAULT_HOLDOFF),
-                     .DEFAULT_OFFSET(DEFAULT_OFFSET))
+                     .DEFAULT_OFFSET(DEFAULT_OFFSET),
+                     .DEFAULT_PHOTO_PRESCALE(DEFAULT_PHOTO_PRESCALE))
                       u_trigctrl( .wb_clk_i(wb_clk_i),
                                   .wb_rst_i(wb_rst_i),
                                   `CONNECT_WBS_IFM(wb_ , trigctl_ ),
@@ -339,6 +353,9 @@ module trig_pueo_wrap_v3 #(parameter WBCLKTYPE = "NONE",
                                   .trig_offset_o(trig_offset),
                                   .trig_latency_o(trig_latency),
                                   .trig_holdoff_o(trig_holdoff),
+                                  .photo_prescale_o(photo_prescale),
+                                  .photo_en_o(photo_en),
+                                  
                                   .pps_trig_i(pps_trig_i),
                                   .gp_in_i(gp_in_i),
                                   .occupancy_i(occupancy),

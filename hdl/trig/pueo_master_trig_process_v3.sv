@@ -12,6 +12,7 @@ module pueo_master_trig_process_v3 #(parameter NSURF=28,
                                      parameter [15:0] DEFAULT_OFFSET = 16'd0,
                                      parameter [15:0] DEFAULT_LATENCY = 16'd0,
                                      parameter [15:0] DEFAULT_HOLDOFF = 16'd0,
+                                     parameter [15:0] DEFAULT_PHOTO_PRESCALE = 16'd0,
                                      parameter [2:0] PHASE_RESET = 4)(
         input sysclk_i,
         input sysclk_phase_i,
@@ -27,6 +28,10 @@ module pueo_master_trig_process_v3 #(parameter NSURF=28,
         input [15:0]            trig_latency_i,
         input [15:0]            trig_holdoff_i,
 
+        input [15:0]            photo_prescale_i,
+        input                   photo_en_i,
+        output                  photoshutter_o,
+                
         // these get organized as
         // tio3, tio2, tio1, tio0
         // where each tio is 7*NBITs bits
@@ -177,7 +182,13 @@ module pueo_master_trig_process_v3 #(parameter NSURF=28,
     // this is for trigger deadtime monitoring: it conditions trigger_dead on !trigger_held_off.
     (* CUSTOM_MC_DST_TAG = "TRIG_HELDOFF" *)
     reg trigger_is_dead = 0;
-    
+
+    (* CUSTOM_CC_DST = SYSCLKTYPE *)
+    reg [15:0] photo_prescale = DEFAULT_PHOTO_PRESCALE;
+    (* CUSTOM_CC_DST = SYSCLKTYPE *)
+    reg        photo_en = 1'b0;
+    reg [16:0] photo_prescale_counter = {17{1'b0}};
+    reg photoshutter = 0;        
     // coming from the buffer track
     wire trigger_dead;
     
@@ -444,6 +455,18 @@ module pueo_master_trig_process_v3 #(parameter NSURF=28,
         if (sysclk_x2_ce_i)
             metadata_store <= { metadata_out[3], metadata_out[2], metadata_out[1], metadata_out[0] };                    
     end
+
+    always @(posedge sysclk_i) begin
+        if (runrst_i) begin
+            photo_prescale <= photo_prescale_i;
+            photo_en <= photo_en_i;
+        end            
+        if (!photo_en) photo_prescale_counter <= {17{1'b0}};
+        else if (photo_prescale_counter[16]) photo_prescale_counter <= photo_prescale;
+        else if (trigger_occurred_rereg) photo_prescale_counter <= photo_prescale_counter - 1;
+        
+        photoshutter <= photo_prescale_counter[16];
+    end
     
     // BUFFER TRACKING
     trig_buffer_track #(.SYSCLKTYPE(SYSCLKTYPE),
@@ -515,4 +538,6 @@ module pueo_master_trig_process_v3 #(parameter NSURF=28,
 
     assign dead_o = trigger_is_dead;
 
+    assign photoshutter_o = photoshutter;
+    
 endmodule

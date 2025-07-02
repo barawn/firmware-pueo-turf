@@ -13,7 +13,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="A",
                     parameter [3:0] VER_MAJOR=4'd0,
                     parameter [3:0] VER_MINOR=4'd7,
-                    parameter [7:0] VER_REV=8'd21,
+                    parameter [7:0] VER_REV=8'd23,
                     parameter [15:0] FIRMWARE_DATE = {16{1'b0}})                    
                     (
 
@@ -196,8 +196,10 @@ module pueo_turf6 #(parameter IDENT="TURF",
     wire hsk_irq;    
     wire hsk_complete;
     wire pps_pulse;
+    wire photoshutter;
+    
     assign emio_gpio_i[11:0] = { GPS_TIMEPULSE[1], pps_pulse, {7{1'b0}}, hsk_complete, hsk_irq, UART_IRQ_B };
-    assign GPS_EXTINT[0] = !emio_gpio_t[8] && emio_gpio_o[8];
+    assign GPS_EXTINT[0] = photoshutter;
     assign GPS_EXTINT[1] = !emio_gpio_t[9] && emio_gpio_o[9];
     // TURFIO resets
     IOBUF u_tioa_resetb(.IO(TRESETB_A),.I(emio_gpio_o[12]),
@@ -808,7 +810,9 @@ module pueo_turf6 #(parameter IDENT="TURF",
                                                 
                            .memclk(ddr_clk[0]),
                            `CONNECT_AXI4S_MIN_IF( turfhdr_ , turfhdr_ ),
-                           .turfhdr_tlast(turfhdr_tlast),                              
+                           .turfhdr_tlast(turfhdr_tlast),
+                           
+                           .photoshutter_o(photoshutter),
                                                 
                            .command67_o(turfio_if_command67),
                            .command68_o(turfio_if_command68));                           

@@ -10,7 +10,8 @@ module pueo_trig_ctrl_v3 #(
     // always does it.
     parameter [15:0] DEFAULT_HOLDOFF = 16'd0,
     parameter [15:0] DEFAULT_LATENCY = 16'd0,
-    parameter [15:0] DEFAULT_OFFSET = 16'd0
+    parameter [15:0] DEFAULT_OFFSET = 16'd0,
+    parameter [15:0] DEFAULT_PHOTO_PRESCALE = 16'd0
     )(
         input wb_clk_i,
         input wb_rst_i,
@@ -53,10 +54,12 @@ module pueo_trig_ctrl_v3 #(
         output [27:0] trig_mask_o,
         output update_trig_mask_o,
 
-        // constants
+        // constants captured at run start
         output [15:0] trig_latency_o,
         output [15:0] trig_offset_o,
-        output [15:0] trig_holdoff_o
+        output [15:0] trig_holdoff_o,
+        output [15:0] photo_prescale_o,
+        output photo_en_o
     );
 
     // There is no soft offset because it doesn't matter,
@@ -69,6 +72,9 @@ module pueo_trig_ctrl_v3 #(
     localparam [7:0] OCCUPANCY_ADDR = 8'h14;
     localparam [7:0] HOLDOFF_ERR_ADDR = 8'h18;
     localparam [7:0] EVENT_COUNT_ADDR = 8'h1C;
+    localparam [7:0] EXT_PRESCALE_ADDR = 8'h20;
+    localparam [7:0] PHOTO_PRESCALE_ADDR = 8'h24;
+
     (* CUSTOM_CC_SRC = WBCLKTYPE *)
     reg [27:0] mask_register = {28{1'b1}};
     (* CUSTOM_CC_SRC = WBCLKTYPE *)
@@ -77,7 +83,11 @@ module pueo_trig_ctrl_v3 #(
     reg [15:0] latency_register = DEFAULT_LATENCY;
     (* CUSTOM_CC_SRC = WBCLKTYPE *)
     reg [15:0] holdoff_register = DEFAULT_HOLDOFF;
-    
+    (* CUSTOM_CC_SRC = WBCLKTYPE *)
+    reg [15:0] photo_prescale = DEFAULT_PHOTO_PRESCALE;
+    (* CUSTOM_CC_SRC = WBCLKTYPE *)
+    reg photo_en = 0;
+            
     (* CUSTOM_CC_DST = WBCLKTYPE *)
     reg [1:0] running_wbclk = {2{1'b0}};
     
@@ -110,6 +120,14 @@ module pueo_trig_ctrl_v3 #(
     reg [2:0] ext_trig_sel = {2{1'b0}};
     (* CUSTOM_CC_SRC = WBCLKTYPE *)
     reg [15:0] ext_offset_register = {16{1'b0}};    
+
+    wire update_prescale_sysclk;
+    (* CUSTOM_CC_SRC = WBCLKTYPE *)
+    reg [15:0] ext_prescale = {16{1'b0}};
+    (* CUSTOM_CC_DST = SYSCLKTYPE *)
+    reg [15:0] ext_prescale_sysclk = {16{1'b0}};
+    // prescales work by counting down and bit 16 is the trip    
+    reg [16:0] ext_prescale_counter = {17{1'b0}};
     
     always @(posedge wb_clk_i) begin
         running_wbclk <= { running_wbclk[0], running_i };
@@ -127,6 +145,8 @@ module pueo_trig_ctrl_v3 #(
             else if (wb_adr_i == HOLDOFF_ERR_ADDR) dat_reg <= { {14{1'b0}}, turf_err_i, surf_err_i, holdoff_register };
             else if (wb_adr_i == SOFT_TRIGGER_ADDR) dat_reg <= { {15{1'b0}}, running_wbclk, {16{1'b0}} };
             else if (wb_adr_i == EVENT_COUNT_ADDR) dat_reg <= event_counter_shadow;
+            else if (wb_adr_i == EXT_PRESCALE_ADDR) dat_reg <= { {16{1'b0}}, ext_prescale };
+            else if (wb_adr_i == PHOTO_PRESCALE_ADDR) dat_reg <= { {15{1'b0}}, photo_en, photo_prescale };
             else dat_reg <= {32{1'b0}};
         end
         if (wb_cyc_i && wb_stb_i && wb_we_i) begin
@@ -156,6 +176,15 @@ module pueo_trig_ctrl_v3 #(
                 if (wb_sel_i[1]) ext_trig_sel <= wb_dat_i[8 +: 3];
                 if (wb_sel_i[2]) ext_offset_register[7:0] <= wb_dat_i[16 +: 8];
                 if (wb_sel_i[3]) ext_offset_register[15:8] <= wb_dat_i[24 +: 8];
+            end
+            if (wb_adr_i == EXT_PRESCALE_ADDR) begin
+                if (wb_sel_i[0]) ext_prescale <= wb_dat_i[0 +: 8];
+                if (wb_sel_i[1]) ext_prescale <= wb_dat_i[8 +: 8];
+            end
+            if (wb_adr_i == PHOTO_PRESCALE_ADDR) begin
+                if (wb_sel_i[0]) photo_prescale <= wb_dat_i[0 +: 8];
+                if (wb_sel_i[1]) photo_prescale <= wb_dat_i[8 +: 8];
+                if (wb_sel_i[2]) photo_en <= wb_dat_i[16];
             end
         end
         soft_trig <= ack && (wb_adr_i == SOFT_TRIGGER_ADDR && wb_we_i);
@@ -244,14 +273,20 @@ module pueo_trig_ctrl_v3 #(
         // no effing flooding us, jackasses
         ext_trig_sysclk <= ext_rereg[0] && !ext_rereg[1] && en_ext_trig_sysclk[1] && !ext_trig_pending;
         
-        if (ext_trig_sysclk) turf_ext_addr_in <= cur_addr_i - ext_offset_register;
+        if (ext_prescale_counter[16]) ext_prescale_counter <= ext_prescale_sysclk;
+        else if (ext_trig_sysclk) ext_prescale_counter <= ext_prescale_counter - 1;
         
-        if (ext_trig_sysclk) ext_trig_pending <= 1;
-        else if (phase_shreg[1]) ext_trig_pending <= 0;
+        if (ext_prescale_counter[16]) begin
+            turf_ext_addr_in <= cur_addr_i - ext_offset_register;
+            ext_trig_pending <= 1;
+        end else if (phase_shreg[1]) begin
+            ext_trig_pending <= 0;
+        end        
         
         if (phase_shreg[5]) turf_ext_trig_write <= 0;
         else if (phase_shreg[1]) turf_ext_trig_write <= ext_trig_pending;
 
+        if (update_prescale_sysclk) ext_prescale_sysclk <= ext_prescale;
     end
 
     flag_sync u_soft_sync(.in_clkA(soft_trig),.out_clkB(soft_trig_sysclk),
@@ -261,6 +296,11 @@ module pueo_trig_ctrl_v3 #(
                             .out_clkB(update_trig_mask_o),
                             .clkA(wb_clk_i),
                             .clkB(sysclk_i));
+
+    flag_sync u_update_ext_pre(.in_clkA(wb_ack_o && wb_adr_i == EXT_PRESCALE_ADDR && wb_we_i),
+                               .out_clkB(update_prescale_sysclk),
+                               .clkA(wb_clk_i),
+                               .clkB(sysclk_i));
                             
     assign turf_soft_trig_o = turf_soft_addr_in;
     assign turf_soft_metadata_o = turf_soft_metadata_in;
@@ -278,7 +318,9 @@ module pueo_trig_ctrl_v3 #(
     assign trig_latency_o = latency_register;
     assign trig_offset_o = offset_register;
     assign trig_holdoff_o = holdoff_register;
-    
+    assign photo_prescale_o = photo_prescale;
+    assign photo_en_o = photo_en;
+        
     assign wb_dat_o = dat_reg;                                
     assign wb_ack_o = ack && wb_cyc_i;
     assign wb_err_o = 1'b0;
