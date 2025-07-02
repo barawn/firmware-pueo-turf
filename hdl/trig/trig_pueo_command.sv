@@ -187,12 +187,21 @@ module trig_pueo_command(
                                   .clkA(sysclk_i),.clkB(wb_clk_i));   
 
     // the way the programmable rundelay works is that it's an
-    // additional delay on top of the 33-clock delay
-    // don't even ASK me where the overall 33-clock delay comes from, I am so confused
+    // additional delay on top of the 34-clock delay
+    // don't even ASK me where the overall 34-clock delay comes from, I am so confused
     wire base_runrst = (sysclk_phase_i && runcmd == 2);
     wire mid_runrst;
+    wire fin_runrst;
+    // SRLs are both registered and combinatoric, so these have a dest path too
+    // It's not asynchronous though because rundly is static when the actually commands are issued.
+    (* CUSTOM_CC_DST = SYSCLKTYPE *)
+    reg runrst_delayed = 0;
     wire base_runstop = (sysclk_phase_i && runcmd == 3);
     wire mid_runstop;
+    wire fin_runstop;
+    // ditto to runrst
+    (* CUSTOM_CC_DST = SYSCLKTYPE *)
+    reg runstop_delayed = 0;
     SRLC32E u_runreset_dlyA(.D(base_runrst),
                             .CE(1'b1),
                             .CLK(sysclk_i),
@@ -209,7 +218,7 @@ module trig_pueo_command(
                            .A1(rundly[1]),
                            .A2(rundly[2]),
                            .A3(rundly[3]),
-                           .Q(runrst_o));
+                           .Q(fin_runrst));
     (* CUSTOM_CC_DST = SYSCLKTYPE *)
     SRL16E u_runstop_dlyB(.D(mid_runstop),
                           .CE(1'b1),
@@ -218,7 +227,11 @@ module trig_pueo_command(
                           .A1(rundly[1]),
                           .A2(rundly[2]),
                           .A3(rundly[3]),
-                          .Q(runstop_o));
+                          .Q(fin_runstop));
+    always @(posedge sysclk_i) begin
+        runrst_delayed <= fin_runrst;
+        runstop_delayed <= fin_runstop;
+    end                                 
     // ack
     assign wb_ack_o = (state == ACK);
     assign wb_err_o = 1'b0;
@@ -226,6 +239,9 @@ module trig_pueo_command(
     assign wb_dat_o = { {16{1'b0}}, {4{1'b0}}, rundly, {7{1'b0}}, en_crate_pps };
     
     assign s_trig_tready = s_trig_tvalid && sysclk_phase_i;
+
+    assign runrst_o = runrst_delayed;
+    assign runstop_o = runstop_delayed;
 
     assign command67_o = command;
     assign command68_o = command;
