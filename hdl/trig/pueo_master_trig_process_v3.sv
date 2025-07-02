@@ -31,6 +31,11 @@ module pueo_master_trig_process_v3 #(parameter NSURF=28,
         input [15:0]            photo_prescale_i,
         input                   photo_en_i,
         output                  photoshutter_o,
+        
+        output                  gpo_run_ce_o,
+        output                  gpo_run_d_o,
+        output                  gpo_trig_ce_o,
+        output                  gpo_trig_d_o,
                 
         // these get organized as
         // tio3, tio2, tio1, tio0
@@ -189,6 +194,10 @@ module pueo_master_trig_process_v3 #(parameter NSURF=28,
     reg        photo_en = 1'b0;
     reg [16:0] photo_prescale_counter = {17{1'b0}};
     reg photoshutter = 0;        
+
+    // the holdoff counter also acts as the stretch for the trigger output
+    reg trigger_held_off_rereg = 0;
+
     // coming from the buffer track
     wire trigger_dead;
     
@@ -322,10 +331,11 @@ module pueo_master_trig_process_v3 #(parameter NSURF=28,
         end
     endgenerate   
 
-
     // all this needs to be timed up so that trig_running goes 1
     // in clock 0. therefore trig_latency counter resets itself to 1.
-    always @(posedge sysclk_i) begin
+    always @(posedge sysclk_i) begin    
+        trigger_held_off_rereg <= trigger_held_off;
+    
         trigger_is_dead <= trigger_dead && !trigger_held_off;
 //        if (runrst_i) trig_running <= 1;
 //        else if (runstop_i) trig_running <= 0;
@@ -539,5 +549,11 @@ module pueo_master_trig_process_v3 #(parameter NSURF=28,
     assign dead_o = trigger_is_dead;
 
     assign photoshutter_o = photoshutter;
+
+    assign gpo_run_ce_o = (runrst_i || runstop_i);
+    assign gpo_run_d_o = runrst_i;
+
+    assign gpo_trig_ce_o = 1'b1;
+    assign gpo_trig_d_o = trigger_held_off_rereg;
     
 endmodule

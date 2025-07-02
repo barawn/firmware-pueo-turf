@@ -23,6 +23,9 @@ module pueo_time_wrap_v2 #(parameter SYSCLKTYPE = "NONE",
         
         output pps_pulse_o,
         
+        output gpo_pps_ce_o,
+        output gpo_pps_d_o,
+        
         output pps_flag_o,
         output [31:0] cur_sec_o,
         output [31:0] cur_time_o,
@@ -97,6 +100,9 @@ module pueo_time_wrap_v2 #(parameter SYSCLKTYPE = "NONE",
     reg [1:0] pps_dbg_wbclk = {2{1'b0}};
     always @(posedge wb_clk_i) pps_dbg_wbclk <= { pps_dbg_wbclk[0], pps_reg };
     
+    // just reregister in holdoff, whatever
+    reg pps_gpo = 0;
+
     always @(posedge sys_clk_i) begin
         count_sysclk_rereg <= { count_sysclk_rereg[0], count_sysclk };
 
@@ -117,6 +123,8 @@ module pueo_time_wrap_v2 #(parameter SYSCLKTYPE = "NONE",
         if (!use_ext_pps_sysclk[1]) pps_in_holdoff <= 0;
         else if (pps_flag) pps_in_holdoff <= 1;
         else if (pps_holdoff_counter == 0) pps_in_holdoff <= 0;
+        
+        pps_gpo <= pps_in_holdoff;
         
         if (!pps_in_holdoff) pps_holdoff_counter <= pps_holdoff_expanded;
         else pps_holdoff_counter <= pps_holdoff_counter - 1;
@@ -186,4 +194,7 @@ module pueo_time_wrap_v2 #(parameter SYSCLKTYPE = "NONE",
     assign pps_pulse_o = pps_in_holdoff;
     assign pps_dbg_o = pps_dbg_wbclk[1];
     assign pps_flag_o = pps_flag;        
+    
+    assign gpo_pps_ce_o = 1'b1;
+    assign gpo_pps_d_o = pps_gpo;
 endmodule

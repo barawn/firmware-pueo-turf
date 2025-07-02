@@ -28,6 +28,8 @@ module turf_id_ctrl #(
         input [NUM_CLK_MON-1:0] clk_mon_i,
         output [NUM_CLK_MON-1:0] clk_ok_o,
         
+        output [2:0] gpo_select_o,
+        output gpo_en_o,
         output bitcmd_sync_o
     );
     // Number of section bits (3 for a total of 8 sections
@@ -50,6 +52,10 @@ module turf_id_ctrl #(
     reg [31:0] statctrl_reg = {32{1'b0}};
     (* CUSTOM_CC_SRC = "PSCLK" *)
     reg bitcmd_sync = 0;
+    (* CUSTOM_CC_SRC = "PSCLK" *)
+    reg [2:0] gpo_select = {3{1'b0}};
+    (* CUSTOM_CC_SRC = "PSCLK" *)
+    reg gpo_en = 1'b0;
     
     assign id_statctrl[0] = IDENT;
     assign id_statctrl[1] = DATEVERSION;
@@ -152,10 +158,15 @@ module turf_id_ctrl #(
 
         if (wb_cyc_i && wb_stb_i && wb_ack_o && id_statctrl_sel && id_statctrl_adr== 15'h000C && wb_we_i) begin
            if (wb_sel_i[0]) statctrl_reg[0] <= wb_dat_i[0];
+           if (wb_sel_i[1]) begin
+                statctrl_reg[8 +: 3] <= wb_dat_i[8 +: 3];
+                statctrl_reg[15] <= wb_dat_i[15];
+           end                
         end
         
         bitcmd_sync <= statctrl_reg[0];
-
+        gpo_select <= statctrl_reg[8 +: 3];
+        gpo_en <= statctrl_reg[15];
 
         bridgectl_ack_ff <= wb_cyc_i && wb_stb_i && bridgectl_en;
         
@@ -197,5 +208,8 @@ module turf_id_ctrl #(
 
     assign bitcmd_sync_o = bitcmd_sync;
     assign bridge_type_o = bridge_type;
+    
+    assign gpo_select_o = gpo_select;
+    assign gpo_en_o = gpo_en;
     
 endmodule

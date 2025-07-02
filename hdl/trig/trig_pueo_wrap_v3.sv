@@ -47,6 +47,11 @@ module trig_pueo_wrap_v3 #(parameter WBCLKTYPE = "NONE",
         input pps_trig_i,
         input [5:0] gp_in_i,
         output photoshutter_o,
+
+        output gpo_run_ce_o, 
+        output gpo_run_d_o,  
+        output gpo_trig_ce_o,
+        output gpo_trig_d_o, 
         
         // SOOOOO MANY INPUTS.
         // SURFs send triggers on a 4-clock cycle, even
@@ -177,6 +182,11 @@ module trig_pueo_wrap_v3 #(parameter WBCLKTYPE = "NONE",
                       .trig_holdoff_i(trig_holdoff),
                       .photo_prescale_i(photo_prescale),
                       .photo_en_i(photo_en),
+                      
+                      .gpo_run_ce_o(gpo_run_ce_o),
+                      .gpo_run_d_o(gpo_run_d_o),
+                      .gpo_trig_ce_o(gpo_trig_ce_o),
+                      .gpo_trig_d_o(gpo_trig_d_o),
                       
                       .trigin_dat_i(real_trigin),
                       .trigin_dat_valid_i(trigger_valid),

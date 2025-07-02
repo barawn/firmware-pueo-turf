@@ -12,7 +12,10 @@ module system_clock_v2( input SYS_CLK_P,
                         // clock enable indicator for sysclk_x2 to capture sysclk
                         output sysclk_x2_ce_o,
                         output sysclk_sync_o,
-                        output SYNC );
+                        // instead of outputting SYNC we now have a
+                        // configurable output
+                        output gpo_sync_ce_o,
+                        output gpo_sync_d_o);
     // the phase indicators mean we go
     // sysclk   sysclkx2    sysclk_phase    sysclk_x2_phase_reg     sysclk_x2_phase_rereg sysclk_x2_ce_0
     // 0        1           0               0                       0                     DLYFF 1
@@ -143,5 +146,7 @@ module system_clock_v2( input SYS_CLK_P,
     assign sysclk_phase_o = sysclk_phase[3];
     assign sysclk_sync_o = sysclk_sync;
     assign sysclk_x2_ce_o = sysclk_x2_ce;
-    assign SYNC = sysclk_sync_obuf;
+    
+    assign gpo_sync_ce_o = (sysclk_phase[2:0] == 3'b111);
+    assign gpo_sync_d_o = ~sysclk_sync;
 endmodule
