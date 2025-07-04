@@ -120,6 +120,8 @@ module pueo_trig_ctrl_v3 #(
     reg [2:0] ext_trig_sel = {2{1'b0}};
     (* CUSTOM_CC_SRC = WBCLKTYPE *)
     reg [15:0] ext_offset_register = {16{1'b0}};    
+    (* CUSTOM_CC_SRC = WBCLKTYPE *)
+    reg ext_edge = {16{1'b0}};
 
     wire update_prescale_sysclk;
     (* CUSTOM_CC_SRC = WBCLKTYPE *)
@@ -140,7 +142,7 @@ module pueo_trig_ctrl_v3 #(
             if (wb_adr_i == MASK_ADDR) dat_reg <= { {4{1'b0}}, mask_register };
             else if (wb_adr_i == LATENCY_OFFSET_ADDR) dat_reg <= { offset_register, latency_register };
             else if (wb_adr_i == PPS_TRIGGER_ADDR) dat_reg <= { pps_offset_register, {15{1'b0}}, en_pps_trig };
-            else if (wb_adr_i == EXT_TRIGGER_ADDR) dat_reg <= { ext_offset_register, {5{1'b0}}, ext_trig_sel, {7{1'b0}}, en_ext_trig };
+            else if (wb_adr_i == EXT_TRIGGER_ADDR) dat_reg <= { ext_offset_register, {5{1'b0}}, ext_trig_sel, {6{1'b0}}, ext_edge, en_ext_trig };
             else if (wb_adr_i == OCCUPANCY_ADDR) dat_reg <= occupancy_i;
             else if (wb_adr_i == HOLDOFF_ERR_ADDR) dat_reg <= { {14{1'b0}}, turf_err_i, surf_err_i, holdoff_register };
             else if (wb_adr_i == SOFT_TRIGGER_ADDR) dat_reg <= { {15{1'b0}}, running_wbclk, {16{1'b0}} };
@@ -173,6 +175,7 @@ module pueo_trig_ctrl_v3 #(
             end
             if (wb_adr_i == EXT_TRIGGER_ADDR) begin
                 if (wb_sel_i[0]) en_ext_trig <= wb_dat_i[0];
+                if (wb_sel_i[0]) ext_edge <= wb_dat_i[1];
                 if (wb_sel_i[1]) ext_trig_sel <= wb_dat_i[8 +: 3];
                 if (wb_sel_i[2]) ext_offset_register[7:0] <= wb_dat_i[16 +: 8];
                 if (wb_sel_i[3]) ext_offset_register[15:8] <= wb_dat_i[24 +: 8];
@@ -228,10 +231,18 @@ module pueo_trig_ctrl_v3 #(
     // 0        001000             4    1
     // 0        010000             5    1
     // 0        100000             6    1   release here
+
+    (* CUSTOM_CC_DST = SYSCLKTYPE *)
+    reg [1:0] ext_edge_sysclk = {2{1'b0}};
+
+    wire ext_valid = (ext_edge_sysclk[1]) ? ext_rereg == 2'b10 : ext_rereg == 2'b01;
+
     always @(posedge sysclk_i) begin
         phase_shreg <= { phase_shreg[4:0], sysclk_phase_i };
         en_pps_trig_sysclk <= { en_pps_trig_sysclk[0], en_pps_trig };
         en_ext_trig_sysclk <= { en_ext_trig_sysclk[0], en_ext_trig };
+
+        ext_edge_sysclk <= { ext_edge_sysclk[0], ext_edge };
 
         /// SOFT TRIGGER
         if (!running_i) turf_soft_metadata_in <= 8'h80;
@@ -271,7 +282,7 @@ module pueo_trig_ctrl_v3 #(
         ext_demux <= ext_in;           
         ext_rereg <= {ext_rereg[0], ext_demux};
         // no effing flooding us, jackasses
-        ext_trig_sysclk <= ext_rereg[0] && !ext_rereg[1] && en_ext_trig_sysclk[1] && !ext_trig_pending;
+        ext_trig_sysclk <= ext_valid && en_ext_trig_sysclk[1] && !ext_trig_pending;
         
         if (ext_prescale_counter[16]) ext_prescale_counter <= ext_prescale_sysclk;
         else if (ext_trig_sysclk) ext_prescale_counter <= ext_prescale_counter - 1;
