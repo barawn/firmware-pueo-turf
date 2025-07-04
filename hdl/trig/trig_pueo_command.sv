@@ -29,6 +29,8 @@ module trig_pueo_command(
     
     parameter WBCLKTYPE = "NONE";
     parameter SYSCLKTYPE = "NONE";
+    // set upstream
+    parameter [3:0] DEFAULT_RUNDLY = 4'h0;
     
     // Commands are captured BEFORE sysclk_phase_i so we can
     // change *in* sysclk_phase_i.
@@ -43,7 +45,7 @@ module trig_pueo_command(
     (* CUSTOM_CC_SRC = WBCLKTYPE *)    
     reg en_crate_pps = 0;
     (* CUSTOM_CC_SRC = WBCLKTYPE *)
-    reg [3:0] rundly = {4{1'b0}};
+    reg [3:0] rundly = DEFAULT_RUNDLY;
     
     (* CUSTOM_CC_DST = SYSCLKTYPE, ASYNC_REG = "TRUE" *)
     reg [1:0] en_crate_pps_sysclk = {2{1'b0}};

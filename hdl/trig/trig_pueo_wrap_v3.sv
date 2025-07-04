@@ -81,7 +81,8 @@ module trig_pueo_wrap_v3 #(parameter WBCLKTYPE = "NONE",
     localparam [15:0] DEFAULT_LATENCY = 16'd100;
     localparam [15:0] DEFAULT_OFFSET = 16'd0;
     localparam [15:0] DEFAULT_PHOTO_PRESCALE = 16'd100;
-            
+    localparam [3:0]  DEFAULT_RUNDLY = 3;            
+
     localparam REAL_SURFS_PER_TIO = 7;
     // it's 3 clocks from phase -> trig dat valid.
     // then the *second* trig dat valid comes in 4 clocks later.
@@ -374,7 +375,8 @@ module trig_pueo_wrap_v3 #(parameter WBCLKTYPE = "NONE",
                                   );
             
     trig_pueo_command #(.WBCLKTYPE(WBCLKTYPE),
-                        .SYSCLKTYPE(SYSCLKTYPE))
+                        .SYSCLKTYPE(SYSCLKTYPE),
+                        .DEFAULT_RUNDLY(DEFAULT_RUNDLY))
                       u_command( .wb_clk_i(wb_clk_i),
                                  .wb_rst_i(wb_rst_i),
                                  `CONNECT_WBS_IFM( wb_ , cmd_ ),
