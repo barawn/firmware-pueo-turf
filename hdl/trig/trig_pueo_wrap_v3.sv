@@ -93,6 +93,13 @@ module trig_pueo_wrap_v3 #(parameter WBCLKTYPE = "NONE",
     localparam [3:0] VALID_OFFSET_2 = 4'd5;
 
     wire [4*REAL_SURFS_PER_TIO*16-1:0] real_trigin;
+    generate
+        genvar i;
+        for (i=0;i<4;i=i+1) begin
+            assign real_trigin[REAL_SURFS_PER_TIO*16*i +: REAL_SURFS_PER_TIO*16] =
+                trig_dat_i[8*16*i +: REAL_SURFS_PER_TIO*16];
+        end    
+    endgenerate
     
     wire phase_delayed;
     wire phase_delayed_2;

@@ -115,7 +115,7 @@ module turfio_if #( parameter [31:0] TRAIN_VALUE=32'hA55A6996,
         8'h00,
         8'h00,
         8'h00,
-        8'h01 };
+        8'h08 };
 
     // create a lookup function for parameters
     function [6:0] lookup_inv_cin;
