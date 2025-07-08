@@ -94,10 +94,10 @@ module trig_pueo_wrap_v3 #(parameter WBCLKTYPE = "NONE",
 
     wire [4*REAL_SURFS_PER_TIO*16-1:0] real_trigin;
     generate
-        genvar i;
-        for (i=0;i<4;i=i+1) begin
-            assign real_trigin[REAL_SURFS_PER_TIO*16*i +: REAL_SURFS_PER_TIO*16] =
-                trig_dat_i[8*16*i +: REAL_SURFS_PER_TIO*16];
+        genvar t;
+        for (t=0;t<4;t=t+1) begin
+            assign real_trigin[REAL_SURFS_PER_TIO*16*t +: REAL_SURFS_PER_TIO*16] =
+                trig_dat_i[8*16*t +: REAL_SURFS_PER_TIO*16];
         end    
     endgenerate
     
@@ -138,7 +138,6 @@ module trig_pueo_wrap_v3 #(parameter WBCLKTYPE = "NONE",
     wire [15:0] trig_offset;
     wire [15:0] trig_latency;
     wire [15:0] trig_holdoff;
-    wire [15:0] photo_prescale;
     
     wire [11:0] turf_soft_trig;
     wire [7:0]  turf_soft_metadata;
