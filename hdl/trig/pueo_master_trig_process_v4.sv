@@ -153,7 +153,10 @@ module pueo_master_trig_process_v4 #(parameter NSURF=28,
     // this is the current address. just duplicate stuff, it ain't bad.
     reg [11:0] current_address = {12{1'b0}};
     
+    // metadata from the URAMs
     wire [63:0] metadata_out[3:0];
+    // metadata out of the leveltwo trigger
+    wire [63:0] leveltwo_metadata[3:0];
     wire [7:0]  trigger_out[3:0];    
 
     // SO MANY GODDAMN REGISTERS
@@ -170,8 +173,9 @@ module pueo_master_trig_process_v4 #(parameter NSURF=28,
     reg [2:0] sysclk_x2_sequence = {3{1'b0}};
 
     // OK, so now we apply offsets.
-    reg trigger_occurred = 0;
-    // trigger occurred is conditioned on sysclk_x2_ce
+    wire leveltwo_trigger;
+
+    // leveltwo_trigger is conditioned on sysclk_x2_ce
     // This means it launches in the FIRST HALF of SYSCLK.
     // To transfer back to SYSCLK we need to REREGISTER it
     // so it is valid to be captured again.
@@ -444,7 +448,7 @@ module pueo_master_trig_process_v4 #(parameter NSURF=28,
         // So trig_holdoff_counter is holdoff - 2 and in sysclk_x2_clock units
         // so only program in an even value.
         // nominally 84.        
-        if (trigger_occurred) trig_holdoff <= 1;
+        if (leveltwo_trigger) trig_holdoff <= 1;
         else if (trig_holdoff_reached) trig_holdoff <= 0;
 
         if (!trig_holdoff) trig_holdoff_counter <= {1'b0, trig_holdoff_sysclk};
@@ -459,16 +463,40 @@ module pueo_master_trig_process_v4 #(parameter NSURF=28,
         // - masking stuff
         // - holdoff
         // - dead
-        trigger_occurred <= |trigger_out[3:0] && sysclk_x2_ce_i && !trig_holdoff && !dead_rereg;
+        // and then we get BACK the trigger output and the delayed metadata so everything lines up.
+        
         trigger_occurred_address <= readout_address - trig_offset_sysclk;
         // this pipeline register moves trigger_occurred to second half of
         // trigger and allows it to be captured in SYSCLK without worrying about
         // multicycle constraints.        
-        trigger_occurred_rereg <= trigger_occurred;
+        trigger_occurred_rereg <= leveltwo_trigger;
 
         if (sysclk_x2_ce_i)
-            metadata_store <= { metadata_out[3], metadata_out[2], metadata_out[1], metadata_out[0] };                    
+            metadata_store <= { leveltwo_metadata[3], leveltwo_metadata[2], leveltwo_metadata[1], leveltwo_metadata[0] };                    
     end
+
+    // LEVEL TWO
+    pueo_leveltwo #(.VERSION(1))
+        u_leveltwo(.clk_i(sysclk_x2_i),
+                   .ce_i(sysclk_x2_ce_i),
+                   .holdoff_i(trig_holdoff),
+                   .dead_i(dead_rereg),
+                   .tio0_trig_i( trigger_out[0] ),
+                   .tio1_trig_i( trigger_out[1] ),
+                   .tio2_trig_i( trigger_out[2] ),
+                   .tio3_trig_i( trigger_out[3] ),
+                   
+                   .trig_o(leveltwo_trigger),
+                   
+                   .tio0_meta_i( metadata_out[0] ),
+                   .tio1_meta_i( metadata_out[1] ),
+                   .tio2_meta_i( metadata_out[2] ),
+                   .tio3_meta_i( metadata_out[3] ),
+                   
+                   .tio0_meta_o( leveltwo_metadata[0] ),
+                   .tio1_meta_o( leveltwo_metadata[1] ),
+                   .tio2_meta_o( leveltwo_metadata[2] ),
+                   .tio3_meta_o( leveltwo_metadata[3] ));   
 
     always @(posedge sysclk_i) begin
         if (runrst_i) begin

@@ -56,6 +56,7 @@ module pueo_leveltwo #(parameter VERSION = 1)(
         end
     end
     
+            
     reg aux_trig = 0;
     // there are always two leveltwos, one for each polarity
     reg [1:0] leveltwo_trig = 2'b00;
@@ -88,5 +89,10 @@ module pueo_leveltwo #(parameter VERSION = 1)(
             assign trig_o = master_trig;
         end
     endgenerate
+
+    assign tio0_meta_o = tio0_meta_hold[(META_DELAY-1)*64 +: 64];
+    assign tio1_meta_o = tio1_meta_hold[(META_DELAY-1)*64 +: 64];
+    assign tio2_meta_o = tio2_meta_hold[(META_DELAY-1)*64 +: 64];
+    assign tio3_meta_o = tio3_meta_hold[(META_DELAY-1)*64 +: 64];
     
 endmodule
