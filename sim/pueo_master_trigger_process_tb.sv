@@ -106,10 +106,18 @@ module pueo_master_trigger_process_tb;
         else cur_count <= cur_count + 1;
     end    
 
+    wire gpo_trig_d;
+    wire gpo_trig_ce;
+    reg TRIGGER_OUT = 0;
+    always @(posedge sys_clk) begin
+        if (gpo_trig_ce)
+            TRIGGER_OUT <= gpo_trig_d;
+    end
+
     reg pps_trig = 0;
     reg [5:0] ext_trig = 0;
     reg pps = 0;
-    trig_pueo_wrap_v3 #(.DEBUG("FALSE"))
+    trig_pueo_wrap_v4 #(.DEBUG("FALSE"))
         u_trig( .wb_clk_i(wb_clk),
                 .wb_rst_i(1'b0),
                 `CONNECT_WBS_IFM( wb_ , wb_ ),
@@ -119,6 +127,9 @@ module pueo_master_trigger_process_tb;
                 .sysclk_x2_i(sys_clk_x2),
                 .sysclk_x2_ce_i(sys_clk_x2_ce),
                 .pps_i(pps),
+
+                .gpo_trig_ce_o(gpo_trig_ce),
+                .gpo_trig_d_o(gpo_trig_d),
 
                 .cur_sec_i(cur_sec),
                 .cur_time_i(cur_count),
@@ -198,8 +209,8 @@ module pueo_master_trigger_process_tb;
 
     initial begin
         #1000;
-        // latency
-        wb_write( 32'h104, 32'd200 );
+        // leave latency default, set offset
+        wb_write( 32'h104, {16'd20, 16'd100} );
         // enable PPS trigger with an offset of 100.
         #100;
         wb_write( 32'h108, 32'h00640001);
@@ -210,10 +221,10 @@ module pueo_master_trigger_process_tb;
         #100;
         wb_write( 32'h100, 32'h0FFF_FFFE );
         #100;
-//        wb_write( 32'h000, 32'd2 );        
+        wb_write( 32'h000, 32'd2 );        
         #1000;
-        // soft trig
-        wb_write( 32'h110, 32'd1 );
+//        // soft trig
+//        wb_write( 32'h110, 32'd1 );
         #100;
         // ok now plunk in an RF trig that occurred at the same time.
         @(posedge sys_clk); #1;
@@ -230,7 +241,7 @@ module pueo_master_trigger_process_tb;
         @(posedge sys_clk); // clk 3
         #1 trig_in[0 +: 16] <= 16'h0000;
                         
-        #1000;
+        #3000;
         wb_write( 32'h110, 32'd1 );
         #1000;
         @(posedge sys_clk);
