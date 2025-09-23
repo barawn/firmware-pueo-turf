@@ -22,6 +22,9 @@ module pueo_leveltwo #(parameter VERSION = 1)(
         output [63:0] tio1_meta_o,
         output [63:0] tio2_meta_o,
         output [63:0] tio3_meta_o,
+        
+        // individual leveltwo scalers
+        output [23:0] leveltwo_o,
         output trig_o
     );
     // normally trigger would just be or of everyone, so next sysclk_x2_ce
@@ -76,13 +79,18 @@ module pueo_leveltwo #(parameter VERSION = 1)(
 
     generate
         if (VERSION == 2) begin : V2
+            // First deal with the LF trigs.
+            always @(posedge clk_i) begin : V2P
+                if (ce_i) lf_trig[0] <= tio0_trig_i[6] || tio1_trig_i[6];
+                if (ce_i) lf_trig[1] <= tio2_trig_i[6] || tio3_trig_i[6];
+            end
             assign trig_o = 1'b0;
         end else begin : V1
             always @(posedge clk_i) begin : V1P
                 if (ce_i) leveltwo_trig[0] <= (|tio0_trig_i[5:0]) || (|tio1_trig_i[5:0]);
                 if (ce_i) leveltwo_trig[1] <= (|tio2_trig_i[5:0]) || (|tio3_trig_i[5:0]);
                 if (ce_i) lf_trig[0] <= tio0_trig_i[6] || tio1_trig_i[6];
-                if (ce_i) lf_trig[1] <= tio2_trig_i[6] || tio2_trig_i[6];
+                if (ce_i) lf_trig[1] <= tio2_trig_i[6] || tio3_trig_i[6];
                 
                 master_trig <= (!holdoff_i && !dead_i) && ce_i && (aux_trig || (|leveltwo_trig) || (|lf_trig));
             end
