@@ -543,7 +543,7 @@ module pueo_master_trig_process_v4 #(parameter NSURF=28,
     // 
     trigger_fifo u_fifo( .wr_clk(sysclk_x2_i),
                          .din( { 2'b10, trigger_occurred_address, {2{1'b0}} } ),
-                         .wr_en( trigger_occurred ),
+                         .wr_en( leveltwo_trigger ),
                          .rd_clk(sysclk_i),
                          .srst(!trig_running),
                          .valid(trigout_tvalid),
