@@ -13,7 +13,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="A",
                     parameter [3:0] VER_MAJOR=4'd0,
                     parameter [3:0] VER_MINOR=4'd7,
-                    parameter [7:0] VER_REV=8'd29,
+                    parameter [7:0] VER_REV=8'd30,
                     parameter [15:0] FIRMWARE_DATE = {16{1'b0}})                    
                     (
 
@@ -792,7 +792,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                              `CONNECT_AXI4S_MIN_IF( m_ev_ctrl_ , ev_ctrl_ ));
     
     
-    trig_pueo_wrap_v3 #(.WBCLKTYPE("PSCLK"),
+    trig_pueo_wrap_v4 #(.WBCLKTYPE("PSCLK"),
                         .SYSCLKTYPE("SYSCLK"),
                         .MEMCLKTYPE("DDRCLK0"))
                    u_trig( .wb_clk_i(ps_clk),
