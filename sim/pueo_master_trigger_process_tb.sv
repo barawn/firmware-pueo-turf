@@ -117,7 +117,7 @@ module pueo_master_trigger_process_tb;
     reg pps_trig = 0;
     reg [5:0] ext_trig = 0;
     reg pps = 0;
-    trig_pueo_wrap_v4 #(.DEBUG("FALSE"))
+    trig_pueo_wrap_v4 #(.DEBUG("FALSE"),.L2VERSION(2))
         u_trig( .wb_clk_i(wb_clk),
                 .wb_rst_i(1'b0),
                 `CONNECT_WBS_IFM( wb_ , wb_ ),
