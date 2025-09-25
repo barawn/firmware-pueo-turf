@@ -98,7 +98,11 @@ module pueo_leveltwo #(parameter VERSION = 1)(
             wire [NPOL-1:0][NSURFSECT*NREGION-1:0] meta_high_in;
             
             wire [NPOL-1:0] leveltwo_trigger;
-            
+            wire [NPOL-1:0][47:0] leveltwo_scaler;
+              
+            reg [NPOL*NSURFSECT-1:0] leveltwo_scaler_ff = {NPOL*NSURFSECT{1'b0}};
+            assign leveltwo_o = leveltwo_scaler_ff;
+                        
             wire [3:0][47:0] meta;
             assign meta[0] = tio0_meta_i;
             assign meta[1] = tio1_meta_i;
@@ -108,6 +112,11 @@ module pueo_leveltwo #(parameter VERSION = 1)(
             // mappity mappy
             genvar i, pol;
             for (i=0;i<12;i=i+1) begin : IN
+                always @(posedge clk_i) begin : SCL
+                    // adding the ce qual makes it a flag
+                    leveltwo_scaler_ff[NSURFSECT*HPOL+i] <= |leveltwo_scaler[HPOL][4*i +: 4] && ce_i;
+                    leveltwo_scaler_ff[NSURFSECT*VPOL+i] <= |leveltwo_scaler[VPOL][4*i +: 4] && ce_i;
+                end
                 // hpol sector (turfio/slots) go
                 // 0/5, 0/4, 0/3, 0/2, 0/1, 0/0, 1/0, 1/1, 1/2, 1/3, 1/4, 1/5
                 // vpol sector (turfio/slots) go
@@ -144,7 +153,6 @@ module pueo_leveltwo #(parameter VERSION = 1)(
 
                 wire [47:0] dspC_AB = meta_low_stretched;
                 wire [47:0] dspC_C = meta_high_stretched_rotated;
-                wire [47:0] leveltwo_scaler;
                 wire not_leveltwo_trigger;
                 assign leveltwo_trigger[pol] = !not_leveltwo_trigger;
 
@@ -163,6 +171,7 @@ module pueo_leveltwo #(parameter VERSION = 1)(
                                   .P( meta_low_stretched ),
                                   .ALUMODE(4'b1100),
                                   .OPMODE( { `W_OPMODE_0, `Z_OPMODE_C, `Y_OPMODE_MINUS1, `X_OPMODE_AB } ),
+                                  .CLK( clk_i ),
                                   .CEA1( ce_i ),
                                   .CEA2( ce_i ),
                                   .CEB1( ce_i ),
@@ -182,6 +191,7 @@ module pueo_leveltwo #(parameter VERSION = 1)(
                                   .P( meta_high_stretched ),
                                   .ALUMODE(4'b1100),
                                   .OPMODE( { `W_OPMODE_0, `Z_OPMODE_C, `Y_OPMODE_MINUS1, `X_OPMODE_AB } ),
+                                  .CLK( clk_i ),
                                   .CEA1( ce_i ),
                                   .CEA2( ce_i ),
                                   .CEB1( ce_i ),
@@ -196,15 +206,18 @@ module pueo_leveltwo #(parameter VERSION = 1)(
                           .PREG(1),
                           .USE_PATTERN_DETECT("PATDET"),
                           .SEL_PATTERN("PATTERN"),
+                          .SEL_MASK("MASK"),
+                          .MASK( {48{1'b0}} ),
                           .PATTERN( {48{1'b0}} ),
                           `CONSTANT_MODE_ATTRS )
                           u_dspC( .A( `DSP_AB_A( dspC_AB ) ),
                                   .B( `DSP_AB_B( dspC_AB ) ),
                                   .C( dspC_C ),
-                                  .P( leveltwo_scaler ),
+                                  .P( leveltwo_scaler[pol] ),
                                   .PATTERNDETECT( not_leveltwo_trigger ),
                                   .ALUMODE(4'b1100),
                                   .OPMODE( { `W_OPMODE_0, `Z_OPMODE_C, `Y_OPMODE_MINUS1, `X_OPMODE_AB } ),
+                                  .CLK( clk_i ),
                                   .CEA2( ce_i ),
                                   .CEB2( ce_i ),
                                   .CEC( ce_i ),
