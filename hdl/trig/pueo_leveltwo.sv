@@ -62,6 +62,8 @@ module pueo_leveltwo #(parameter VERSION = 1)(
         end
     end
     
+    reg [3:0] por_holdoff_shreg = {4{1'b0}};
+    wire por_done = por_holdoff_shreg[3];
             
     reg aux_trig = 0;
     // there are always two leveltwos, one for each polarity
@@ -78,6 +80,8 @@ module pueo_leveltwo #(parameter VERSION = 1)(
     // Aux trig's the same for both versions.
     always @(posedge clk_i) begin
         if (ce_i) aux_trig <= |aux_triggers;
+        
+        por_holdoff_shreg <= {por_holdoff_shreg[2:0], 1'b1};
     end
 
     generate
@@ -230,9 +234,9 @@ module pueo_leveltwo #(parameter VERSION = 1)(
                 // TO MATCH UP WITH THE RF TRIGS ABOVE!!
                 if (ce_i) lf_trig[0] <= tio0_trig_i[6] || tio1_trig_i[6];
                 if (ce_i) lf_trig[1] <= tio2_trig_i[6] || tio3_trig_i[6];
-                // actual leveltwos
-                if (ce_i) leveltwo_trig[0] <= leveltwo_trigger[0];
-                if (ce_i) leveltwo_trig[1] <= leveltwo_trigger[1];
+                // actual leveltwos. por_done prevents them from going when the DSP's pattern reg starts at 0.
+                if (ce_i) leveltwo_trig[0] <= leveltwo_trigger[0] && por_done;
+                if (ce_i) leveltwo_trig[1] <= leveltwo_trigger[1] && por_done;
                 
                 master_trig <= (!holdoff_i && !dead_i) && ce_i &&
                         ( aux_trig || (|leveltwo_trig) || (|lf_trig) );
