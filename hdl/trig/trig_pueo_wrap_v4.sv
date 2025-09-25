@@ -6,6 +6,7 @@
 module trig_pueo_wrap_v4 #(parameter WBCLKTYPE = "NONE",
                         parameter SYSCLKTYPE = "NONE",
                         parameter MEMCLKTYPE = "NONE",
+                        parameter L2VERSION = 1,
                         parameter NSURF = 32,
                         parameter DEBUG = "TRUE")(
         input wb_clk_i,
@@ -169,10 +170,11 @@ module trig_pueo_wrap_v4 #(parameter WBCLKTYPE = "NONE",
     wire surf_err;
     wire turf_err;
     wire [15:0] photo_prescale;
-    wire photo_en;        
+    wire photo_en;
     pueo_master_trig_process_v4 #(.SYSCLKTYPE(SYSCLKTYPE),
                                .MEMCLKTYPE(MEMCLKTYPE),
                                .WBCLKTYPE(WBCLKTYPE),
+                               .L2VERSION(L2VERSION),
                                .DEFAULT_OFFSET(DEFAULT_OFFSET),
                                .DEFAULT_LATENCY(DEFAULT_LATENCY),
                                .DEFAULT_HOLDOFF(DEFAULT_HOLDOFF),

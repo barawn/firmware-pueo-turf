@@ -13,6 +13,7 @@ module pueo_master_trig_process_v4 #(parameter NSURF=28,
                                      parameter SYSCLKTYPE = "NONE",
                                      parameter MEMCLKTYPE = "NONE",
                                      parameter WBCLKTYPE = "NONE",
+                                     parameter L2VERSION = 1,
                                      parameter [15:0] DEFAULT_OFFSET = 16'd0,
                                      parameter [15:0] DEFAULT_LATENCY = 16'd0,
                                      parameter [15:0] DEFAULT_HOLDOFF = 16'd0,
@@ -476,7 +477,7 @@ module pueo_master_trig_process_v4 #(parameter NSURF=28,
     end
 
     // LEVEL TWO
-    pueo_leveltwo #(.VERSION(1))
+    pueo_leveltwo #(.VERSION(L2VERSION))
         u_leveltwo(.clk_i(sysclk_x2_i),
                    .ce_i(sysclk_x2_ce_i),
                    .holdoff_i(trig_holdoff),
