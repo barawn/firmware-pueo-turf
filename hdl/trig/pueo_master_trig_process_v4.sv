@@ -304,11 +304,17 @@ module pueo_master_trig_process_v4 #(parameter NSURF=28,
                     assign trigger[i][j] = turf_valid_i[i];
                     assign scal_trig_o[8*i + j] = turf_valid_i[i];
                 end
+                // Trigger gets written if the corresponding trigger bit is asserted
+                // during its sequence run.
+                assign trigger_bwe[i][j] = trigger[i][j] && (sysclk_x2_sequence == j);
             end
             assign address_muxed[i] = address[i][sysclk_x2_sequence];
             // We DO NOT mask here now. It now happens at the L2, which occurs at readout.
             //assign trigger_muxed[i] = trigger[i][sysclk_x2_sequence] && trig_running && !trig_mask_vec[i][sysclk_x2_sequence];
-            assign trigger_bwe[i] = trigger[i];
+            
+            // dumbass, this doesn't work. We need to assert trigger_bwe[i]
+            // only in the sysclk_x2_sequence where it's selected.
+            // assign trigger_bwe[i] = trigger[i];
             // At this point we now have a clean set of
             // address_muxed
             // metadata
