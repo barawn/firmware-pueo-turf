@@ -131,9 +131,9 @@ module pueo_leveltwo #(parameter VERSION = 1)(
                     (meta[3][8*(5-i) +: 4]) : (meta[2][8*(i-6) +: 4]);
 
                 assign meta_high_in[HPOL][4*i +: 4] = (i < 6) ?
-                    (meta[0][8*(5-i) +: 4]) : (meta[1][8*(i-6)+4 +: 4]);
+                    (meta[0][8*(5-i)+4 +: 4]) : (meta[1][8*(i-6)+4 +: 4]);
                 assign meta_high_in[VPOL][4*i +: 4] = (i < 6) ?
-                    (meta[3][8*(5-i) +: 4]) : (meta[2][8*(i-6)+4 +: 4]);
+                    (meta[3][8*(5-i)+4 +: 4]) : (meta[2][8*(i-6)+4 +: 4]);
             end
             
             // We now have the metadata mapped into SURF sectors.
