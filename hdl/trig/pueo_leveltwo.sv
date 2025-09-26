@@ -103,8 +103,10 @@ module pueo_leveltwo #(parameter VERSION = 1)(
             
             wire [NPOL-1:0] leveltwo_trigger;
             wire [NPOL-1:0][47:0] leveltwo_scaler;
-              
+
             reg [NPOL*NSURFSECT-1:0] leveltwo_scaler_ff = {NPOL*NSURFSECT{1'b0}};
+            reg [NPOL*NSURFSECT-1:0] leveltwo_scaler_r = {NPOL*NSURFSECT{1'b0}};
+            reg [NPOL*NSURFSECT-1:0] leveltwo_scaler_rr = {NPOL*NSURFSECT{1'b0}};
             assign leveltwo_o = leveltwo_scaler_ff;
                         
             wire [3:0][47:0] meta;
@@ -117,9 +119,14 @@ module pueo_leveltwo #(parameter VERSION = 1)(
             genvar i, pol;
             for (i=0;i<12;i=i+1) begin : IN
                 always @(posedge clk_i) begin : SCL
-                    // adding the ce qual makes it a flag
-                    leveltwo_scaler_ff[NSURFSECT*HPOL+i] <= |leveltwo_scaler[HPOL][4*i +: 4] && ce_i;
-                    leveltwo_scaler_ff[NSURFSECT*VPOL+i] <= |leveltwo_scaler[VPOL][4*i +: 4] && ce_i;
+                    // reregister and create a rising edge detection.
+                    leveltwo_scaler_r[NSURFSECT*HPOL+i] <= |leveltwo_scaler[HPOL][4*i +: 4];
+                    leveltwo_scaler_rr[NSURFSECT*HPOL+i] <= leveltwo_scaler_r[NSURFSECT*HPOL+i];
+                    leveltwo_scaler_ff[NSURFSECT*HPOL+i] <= leveltwo_scaler_r[NSURFSECT*HPOL+i] && !leveltwo_scaler_rr[NSURFSECT*HPOL+i];
+                    // reregister and create a rising edge detection.
+                    leveltwo_scaler_r[NSURFSECT*VPOL+i] <= |leveltwo_scaler[VPOL][4*i +: 4];
+                    leveltwo_scaler_rr[NSURFSECT*VPOL+i] <= leveltwo_scaler_r[NSURFSECT*VPOL+i];
+                    leveltwo_scaler_ff[NSURFSECT*VPOL+i] <= leveltwo_scaler_r[NSURFSECT*VPOL+i] && !leveltwo_scaler_rr[NSURFSECT*VPOL+i];
                 end
                 // hpol sector (turfio/slots) go
                 // 0/5, 0/4, 0/3, 0/2, 0/1, 0/0, 1/0, 1/1, 1/2, 1/3, 1/4, 1/5
