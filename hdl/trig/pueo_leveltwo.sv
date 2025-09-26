@@ -33,7 +33,7 @@ module pueo_leveltwo #(parameter VERSION = 1)(
     // normally trigger would just be or of everyone, so next sysclk_x2_ce
     // here aux/leveltwo/lf are formed in sysclk_x2_ce
     // then the trig occurs, so meta delay is 1.
-    localparam META_DELAY = (VERSION == 1) ? 1 : 1;
+    localparam META_DELAY = (VERSION == 1) ? 1 : 6;
 
     reg [META_DELAY-1:0][63:0] tio0_meta_hold = {64*META_DELAY{1'b0}};
     reg [META_DELAY-1:0][63:0] tio1_meta_hold = {64*META_DELAY{1'b0}};
@@ -70,7 +70,7 @@ module pueo_leveltwo #(parameter VERSION = 1)(
     reg [1:0] leveltwo_trig = 2'b00;
     // and pointlessly two lf trigs as well
     reg [1:0] lf_trig = 2'b00;
-    
+        
     reg master_trig = 0;
     
     wire [3:0] aux_triggers = { tio3_trig_i[7],
@@ -85,7 +85,10 @@ module pueo_leveltwo #(parameter VERSION = 1)(
     end
 
     generate
-        if (VERSION == 2) begin : V2
+        if (VERSION == 2) begin : V2                        
+            localparam NON_MIE_DELAY = 3;
+            localparam [3:0] NMADDR = NON_MIE_DELAY-2;
+
             localparam COINCIDENCE_WINDOW = 2;
             
             // number of polarizations
@@ -209,6 +212,7 @@ module pueo_leveltwo #(parameter VERSION = 1)(
                                   .CEB2( ce_i ),
                                   .CEC( ce_i ),
                                   .CEP( ce_i ));
+                // and dspC needs to be an AND not an OR, so you just don't XOR everyone.
                 DSP48E2 #(`NO_MULT_ATTRS,
                           `DE2_UNUSED_ATTRS,
                           .AREG(1),
@@ -227,15 +231,26 @@ module pueo_leveltwo #(parameter VERSION = 1)(
                                   .P( leveltwo_scaler[pol] ),
                                   .PATTERNDETECT( not_leveltwo_trigger ),
                                   .ALUMODE(4'b1100),
-                                  .OPMODE( { `W_OPMODE_0, `Z_OPMODE_C, `Y_OPMODE_MINUS1, `X_OPMODE_AB } ),
+                                  .OPMODE( { `W_OPMODE_0, `Z_OPMODE_C, `Y_OPMODE_0, `X_OPMODE_AB } ),
                                   .CLK( clk_i ),
                                   .CEA2( ce_i ),
                                   .CEB2( ce_i ),
                                   .CEC( ce_i ),
                                   .CEP( ce_i ));                                  
             end
+
+            wire aux_trig_delayed;
+            reg aux_trig_delayed_ff = 0;
+            wire [1:0] lf_trig_delayed; 
+            reg [1:0] lf_trig_delayed_ff = {2{1'b0}};           
+            
+            srlvec #(.NBITS(3)) u_dly(.clk(clk_i),.ce(ce_i),
+                                      .a(NMADDR),
+                                      .din( { aux_trig, lf_trig } ),
+                                      .dout( {aux_trig_delayed, lf_trig_delayed} ));            
             
             always @(posedge clk_i) begin : V2P
+                if (ce_i) lf_trig_delayed_ff <= lf_trig_delayed;
                 // First deal with the LF trigs. They're automatic.
                 // NOTE NOTE NOTE NOTE!!! THESE NEED TO BE DELAYED
                 // TO MATCH UP WITH THE RF TRIGS ABOVE!!
@@ -246,7 +261,7 @@ module pueo_leveltwo #(parameter VERSION = 1)(
                 if (ce_i) leveltwo_trig[1] <= leveltwo_trigger[1] && por_done;
                 
                 master_trig <= (!holdoff_i && !dead_i) && ce_i &&
-                        ( aux_trig || (|leveltwo_trig) || (|lf_trig) );
+                        ( aux_trig_delayed_ff || (|leveltwo_trig) || (|lf_trig_delayed_ff) );
             end
             assign trig_o = master_trig;
         end else begin : V1
