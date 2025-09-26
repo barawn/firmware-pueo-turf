@@ -230,10 +230,14 @@ module pueo_master_trigger_process_tb;
 //        wb_write( 32'h110, 32'd1 );
         #100;
         // ok now plunk in an RF trig that occurred at the same time.
+        // This should trigger.
+        // We're also adding an LF trigger at the same time because
+        // that way the leveltwo and LF trigs should line up.
         @(posedge sys_clk); #1;
         while (!trigin_will_be_valid) @(posedge sys_clk);
         #1 trig_in[0 +: 16] <= 16'h8010;
            trig_in[16 +: 16] <= 16'h8010;
+           trig_in[6*16 +: 16] <= 16'h8010;
         @(posedge sys_clk); // trigin valid and trig_in - clk 0
         @(posedge sys_clk); // clk 1
         @(posedge sys_clk); // clk 2
@@ -243,6 +247,30 @@ module pueo_master_trigger_process_tb;
             // we need the low bits of sector 4 and high
             // of sector 5.
         #1 trig_in[0 +: 16] <=  16'h0010;
+           trig_in[16 +: 16] <= 16'h0001;
+           trig_in[6*16 +: 16] <= 16'h0000;
+        @(posedge sys_clk); // clk 0
+        @(posedge sys_clk); // clk 1
+        @(posedge sys_clk); // clk 2
+        @(posedge sys_clk); // clk 3
+        #1 trig_in[0 +: 16] <= 16'h0000;
+           trig_in[16 +: 16] <= 16'h0000;
+           trig_in[6*16 +: 16] <= 16'h0000;
+
+        // This should not.
+        @(posedge sys_clk); #1;
+        while (!trigin_will_be_valid) @(posedge sys_clk);
+        #1 trig_in[0 +: 16] <= 16'h8020;
+           trig_in[16 +: 16] <= 16'h8020;
+        @(posedge sys_clk); // trigin valid and trig_in - clk 0
+        @(posedge sys_clk); // clk 1
+        @(posedge sys_clk); // clk 2
+        @(posedge sys_clk); // clk 3
+            // tio 0 slot 0 is sector 5
+            // tio 0 slot 1 is sector 4
+            // we need the low bits of sector 4 and high
+            // of sector 5.
+        #1 trig_in[0 +: 16] <=  16'h0001;
            trig_in[16 +: 16] <= 16'h0001;
         @(posedge sys_clk); // clk 0
         @(posedge sys_clk); // clk 1
