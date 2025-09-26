@@ -207,6 +207,9 @@ module pueo_master_trigger_process_tb;
 
     integer j;
 
+    // The tests here are silly - the offset is 100,
+    // but we're putting in ext/pps offsets of 100,
+    // so they'll wrap around and show up 32 us later.
     initial begin
         #1000;
         // leave latency default, set offset
@@ -230,16 +233,23 @@ module pueo_master_trigger_process_tb;
         @(posedge sys_clk); #1;
         while (!trigin_will_be_valid) @(posedge sys_clk);
         #1 trig_in[0 +: 16] <= 16'h8010;
+           trig_in[16 +: 16] <= 16'h8010;
         @(posedge sys_clk); // trigin valid and trig_in - clk 0
         @(posedge sys_clk); // clk 1
         @(posedge sys_clk); // clk 2
         @(posedge sys_clk); // clk 3
-        #1 trig_in[0 +: 16] <= 16'h00AA;
+            // tio 0 slot 0 is sector 5
+            // tio 0 slot 1 is sector 4
+            // we need the low bits of sector 4 and high
+            // of sector 5.
+        #1 trig_in[0 +: 16] <=  16'h0010;
+           trig_in[16 +: 16] <= 16'h0001;
         @(posedge sys_clk); // clk 0
         @(posedge sys_clk); // clk 1
         @(posedge sys_clk); // clk 2
         @(posedge sys_clk); // clk 3
         #1 trig_in[0 +: 16] <= 16'h0000;
+           trig_in[16 +: 16] <= 16'h0000;
                         
         #3000;
         wb_write( 32'h110, 32'd1 );
