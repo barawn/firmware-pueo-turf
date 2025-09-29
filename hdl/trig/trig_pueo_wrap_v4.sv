@@ -171,6 +171,9 @@ module trig_pueo_wrap_v4 #(parameter WBCLKTYPE = "NONE",
     wire turf_err;
     wire [15:0] photo_prescale;
     wire photo_en;
+    wire leveltwo_logictype;
+    
+    wire [23:0] scal_leveltwo;
     pueo_master_trig_process_v4 #(.SYSCLKTYPE(SYSCLKTYPE),
                                .MEMCLKTYPE(MEMCLKTYPE),
                                .WBCLKTYPE(WBCLKTYPE),
@@ -190,6 +193,8 @@ module trig_pueo_wrap_v4 #(parameter WBCLKTYPE = "NONE",
                       .trig_holdoff_i(trig_holdoff),
                       .photo_prescale_i(photo_prescale),
                       .photo_en_i(photo_en),
+                      
+                      .leveltwo_logictype_i(leveltwo_logictype),
                       
                       .gpo_run_ce_o(gpo_run_ce_o),
                       .gpo_run_d_o(gpo_run_d_o),
@@ -221,6 +226,7 @@ module trig_pueo_wrap_v4 #(parameter WBCLKTYPE = "NONE",
                       .running_o(running),
                       
                       .scal_trig_o(scal_trig),
+                      .scal_leveltwo_o(scal_leveltwo),
                       
                       .cur_sec_i(cur_sec_i),
                       .cur_time_i(cur_time_i),
@@ -332,7 +338,8 @@ module trig_pueo_wrap_v4 #(parameter WBCLKTYPE = "NONE",
                                .eth_adr_i(),
                                .eth_dat_o(),
                                
-                               .trig_i(scal_trig));
+                               .trig_i(scal_trig),
+                               .leveltwo_i(scal_leveltwo));
 
     assign wb_ack_o = wb_ack_vec[wb_block];
     assign wb_dat_o = wb_dat_vec[wb_block];
@@ -373,6 +380,8 @@ module trig_pueo_wrap_v4 #(parameter WBCLKTYPE = "NONE",
                                   .trig_holdoff_o(trig_holdoff),
                                   .photo_prescale_o(photo_prescale),
                                   .photo_en_o(photo_en),
+                                  
+                                  .leveltwo_logictype_o(leveltwo_logictype),
                                   
                                   .pps_trig_i(pps_trig_i),
                                   .gp_in_i(gp_in_i),
