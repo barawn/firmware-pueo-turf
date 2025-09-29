@@ -21,6 +21,8 @@ module pueo_leveltwo #(parameter VERSION = 1)(
         input holdoff_i,
         input dead_i,
         
+        input logictype_i,
+        
         output [63:0] tio0_meta_o,
         output [63:0] tio1_meta_o,
         output [63:0] tio2_meta_o,
@@ -107,6 +109,7 @@ module pueo_leveltwo #(parameter VERSION = 1)(
             wire [NPOL-1:0] leveltwo_trigger;
             wire [NPOL-1:0][47:0] leveltwo_scaler;
 
+            (* CUSTOM_MC_SRC_TAG = "LEVELTWO_SCAL", CUSTOM_MC_MIN = "0.0", CUSTOM_MC_MAX = "2.0" *)
             reg [NPOL*NSURFSECT-1:0] leveltwo_scaler_ff = {NPOL*NSURFSECT{1'b0}};
             reg [NPOL*NSURFSECT-1:0] leveltwo_scaler_r = {NPOL*NSURFSECT{1'b0}};
             reg [NPOL*NSURFSECT-1:0] leveltwo_scaler_rr = {NPOL*NSURFSECT{1'b0}};
@@ -122,14 +125,16 @@ module pueo_leveltwo #(parameter VERSION = 1)(
             genvar i, pol;
             for (i=0;i<12;i=i+1) begin : IN
                 always @(posedge clk_i) begin : SCL
-                    // reregister and create a rising edge detection.
-                    leveltwo_scaler_r[NSURFSECT*HPOL+i] <= |leveltwo_scaler[HPOL][4*i +: 4];
-                    leveltwo_scaler_rr[NSURFSECT*HPOL+i] <= leveltwo_scaler_r[NSURFSECT*HPOL+i];
-                    leveltwo_scaler_ff[NSURFSECT*HPOL+i] <= leveltwo_scaler_r[NSURFSECT*HPOL+i] && !leveltwo_scaler_rr[NSURFSECT*HPOL+i];
-                    // reregister and create a rising edge detection.
-                    leveltwo_scaler_r[NSURFSECT*VPOL+i] <= |leveltwo_scaler[VPOL][4*i +: 4];
-                    leveltwo_scaler_rr[NSURFSECT*VPOL+i] <= leveltwo_scaler_r[NSURFSECT*VPOL+i];
-                    leveltwo_scaler_ff[NSURFSECT*VPOL+i] <= leveltwo_scaler_r[NSURFSECT*VPOL+i] && !leveltwo_scaler_rr[NSURFSECT*VPOL+i];
+                    // reregister and create a rising edge detection for sysclk
+                    if (ce_i) begin
+                        leveltwo_scaler_r[NSURFSECT*HPOL+i] <= |leveltwo_scaler[HPOL][4*i +: 4];
+                        leveltwo_scaler_rr[NSURFSECT*HPOL+i] <= leveltwo_scaler_r[NSURFSECT*HPOL+i];
+                        leveltwo_scaler_ff[NSURFSECT*HPOL+i] <= leveltwo_scaler_r[NSURFSECT*HPOL+i] && !leveltwo_scaler_rr[NSURFSECT*HPOL+i];
+                        // reregister and create a rising edge detection.
+                        leveltwo_scaler_r[NSURFSECT*VPOL+i] <= |leveltwo_scaler[VPOL][4*i +: 4];
+                        leveltwo_scaler_rr[NSURFSECT*VPOL+i] <= leveltwo_scaler_r[NSURFSECT*VPOL+i];
+                        leveltwo_scaler_ff[NSURFSECT*VPOL+i] <= leveltwo_scaler_r[NSURFSECT*VPOL+i] && !leveltwo_scaler_rr[NSURFSECT*VPOL+i];
+                    end
                 end
                 // hpol sector (turfio/slots) go
                 // 0/5, 0/4, 0/3, 0/2, 0/1, 0/0, 1/0, 1/1, 1/2, 1/3, 1/4, 1/5
@@ -170,6 +175,14 @@ module pueo_leveltwo #(parameter VERSION = 1)(
                 wire not_leveltwo_trigger;
                 assign leveltwo_trigger[pol] = !not_leveltwo_trigger;
 
+                wire [8:0] dspC_OPMODE;
+                assign dspC_OPMODE[8:7] = `W_OPMODE_0;
+                assign dspC_OPMODE[6:4] = `Z_OPMODE_C;
+                // switches between Y_OPMODE_MINUS1 and Y_OPMODE_0 which
+                // switches between AND (=0) and OR (=1).
+                assign dspC_OPMODE[3:2] = { logictype_i, 1'b0 };
+                assign dspC_OPMODE[1:0] = `X_OPMODE_AB;
+                
                 // We want X OR Z which requires ALUMODE 1100
                 // and OPMODE[3:2] = 10, to select Y_OPMODE_MINUS1
                 DSP48E2 #(`NO_MULT_ATTRS,
@@ -231,7 +244,7 @@ module pueo_leveltwo #(parameter VERSION = 1)(
                                   .P( leveltwo_scaler[pol] ),
                                   .PATTERNDETECT( not_leveltwo_trigger ),
                                   .ALUMODE(4'b1100),
-                                  .OPMODE( { `W_OPMODE_0, `Z_OPMODE_C, `Y_OPMODE_0, `X_OPMODE_AB } ),
+                                  .OPMODE( dspC_OPMODE ),
                                   .CLK( clk_i ),
                                   .CEA2( ce_i ),
                                   .CEB2( ce_i ),
@@ -274,6 +287,7 @@ module pueo_leveltwo #(parameter VERSION = 1)(
                 master_trig <= (!holdoff_i && !dead_i) && ce_i && (aux_trig || (|leveltwo_trig) || (|lf_trig));
             end
             assign trig_o = master_trig;
+            assign leveltwo_o = {24{1'b0}};
         end
     endgenerate
 
