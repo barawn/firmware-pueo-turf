@@ -23,7 +23,7 @@ module pueo_master_trig_process_v4 #(parameter NSURF=28,
         input sysclk_phase_i,
         input sysclk_x2_i,
         input sysclk_x2_ce_i,
-        
+                
         // wishbone side, needs an update since it can change dynamically
         input [27:0]            trigmask_i,
         // flag to update trigmask
@@ -36,6 +36,10 @@ module pueo_master_trig_process_v4 #(parameter NSURF=28,
         input [15:0]            photo_prescale_i,
         input                   photo_en_i,
         output                  photoshutter_o,
+
+        // For L2 versions > 1, this determines the logic type for
+        // the L2. 0 means AND, 1 means OR (which goes back to prior L2).
+        input                   leveltwo_logictype_i,
         
         output                  gpo_run_ce_o,
         output                  gpo_run_d_o,
@@ -100,6 +104,7 @@ module pueo_master_trig_process_v4 #(parameter NSURF=28,
         output [11:0] address_o,
         
         output [31:0] scal_trig_o,
+        output [23:0] scal_leveltwo_o,
         
         `HOST_NAMED_PORTS_AXI4S_MIN_IF( trigout_ , 16 ),
         input memclk_i,     
@@ -175,6 +180,11 @@ module pueo_master_trig_process_v4 #(parameter NSURF=28,
 
     // OK, so now we apply offsets.
     wire leveltwo_trigger;
+    // The leveltwo scalers need to cross out of sysclk x2
+    (* CUSTOM_MC_DST_TAG = "LEVELTWO_SCAL" *)
+    reg [23:0] leveltwo_scal_sysclk = {24{1'b0}};
+    wire [23:0] leveltwo_scal;
+    assign scal_leveltwo_o = leveltwo_scal_sysclk;
 
     // leveltwo_trigger is conditioned on sysclk_x2_ce
     // This means it launches in the FIRST HALF of SYSCLK.
@@ -203,6 +213,9 @@ module pueo_master_trig_process_v4 #(parameter NSURF=28,
     reg        photo_en = 1'b0;
     reg [16:0] photo_prescale_counter = {17{1'b0}};
     reg photoshutter = 0;        
+    
+    (* CUSTOM_CC_DST = SYSCLKTYPE *)
+    reg leveltwo_logictype = 0;
 
     // the holdoff counter also acts as the stretch for the trigger output
     reg trigger_held_off_rereg = 0;
@@ -364,6 +377,9 @@ module pueo_master_trig_process_v4 #(parameter NSURF=28,
             
         if (trigmask_update_i)
             trig_mask_sysclk <= trigmask_i;            
+            
+        // leveltwo scalers back in sysclk from sysclkx2
+        leveltwo_scal_sysclk <= leveltwo_scal;            
     end
 
     // sysclk x2 needs to run the sequencer.
@@ -486,6 +502,7 @@ module pueo_master_trig_process_v4 #(parameter NSURF=28,
     pueo_leveltwo #(.VERSION(L2VERSION))
         u_leveltwo(.clk_i(sysclk_x2_i),
                    .ce_i(sysclk_x2_ce_i),
+                   .logictype_i(leveltwo_logictype),
                    .holdoff_i(trig_holdoff),
                    .dead_i(dead_rereg),
                    .tio0_trig_i( trigger_out[0] ),
@@ -494,6 +511,8 @@ module pueo_master_trig_process_v4 #(parameter NSURF=28,
                    .tio3_trig_i( trigger_out[3] ),
                    
                    .trig_o(leveltwo_trigger),
+                   
+                   .leveltwo_o(leveltwo_scal),
                    
                    .tio0_meta_i( metadata_out[0] ),
                    .tio1_meta_i( metadata_out[1] ),
@@ -507,6 +526,7 @@ module pueo_master_trig_process_v4 #(parameter NSURF=28,
 
     always @(posedge sysclk_i) begin
         if (runrst_i) begin
+            leveltwo_logictype <= leveltwo_logictype_i;
             photo_prescale <= photo_prescale_i;
             photo_en <= photo_en_i;
         end            
