@@ -59,7 +59,8 @@ module pueo_trig_ctrl_v3 #(
         output [15:0] trig_offset_o,
         output [15:0] trig_holdoff_o,
         output [15:0] photo_prescale_o,
-        output photo_en_o
+        output photo_en_o,
+        output leveltwo_logictype_o
     );
 
     // There is no soft offset because it doesn't matter,
@@ -87,6 +88,8 @@ module pueo_trig_ctrl_v3 #(
     reg [15:0] photo_prescale = DEFAULT_PHOTO_PRESCALE;
     (* CUSTOM_CC_SRC = WBCLKTYPE *)
     reg photo_en = 0;
+    (* CUSTOM_CC_SRC = WBCLKTYPE *)
+    reg leveltwo_logictype = 0;            
             
     (* CUSTOM_CC_DST = WBCLKTYPE *)
     reg [1:0] running_wbclk = {2{1'b0}};
@@ -144,7 +147,7 @@ module pueo_trig_ctrl_v3 #(
             else if (wb_adr_i == PPS_TRIGGER_ADDR) dat_reg <= { pps_offset_register, {15{1'b0}}, en_pps_trig };
             else if (wb_adr_i == EXT_TRIGGER_ADDR) dat_reg <= { ext_offset_register, {5{1'b0}}, ext_trig_sel, {6{1'b0}}, ext_edge, en_ext_trig };
             else if (wb_adr_i == OCCUPANCY_ADDR) dat_reg <= occupancy_i;
-            else if (wb_adr_i == HOLDOFF_ERR_ADDR) dat_reg <= { {14{1'b0}}, turf_err_i, surf_err_i, holdoff_register };
+            else if (wb_adr_i == HOLDOFF_ERR_ADDR) dat_reg <= { {7{1'b0}}, leveltwo_logictype, {6{1'b0}}, turf_err_i, surf_err_i, holdoff_register };
             else if (wb_adr_i == SOFT_TRIGGER_ADDR) dat_reg <= { {15{1'b0}}, running_wbclk, {16{1'b0}} };
             else if (wb_adr_i == EVENT_COUNT_ADDR) dat_reg <= event_counter_shadow;
             else if (wb_adr_i == EXT_PRESCALE_ADDR) dat_reg <= { {16{1'b0}}, ext_prescale };
@@ -167,6 +170,7 @@ module pueo_trig_ctrl_v3 #(
             if (wb_adr_i == HOLDOFF_ERR_ADDR) begin
                 if (wb_sel_i[0]) holdoff_register[7:0] <= wb_dat_i[7:0];
                 if (wb_sel_i[1]) holdoff_register[15:8] <= wb_dat_i[15:8];
+                if (wb_sel_i[3]) leveltwo_logictype <= wb_dat_i[24];
             end
             if (wb_adr_i == PPS_TRIGGER_ADDR) begin
                 if (wb_sel_i[0]) en_pps_trig <= wb_dat_i[0];
@@ -331,6 +335,7 @@ module pueo_trig_ctrl_v3 #(
     assign trig_holdoff_o = holdoff_register;
     assign photo_prescale_o = photo_prescale;
     assign photo_en_o = photo_en;
+    assign leveltwo_logictype_o = leveltwo_logictype;
         
     assign wb_dat_o = dat_reg;                                
     assign wb_ack_o = ack && wb_cyc_i;
