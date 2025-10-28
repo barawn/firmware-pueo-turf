@@ -358,4 +358,5 @@ if { $we_are_synthesis != 1 } {
     set_mc_paths TRIG_META
     set_mc_paths TRIG_DEAD
     set_mc_paths TRIG_HELDOFF
+    set_mc_paths LEVELTWO_SCAL
 }

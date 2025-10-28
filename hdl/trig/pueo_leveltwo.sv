@@ -263,6 +263,7 @@ module pueo_leveltwo #(parameter VERSION = 1)(
                                       .dout( {aux_trig_delayed, lf_trig_delayed} ));            
             
             always @(posedge clk_i) begin : V2P
+                if (ce_i) aux_trig_delayed_ff <= aux_trig_delayed;
                 if (ce_i) lf_trig_delayed_ff <= lf_trig_delayed;
                 // First deal with the LF trigs. They're automatic.
                 // NOTE NOTE NOTE NOTE!!! THESE NEED TO BE DELAYED
