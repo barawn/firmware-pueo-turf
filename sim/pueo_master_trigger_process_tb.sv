@@ -226,8 +226,9 @@ module pueo_master_trigger_process_tb;
         #100;
         wb_write( 32'h000, 32'd2 );        
         #1000;
-//        // soft trig
-//        wb_write( 32'h110, 32'd1 );
+        // soft trig
+        wb_write( 32'h110, 32'd1 );
+        #5000;
         #100;
         // ok now plunk in an RF trig that occurred at the same time.
         // This should trigger.
