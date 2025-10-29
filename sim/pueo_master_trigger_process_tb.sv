@@ -205,6 +205,21 @@ module pueo_master_trigger_process_tb;
         end
     endtask                       
 
+    task wb_read;
+        input [13:0] addr;
+        begin
+            @(posedge wb_clk);
+            #1 wb_cyc = 1;
+               wb_we = 0;
+               wb_adr = addr;
+            @(posedge wb_clk);
+            while (!wb_ack_i) @(posedge wb_clk);
+            #1 wb_cyc = 0;
+               wb_adr = {14{1'b0}};
+            @(posedge wb_clk);               
+        end
+    endtask        
+
     integer j;
 
     // The tests here are silly - the offset is 100,
@@ -294,6 +309,9 @@ module pueo_master_trigger_process_tb;
         #1 pps = 0;        
         #1000;
         
+        #1000;
+        wb_read( 32'h300 );
+        wb_read( 32'h3A0 );
     end        
 
 endmodule
