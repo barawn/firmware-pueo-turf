@@ -117,7 +117,7 @@ module pueo_scaler_wrap #(parameter SYSCLKTYPE="NONE",
                        .pps_i(pps_i),
                        .gate_i(gate),
                        .gate_en_i(gate_enable),
-                       .trig_i(scaltwo_in));
+                       .trig_i(trig_i));
 
     pueo_scaler_core #(.SYSCLKTYPE(SYSCLKTYPE),
                        .WBCLKTYPE(WBCLKTYPE),
