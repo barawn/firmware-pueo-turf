@@ -7,7 +7,8 @@
 
 `include "dsp_macros.vh"
 
-module pueo_leveltwo #(parameter VERSION = 1)(
+module pueo_leveltwo #(parameter VERSION = 1,
+                       parameter DEBUG = "TRUE")(
         input clk_i,
         input ce_i,
         input [7:0] tio0_trig_i,
@@ -121,9 +122,21 @@ module pueo_leveltwo #(parameter VERSION = 1)(
             assign meta[2] = tio2_meta_i;
             assign meta[3] = tio3_meta_i;
             
+            if (DEBUG == "TRUE") begin : ILA
+                leveltwo_ila u_ila(.clk(clk_i),
+                                   .probe0(tio0_trig_i),
+                                   .probe1(tio1_trig_i),
+                                   .probe2(tio0_meta_i),
+                                   .probe3(tio1_meta_i),
+                                   .probe4(leveltwo_o),
+                                   .probe5(ce),
+                                   .probe6(trig_o));
+            end
+            
             // mappity mappy
             genvar i, pol;
             for (i=0;i<12;i=i+1) begin : IN
+                // OK, we 
                 always @(posedge clk_i) begin : SCL
                     // reregister and create a rising edge detection for sysclk
                     if (ce_i) begin
