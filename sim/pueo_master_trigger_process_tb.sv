@@ -311,7 +311,27 @@ module pueo_master_trigger_process_tb;
         
         #1000;
         wb_read( 32'h300 );
-        wb_read( 32'h3A0 );
+
+        #22000;
+        @(posedge sys_clk);
+        #1 pps = 1;
+        @(posedge sys_clk);
+        #1 pps = 0;                
+        #500;
+        wb_read( 32'h390 );
+        wb_read( 32'h394 );
+        wb_read( 32'h398 );
+        wb_read( 32'h39c );
+        wb_read( 32'h3a0 );
+        wb_read( 32'h3a4 );
+        wb_read( 32'h3a8 );
+        wb_read( 32'h3ac );
+        wb_read( 32'h3b0 );
+        wb_read( 32'h3b4 );
+        wb_read( 32'h3b8 );
+        wb_read( 32'h3bc );
+        wb_read( 32'h3c0 );
+        wb_read( 32'h3c4 );
     end        
 
 endmodule
