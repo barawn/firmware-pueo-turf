@@ -23,7 +23,9 @@ module pueo_leveltwo #(parameter VERSION = 1,
         input dead_i,
         
         input logictype_i,
-        
+        input rf_en_i,
+        input [27:0] mask_i,
+                
         output [63:0] tio0_meta_o,
         output [63:0] tio1_meta_o,
         output [63:0] tio2_meta_o,
@@ -129,7 +131,7 @@ module pueo_leveltwo #(parameter VERSION = 1,
                                    .probe2(tio0_meta_i),
                                    .probe3(tio1_meta_i),
                                    .probe4(leveltwo_o),
-                                   .probe5(ce),
+                                   .probe5(ce_i),
                                    .probe6(trig_o));
             end
             
@@ -150,6 +152,7 @@ module pueo_leveltwo #(parameter VERSION = 1,
                     end
                 end
                 // hpol sector (turfio/slots) go
+                //  0   1    2    3    4    5    6    7    8    9   10    11
                 // 0/5, 0/4, 0/3, 0/2, 0/1, 0/0, 1/0, 1/1, 1/2, 1/3, 1/4, 1/5
                 // vpol sector (turfio/slots) go
                 // 3/5, 3/4, 3/3, 3/2, 3/1, 3/0, 2/0, 2/1, 2/2, 2/3, 2/4, 2/5
@@ -183,14 +186,28 @@ module pueo_leveltwo #(parameter VERSION = 1,
                 wire [47:0] meta_high_stretched_rotated =
                     { meta_high_stretched[3:0], meta_high_stretched[47:4] };
 
-                wire [47:0] dspC_AB = meta_low_stretched;
-                wire [47:0] dspC_C = meta_high_stretched_rotated;
+                wire [47:0] dspA_to_C;
+                
+                wire [47:0] dspC_AB = meta_high_stretched_rotated;
+                wire [47:0] dspC_C = { {4{mask_i[12*pol + 11]}},
+                                       {4{mask_i[12*pol + 10]}},
+                                       {4{mask_i[12*pol + 09]}},
+                                       {4{mask_i[12*pol + 08]}},
+                                       {4{mask_i[12*pol + 07]}},
+                                       {4{mask_i[12*pol + 06]}},
+                                       {4{mask_i[12*pol + 05]}},
+                                       {4{mask_i[12*pol + 04]}},
+                                       {4{mask_i[12*pol + 03]}},
+                                       {4{mask_i[12*pol + 02]}},
+                                       {4{mask_i[12*pol + 01]}},
+                                       {4{mask_i[12*pol + 00]}} };
+
                 wire not_leveltwo_trigger;
                 assign leveltwo_trigger[pol] = !not_leveltwo_trigger;
 
                 wire [8:0] dspC_OPMODE;
                 assign dspC_OPMODE[8:7] = `W_OPMODE_0;
-                assign dspC_OPMODE[6:4] = `Z_OPMODE_C;
+                assign dspC_OPMODE[6:4] = `Z_OPMODE_PCIN;
                 // switches between Y_OPMODE_MINUS1 and Y_OPMODE_0 which
                 // switches between AND (=0) and OR (=1).
                 assign dspC_OPMODE[3:2] = { logictype_i, 1'b0 };
@@ -198,6 +215,22 @@ module pueo_leveltwo #(parameter VERSION = 1,
                 
                 // We want X OR Z which requires ALUMODE 1100
                 // and OPMODE[3:2] = 10, to select Y_OPMODE_MINUS1
+                
+                // CHANGE OF PLANS: dspA chains up to dsp C.
+                // dspB generates meta_high_stretched and we rotate it
+                // in the connection over.
+                // We handle this by toggling the ce input:
+                // the A/B capture happens in !ce_i, so we get
+                // clk  ce  dspA_out    dspB_out    dspC Z input dspC X input dspC P output
+                // 0    1   X           X           X            X            X
+                // 1    0   A_CLK0      B_CLK0      A_CLK0       X            X
+                // 2    1   A_CLK0      B_CLK0      A_CLK0       B_CLK0       X
+                // 3    0   A_CLK1      B_CLK1      A_CLK1       B_CLK0       A_CLK0 & B_CLK0
+                // 4    1   A_CLK1      B_CLK1      A_CLK1       B_CLK1       A_CLK0 & B_CLK0
+                // 5    0   A_CLK2      B_CLK2      A_CLK2       B_CLK1       A_CLK1 & B_CLK1
+                //
+                // The C reg in dspC is then used for the mask input,
+                // and we duplicate the mask bits by 4.                                
                 DSP48E2 #(`NO_MULT_ATTRS,
                           `DE2_UNUSED_ATTRS,
                           .AREG(2),
@@ -209,6 +242,7 @@ module pueo_leveltwo #(parameter VERSION = 1,
                                   .B( `DSP_AB_B( dspA_AB ) ),
                                   .C( dspA_C ),
                                   .P( meta_low_stretched ),
+                                  .PCOUT( dspA_to_C ),
                                   .ALUMODE(4'b1100),
                                   .OPMODE( { `W_OPMODE_0, `Z_OPMODE_C, `Y_OPMODE_MINUS1, `X_OPMODE_AB } ),
                                   .CLK( clk_i ),
@@ -247,21 +281,21 @@ module pueo_leveltwo #(parameter VERSION = 1,
                           .PREG(1),
                           .USE_PATTERN_DETECT("PATDET"),
                           .SEL_PATTERN("PATTERN"),
-                          .SEL_MASK("MASK"),
-                          .MASK( {48{1'b0}} ),
+                          .SEL_MASK("C"),
                           .PATTERN( {48{1'b0}} ),
                           `CONSTANT_MODE_ATTRS )
                           u_dspC( .A( `DSP_AB_A( dspC_AB ) ),
                                   .B( `DSP_AB_B( dspC_AB ) ),
                                   .C( dspC_C ),
+                                  .PCIN( dspA_to_C ),
                                   .P( leveltwo_scaler[pol] ),
                                   .PATTERNDETECT( not_leveltwo_trigger ),
                                   .ALUMODE(4'b1100),
                                   .OPMODE( dspC_OPMODE ),
                                   .CLK( clk_i ),
-                                  .CEA2( ce_i ),
-                                  .CEB2( ce_i ),
-                                  .CEC( ce_i ),
+                                  .CEA2( ~ce_i ),
+                                  .CEB2( ~ce_i ),
+                                  .CEC( 1'b1 ),
                                   .CEP( ce_i ));                                  
             end
 
@@ -281,22 +315,35 @@ module pueo_leveltwo #(parameter VERSION = 1,
                 // First deal with the LF trigs. They're automatic.
                 // NOTE NOTE NOTE NOTE!!! THESE NEED TO BE DELAYED
                 // TO MATCH UP WITH THE RF TRIGS ABOVE!!
-                if (ce_i) lf_trig[0] <= tio0_trig_i[6] || tio1_trig_i[6];
-                if (ce_i) lf_trig[1] <= tio2_trig_i[6] || tio3_trig_i[6];
+                if (ce_i) lf_trig[0] <= (tio0_trig_i[6] || tio1_trig_i[6]) && rf_en_i;
+                if (ce_i) lf_trig[1] <= (tio2_trig_i[6] || tio3_trig_i[6]) && rf_en_i;
                 // actual leveltwos. por_done prevents them from going when the DSP's pattern reg starts at 0.
-                if (ce_i) leveltwo_trig[0] <= leveltwo_trigger[0] && por_done;
-                if (ce_i) leveltwo_trig[1] <= leveltwo_trigger[1] && por_done;
+                if (ce_i) leveltwo_trig[0] <= leveltwo_trigger[0] && por_done && rf_en_i;
+                if (ce_i) leveltwo_trig[1] <= leveltwo_trigger[1] && por_done && rf_en_i;
                 
                 master_trig <= (!holdoff_i && !dead_i) && ce_i &&
                         ( aux_trig_delayed_ff || (|leveltwo_trig) || (|lf_trig_delayed_ff) );
             end
             assign trig_o = master_trig;
         end else begin : V1
+            wire [5:0] tio0_remask = { mask_i[0], mask_i[1], mask_i[2], mask_i[3], mask_i[4], mask_i[5] };
+            wire [5:0] tio1_remask = { mask_i[11], mask_i[10], mask_i[9], mask_i[8], mask_i[7], mask_i[6] };
+            wire [5:0] tio2_remask = { mask_i[12], mask_i[13], mask_i[14], mask_i[15], mask_i[16], mask_i[17] };
+            wire [5:0] tio3_remask = { mask_i[23], mask_i[22], mask_i[21], mask_i[20], mask_i[19], mask_i[18] };
+
+            wire tio0_trig = |(tio0_trig_i[5:0] & (~tio0_remask));
+            wire tio1_trig = |(tio1_trig_i[5:0] & (~tio1_remask));
+            wire tio2_trig = |(tio2_trig_i[5:0] & (~tio2_remask));
+            wire tio3_trig = |(tio3_trig_i[5:0] & (~tio3_remask));
+            
+            wire lftrig0 = ((tio0_trig_i[6] && mask_i[24]) || (tio1_trig_i[6] && mask_i[25])) && rf_en_i;
+            wire unused = ((tio2_trig_i[6] && mask_i[26]) || (tio3_trig_i[6] && mask_i[27])) && rf_en_i;
+            
             always @(posedge clk_i) begin : V1P
-                if (ce_i) leveltwo_trig[0] <= (|tio0_trig_i[5:0]) || (|tio1_trig_i[5:0]);
-                if (ce_i) leveltwo_trig[1] <= (|tio2_trig_i[5:0]) || (|tio3_trig_i[5:0]);
-                if (ce_i) lf_trig[0] <= tio0_trig_i[6] || tio1_trig_i[6];
-                if (ce_i) lf_trig[1] <= tio2_trig_i[6] || tio3_trig_i[6];
+                if (ce_i) leveltwo_trig[0] <= (tio0_trig || tio1_trig) && rf_en_i;
+                if (ce_i) leveltwo_trig[1] <= (tio2_trig || tio3_trig) && rf_en_i;
+                if (ce_i) lf_trig[0] <= lftrig0;
+                if (ce_i) lf_trig[1] <= unused;
                 
                 master_trig <= (!holdoff_i && !dead_i) && ce_i && (aux_trig || (|leveltwo_trig) || (|lf_trig));
             end
