@@ -139,8 +139,8 @@ module turfio_cin_parallel_sync_v2(
         if (enable_capture && !capture_i && !capture_hold) begin
             cin_capture <= current_cin;
         end else if (shift_capture) begin
-            // Always shift down.
-            cin_capture[15:0] <= cin_capture[31:16];
+            // ALWAYS SHIFT UP STUPID
+            cin_capture[31:16] <= cin_capture[15:0];
         end
         
         valid <= (enable_capture || shift_capture) && enable_i;
