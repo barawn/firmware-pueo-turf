@@ -235,9 +235,9 @@ module pueo_master_trigger_process_tb;
         // enable ext trigger with a select of 1
         #100;
         wb_write( 32'h10C, 32'h00640101);
-        // unmask surf 0
+        // unmask all SURFs.
         #100;
-        wb_write( 32'h100, 32'h0FFF_FFFE );
+        wb_write( 32'h100, 32'h0000_0010);
         #100;
         wb_write( 32'h000, 32'd2 );        
         #1000;
