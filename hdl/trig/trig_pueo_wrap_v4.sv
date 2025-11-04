@@ -172,6 +172,8 @@ module trig_pueo_wrap_v4 #(parameter WBCLKTYPE = "NONE",
     wire [15:0] photo_prescale;
     wire photo_en;
     wire leveltwo_logictype;
+
+    wire rf_trig_en;
     
     wire [23:0] scal_leveltwo;
     pueo_master_trig_process_v4 #(.SYSCLKTYPE(SYSCLKTYPE),
@@ -195,6 +197,7 @@ module trig_pueo_wrap_v4 #(parameter WBCLKTYPE = "NONE",
                       .photo_en_i(photo_en),
                       
                       .leveltwo_logictype_i(leveltwo_logictype),
+                      .rf_en_i(rf_trig_en),
                       
                       .gpo_run_ce_o(gpo_run_ce_o),
                       .gpo_run_d_o(gpo_run_d_o),
@@ -382,6 +385,8 @@ module trig_pueo_wrap_v4 #(parameter WBCLKTYPE = "NONE",
                                   .photo_en_o(photo_en),
                                   
                                   .leveltwo_logictype_o(leveltwo_logictype),
+                                  
+                                  .rf_en_o(rf_trig_en),
                                   
                                   .pps_trig_i(pps_trig_i),
                                   .gp_in_i(gp_in_i),
