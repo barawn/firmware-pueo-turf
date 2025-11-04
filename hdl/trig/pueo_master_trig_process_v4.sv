@@ -40,6 +40,8 @@ module pueo_master_trig_process_v4 #(parameter NSURF=28,
         // For L2 versions > 1, this determines the logic type for
         // the L2. 0 means AND, 1 means OR (which goes back to prior L2).
         input                   leveltwo_logictype_i,
+        // enable the RF triggers
+        input                   rf_en_i,
         
         output                  gpo_run_ce_o,
         output                  gpo_run_d_o,
@@ -138,6 +140,15 @@ module pueo_master_trig_process_v4 #(parameter NSURF=28,
     wire [7:0] metadata[3:0][7:0];
     // NOTE: this ALSO acts the byte-write enable just as it is.
     wire [7:0] trigger[3:0];
+    
+    wire [1:0] dbg_trig = trigger[0][5:4];
+    wire [15:0] dbg_meta = { metadata[0][5], metadata[0][4] };
+    wire [23:0] dbg_addr = { address[0][5], address[0][4] };
+    master_trig_ila u_ila(.clk(sysclk_i),
+                             .probe0(dbg_trig),
+                             .probe1(dbg_meta),
+                             .probe2(dbg_addr));
+    
     // We need to mux the addresses, since we only have one port.
     wire [ADDRBITS-1:0] address_muxed[3:0];
     // We do NOT need to mux the metadata!
@@ -216,6 +227,9 @@ module pueo_master_trig_process_v4 #(parameter NSURF=28,
     
     (* CUSTOM_CC_DST = SYSCLKTYPE *)
     reg leveltwo_logictype = 0;
+
+    (* CUSTOM_CC_DST = SYSCLKTYPE *)
+    reg rf_trig_en = 1;
 
     // the holdoff counter also acts as the stretch for the trigger output
     reg trigger_held_off_rereg = 0;
@@ -503,6 +517,10 @@ module pueo_master_trig_process_v4 #(parameter NSURF=28,
         u_leveltwo(.clk_i(sysclk_x2_i),
                    .ce_i(sysclk_x2_ce_i),
                    .logictype_i(leveltwo_logictype),
+                   .rf_en_i(rf_trig_en),
+                   
+                   .mask_i(trig_mask_sysclk),
+                   
                    .holdoff_i(trig_holdoff),
                    .dead_i(dead_rereg),
                    .tio0_trig_i( trigger_out[0] ),
@@ -527,6 +545,7 @@ module pueo_master_trig_process_v4 #(parameter NSURF=28,
     always @(posedge sysclk_i) begin
         if (runrst_i) begin
             leveltwo_logictype <= leveltwo_logictype_i;
+            rf_trig_en <= rf_en_i;
             photo_prescale <= photo_prescale_i;
             photo_en <= photo_en_i;
         end            
