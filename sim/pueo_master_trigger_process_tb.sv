@@ -106,10 +106,18 @@ module pueo_master_trigger_process_tb;
         else cur_count <= cur_count + 1;
     end    
 
+    wire gpo_trig_d;
+    wire gpo_trig_ce;
+    reg TRIGGER_OUT = 0;
+    always @(posedge sys_clk) begin
+        if (gpo_trig_ce)
+            TRIGGER_OUT <= gpo_trig_d;
+    end
+
     reg pps_trig = 0;
     reg [5:0] ext_trig = 0;
     reg pps = 0;
-    trig_pueo_wrap_v3 #(.DEBUG("FALSE"))
+    trig_pueo_wrap_v4 #(.DEBUG("FALSE"),.L2VERSION(2))
         u_trig( .wb_clk_i(wb_clk),
                 .wb_rst_i(1'b0),
                 `CONNECT_WBS_IFM( wb_ , wb_ ),
@@ -119,6 +127,9 @@ module pueo_master_trigger_process_tb;
                 .sysclk_x2_i(sys_clk_x2),
                 .sysclk_x2_ce_i(sys_clk_x2_ce),
                 .pps_i(pps),
+
+                .gpo_trig_ce_o(gpo_trig_ce),
+                .gpo_trig_d_o(gpo_trig_d),
 
                 .cur_sec_i(cur_sec),
                 .cur_time_i(cur_count),
@@ -194,12 +205,30 @@ module pueo_master_trigger_process_tb;
         end
     endtask                       
 
+    task wb_read;
+        input [13:0] addr;
+        begin
+            @(posedge wb_clk);
+            #1 wb_cyc = 1;
+               wb_we = 0;
+               wb_adr = addr;
+            @(posedge wb_clk);
+            while (!wb_ack_i) @(posedge wb_clk);
+            #1 wb_cyc = 0;
+               wb_adr = {14{1'b0}};
+            @(posedge wb_clk);               
+        end
+    endtask        
+
     integer j;
 
+    // The tests here are silly - the offset is 100,
+    // but we're putting in ext/pps offsets of 100,
+    // so they'll wrap around and show up 32 us later.
     initial begin
         #1000;
-        // latency
-        wb_write( 32'h104, 32'd200 );
+        // leave latency default, set offset
+        wb_write( 32'h104, {16'd20, 16'd100} );
         // enable PPS trigger with an offset of 100.
         #100;
         wb_write( 32'h108, 32'h00640001);
@@ -210,27 +239,63 @@ module pueo_master_trigger_process_tb;
         #100;
         wb_write( 32'h100, 32'h0FFF_FFFE );
         #100;
-//        wb_write( 32'h000, 32'd2 );        
+        wb_write( 32'h000, 32'd2 );        
         #1000;
         // soft trig
         wb_write( 32'h110, 32'd1 );
+        #5000;
         #100;
         // ok now plunk in an RF trig that occurred at the same time.
+        // This should trigger.
+        // We're also adding an LF trigger at the same time because
+        // that way the leveltwo and LF trigs should line up.
         @(posedge sys_clk); #1;
         while (!trigin_will_be_valid) @(posedge sys_clk);
         #1 trig_in[0 +: 16] <= 16'h8010;
+           trig_in[16 +: 16] <= 16'h8010;
+           trig_in[6*16 +: 16] <= 16'h8010;
         @(posedge sys_clk); // trigin valid and trig_in - clk 0
         @(posedge sys_clk); // clk 1
         @(posedge sys_clk); // clk 2
         @(posedge sys_clk); // clk 3
-        #1 trig_in[0 +: 16] <= 16'h00AA;
+            // tio 0 slot 0 is sector 5
+            // tio 0 slot 1 is sector 4
+            // we need the low bits of sector 4 and high
+            // of sector 5.
+        #1 trig_in[0 +: 16] <=  16'h0010;
+           trig_in[16 +: 16] <= 16'h0001;
+           trig_in[6*16 +: 16] <= 16'h0000;
         @(posedge sys_clk); // clk 0
         @(posedge sys_clk); // clk 1
         @(posedge sys_clk); // clk 2
         @(posedge sys_clk); // clk 3
         #1 trig_in[0 +: 16] <= 16'h0000;
+           trig_in[16 +: 16] <= 16'h0000;
+           trig_in[6*16 +: 16] <= 16'h0000;
+
+        // This should not.
+        @(posedge sys_clk); #1;
+        while (!trigin_will_be_valid) @(posedge sys_clk);
+        #1 trig_in[0 +: 16] <= 16'h8020;
+           trig_in[16 +: 16] <= 16'h8020;
+        @(posedge sys_clk); // trigin valid and trig_in - clk 0
+        @(posedge sys_clk); // clk 1
+        @(posedge sys_clk); // clk 2
+        @(posedge sys_clk); // clk 3
+            // tio 0 slot 0 is sector 5
+            // tio 0 slot 1 is sector 4
+            // we need the low bits of sector 4 and high
+            // of sector 5.
+        #1 trig_in[0 +: 16] <=  16'h0001;
+           trig_in[16 +: 16] <= 16'h0001;
+        @(posedge sys_clk); // clk 0
+        @(posedge sys_clk); // clk 1
+        @(posedge sys_clk); // clk 2
+        @(posedge sys_clk); // clk 3
+        #1 trig_in[0 +: 16] <= 16'h0000;
+           trig_in[16 +: 16] <= 16'h0000;
                         
-        #1000;
+        #3000;
         wb_write( 32'h110, 32'd1 );
         #1000;
         @(posedge sys_clk);
@@ -244,6 +309,29 @@ module pueo_master_trigger_process_tb;
         #1 pps = 0;        
         #1000;
         
+        #1000;
+        wb_read( 32'h300 );
+
+        #22000;
+        @(posedge sys_clk);
+        #1 pps = 1;
+        @(posedge sys_clk);
+        #1 pps = 0;                
+        #500;
+        wb_read( 32'h390 );
+        wb_read( 32'h394 );
+        wb_read( 32'h398 );
+        wb_read( 32'h39c );
+        wb_read( 32'h3a0 );
+        wb_read( 32'h3a4 );
+        wb_read( 32'h3a8 );
+        wb_read( 32'h3ac );
+        wb_read( 32'h3b0 );
+        wb_read( 32'h3b4 );
+        wb_read( 32'h3b8 );
+        wb_read( 32'h3bc );
+        wb_read( 32'h3c0 );
+        wb_read( 32'h3c4 );
     end        
 
 endmodule

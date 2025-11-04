@@ -40,8 +40,9 @@ hdl/event/event_register_core.sv
 hdl/event/hdr_accumulator.sv
 hdl/i2c_merger.sv
 hdl/time/internal_pps.sv
-hdl/trig/master_trig_uram.sv
-hdl/trig/pueo_master_trig_process_v3.sv
+hdl/trig/master_trig_uram_v2.sv
+hdl/trig/pueo_leveltwo.sv
+hdl/trig/pueo_master_trig_process_v4.sv
 hdl/trig/pueo_scaler_core.sv
 hdl/trig/pueo_scaler_register_core.sv
 hdl/trig/pueo_scaler_wrap.sv
@@ -53,7 +54,7 @@ verilog-library-barawn/hdl/simple_clock_mon.sv
 hdl/clock/system_clock_v2.sv
 hdl/trig/trig_buffer_track.sv
 hdl/trig/trig_pueo_command.sv
-hdl/trig/trig_pueo_wrap_v3.sv
+hdl/trig/trig_pueo_wrap_v4.sv
 hdl/ethernet/turf_acknack_port.sv
 hdl/ethernet/turf_event_ctrl_port.sv
 hdl/turf_gpo_mux.sv
@@ -79,5 +80,8 @@ hdl/ethernet/udp_port_mux.sv
 hdl/ethernet/udp_port_switch.sv
 hdl/ethernet/wb_to_drpx2.sv
 hdl/pueo_turf6.sv
+hdl/trig/master_trig_uram.sv
+hdl/trig/pueo_master_trig_process_v3.sv
+hdl/trig/trig_pueo_wrap_v3.sv
 hdl/event/event_readout_generator.sv
 hdl/kr/kr_phy_wrap.sv

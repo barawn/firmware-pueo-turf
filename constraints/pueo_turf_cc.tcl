@@ -1,3 +1,6 @@
+set we_are_synthesis [info exists are_we_synthesis]
+puts "we are synthesis: $we_are_synthesis"
+
 ######## CONVENIENCE FUNCTIONS
 # These all have escape clauses because clocks sometimes don't exist in the elaboration/synthesis
 # steps.
@@ -173,6 +176,12 @@ proc set_mc_paths { tag } {
     set_max_delay -from $srcRegs -to $dstRegs $maxTime
 }    
 
+proc set_max_delay_if { src dst period } {
+    if { [llength $src] && [llength $dst] } {
+        set_max_delay -datapath_only -from $src -to $dst $period
+    }
+}
+
 
 ######## END CONVENIENCE FUNCTIONS
 
@@ -202,7 +211,7 @@ if {[llength $isgenclk] && [expr $isgenclk == 1] && [llength $isusergenclk] && [
     puts "DDR clk was generated: checking to see if we need to rename it"
     if {[get_property IS_RENAMED $ddr_genclk ]} {
         puts "Already renamed, skipping."
-        set userclk $user_genclk
+        set ddrclk0 [get_clocks ddr_clk0]        
     } else {
         puts "Renaming $ddr_genclk to ddrclk0."
         set ddr_genclkpin [get_property SOURCE_PINS $ddr_genclk]
@@ -267,77 +276,87 @@ set clktypelist [array get clktypes]
 
 ######## END CLOCK DEFINITIONS
 
-# magic grab all of the flag_sync'd guys. This is not ideal but it'll work for now.
-set sync_flag_regs [get_cells -hier -filter {NAME =~ *FlagToggle_clkA_reg*}]
-set sync_sync_regs [get_cells -hier -filter {NAME =~ *SyncA_clkB_reg*}]
-set sync_syncB_regs [get_cells -hier -filter {NAME =~ *SyncB_clkA_reg*}]
+# EVERYTHING AFTER THIS IS IMPLEMENTATION ONLY
 
-set_max_delay -datapath_only -from $sync_flag_regs -to $sync_sync_regs 10.000
-set_max_delay -datapath_only -from $sync_sync_regs -to $sync_syncB_regs 10.000
+if { $we_are_synthesis != 1 } {
+    puts "Processing timing constraints."
 
-# magic grab all of the clockmon regs
-set clockmon_level_regs [ get_cells -hier -filter {NAME =~ *u_clkmon/*clk_32x_level_reg*} ]
-set clockmon_cc_regs [ get_cells -hier -filter {NAME =~ *u_clkmon/*level_cdc_ff1_reg*}]
-set clockmon_run_reset_regs [ get_cells -hier -filter {NAME =~ *u_clkmon/clk_running_reset_reg*}]
-set clockmon_run_regs [get_cells -hier -filter {NAME=~ *u_clkmon/*u_clkmon*}]
-set clockmon_run_cc_regs [get_cells -hier -filter {NAME=~ *u_clkmon/clk_running_status_cdc1_reg*}]
-set_max_delay -datapath_only -from $clockmon_level_regs -to $clockmon_cc_regs 10.000
-set_max_delay -datapath_only -from $clockmon_run_reset_regs -to $clockmon_run_regs 10.000
-set_max_delay -datapath_only -from $clockmon_run_regs -to $clockmon_run_cc_regs 10.000
 
-# more magic grabs
-set async_regs_A [get_cells -hier -filter {NAME=~u_aurora*loopback_sync*reg_clkA_reg*}]
-set async_regs_B [get_cells -hier -filter {NAME=~u_aurora*loopback_sync*pipe_clkB_reg*}]
-set_max_delay -datapath_only -from $async_regs_A -to $async_regs_B 10.000
+    # magic grab all of the flag_sync'd guys. This is not ideal but it'll work for now.
+    set sync_flag_regs [get_cells -hier -filter {NAME =~ *FlagToggle_clkA_reg*}]
+    set sync_sync_regs [get_cells -hier -filter {NAME =~ *SyncA_clkB_reg*}]
+    set sync_syncB_regs [get_cells -hier -filter {NAME =~ *SyncB_clkA_reg*}]
+        
+    set_max_delay_if $sync_flag_regs $sync_sync_regs 10.000
+    set_max_delay_if $sync_sync_regs $sync_syncB_regs 10.000
+    
+    # magic grab all of the clockmon regs
+    set clockmon_level_regs [ get_cells -hier -filter {NAME =~ *u_clkmon/*clk_32x_level_reg*} ]
+    set clockmon_cc_regs [ get_cells -hier -filter {NAME =~ *u_clkmon/*level_cdc_ff1_reg*}]
+    set clockmon_run_reset_regs [ get_cells -hier -filter {NAME =~ *u_clkmon/clk_running_reset_reg*}]
+    set clockmon_run_regs [get_cells -hier -filter {NAME=~ *u_clkmon/*u_clkmon*}]
+    set clockmon_run_cc_regs [get_cells -hier -filter {NAME=~ *u_clkmon/clk_running_status_cdc1_reg*}]
 
-# don't want to dig into the core, sigh.
-set lock_regs [get_cells -hier -filter {NAME=~u_ethernet/SFP[*]*rx_block_lock_reg_reg}]
-set ber_regs [get_cells -hier -filter {NAME=~u_ethernet/SFP[*]*rx_high_ber_reg_reg}]
-set stat_regs [get_cells -hier -filter {NAME=~u_ethernet/gbe_status_reg[*]}]
-set_max_delay -datapath_only -from $lock_regs -to $stat_regs 10.0
-set_max_delay -datapath_only -from $ber_regs -to $stat_regs 10.0
-
-# just.... blanket for now
-#set_max_delay -datapath_only -from $psclk -to $userclk 10.0
-#set_max_delay -datapath_only -from $userclk -to $psclk 10.0
-
-# guard on userclk/ddrclk0 due to generated crap
-if {[info exists userclk]} {
-    set_cc_paths $psclk $userclk $clktypelist
-    set_cc_paths $userclk $psclk $clktypelist
-}
-
-if {[info exists ddrclk0]} {
-    set_cc_paths $psclk $ddrclk0 $clktypelist
-    # now ddr -> ethernet
+    set_max_delay_if $clockmon_level_regs $clockmon_cc_regs 10.000
+    set_max_delay_if $clockmon_run_reset_regs $clockmon_run_regs 10.000
+    set_max_delay_if $clockmon_run_regs $clockmon_run_cc_regs 10.000
+    
+    # more magic grabs
+    set async_regs_A [get_cells -hier -filter {NAME=~u_aurora*loopback_sync*reg_clkA_reg*}]
+    set async_regs_B [get_cells -hier -filter {NAME=~u_aurora*loopback_sync*pipe_clkB_reg*}]    
+    set_max_delay_if $async_regs_A $async_regs_B 10.000
+    
+    # don't want to dig into the core, sigh.
+    set lock_regs [get_cells -hier -filter {NAME=~u_ethernet/SFP[*]*rx_block_lock_reg_reg}]
+    set ber_regs [get_cells -hier -filter {NAME=~u_ethernet/SFP[*]*rx_high_ber_reg_reg}]
+    set stat_regs [get_cells -hier -filter {NAME=~u_ethernet/gbe_status_reg[*]}]
+    
+    set_max_delay_if $lock_regs $stat_regs 10.0
+    set_max_delay_if $ber_regs $stat_regs 10.0
+    
+    # just.... blanket for now
+    #set_max_delay -datapath_only -from $psclk -to $userclk 10.0
+    #set_max_delay -datapath_only -from $userclk -to $psclk 10.0
+    
+    # guard on userclk/ddrclk0 due to generated crap
+    if {[info exists userclk]} {
+        set_cc_paths $psclk $userclk $clktypelist
+        set_cc_paths $userclk $psclk $clktypelist
+    }
+    
+    if {[info exists ddrclk0]} {
+        set_cc_paths $psclk $ddrclk0 $clktypelist
+        # now ddr -> ethernet
+        set_cc_paths $ddrclk0 $gbeclk $clktypelist
+        # only have a flag going this direction, leave it alone for now
+        #set_cc_paths $gbeclk $ddrclk0 $clktypelist
+    }
+    
+    set_cc_paths $psclk $ifclk67 $clktypelist
+    set_cc_paths $ifclk67 $psclk $clktypelist
+    
+    set_cc_paths $psclk $ifclk68 $clktypelist
+    set_cc_paths $ifclk68 $psclk $clktypelist
+    
+    set_cc_paths $psclk $sys_clk $clktypelist
+    set_cc_paths $sys_clk $psclk $clktypelist
+    
+    set_cc_paths $psclk $gbeclk $clktypelist
+    set_cc_paths $gbeclk $psclk $clktypelist
+    
+    set_cc_paths $sys_clk $gbeclk $clktypelist
+    set_cc_paths $gbeclk $sys_clk $clktypelist
+    
+    set_cc_paths $sys_clk $userclk $clktypelist
+    
+    set_cc_paths $ddrclk0 $psclk $clktypelist
+    set_cc_paths $ddrclk0 $sys_clk $clktypelist
+    
+    set_cc_paths $gbeclk $ddrclk0 $clktypelist
     set_cc_paths $ddrclk0 $gbeclk $clktypelist
-    # only have a flag going this direction, leave it alone for now
-    #set_cc_paths $gbeclk $ddrclk0 $clktypelist
+    
+    set_mc_paths TRIG_META
+    set_mc_paths TRIG_DEAD
+    set_mc_paths TRIG_HELDOFF
+    set_mc_paths LEVELTWO_SCAL
 }
-
-set_cc_paths $psclk $ifclk67 $clktypelist
-set_cc_paths $ifclk67 $psclk $clktypelist
-
-set_cc_paths $psclk $ifclk68 $clktypelist
-set_cc_paths $ifclk68 $psclk $clktypelist
-
-set_cc_paths $psclk $sys_clk $clktypelist
-set_cc_paths $sys_clk $psclk $clktypelist
-
-set_cc_paths $psclk $gbeclk $clktypelist
-set_cc_paths $gbeclk $psclk $clktypelist
-
-set_cc_paths $sys_clk $gbeclk $clktypelist
-set_cc_paths $gbeclk $sys_clk $clktypelist
-
-set_cc_paths $sys_clk $userclk $clktypelist
-
-set_cc_paths $ddrclk0 $psclk $clktypelist
-set_cc_paths $ddrclk0 $sys_clk $clktypelist
-
-set_cc_paths $gbeclk $ddrclk0 $clktypelist
-set_cc_paths $ddrclk0 $gbeclk $clktypelist
-
-set_mc_paths TRIG_META
-set_mc_paths TRIG_DEAD
-set_mc_paths TRIG_HELDOFF

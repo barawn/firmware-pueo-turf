@@ -48,6 +48,7 @@ ip/debug/hsk_tx_ila/hsk_tx_ila.xci
 ip/debug/i2c_merge_ila/i2c_merge_ila.xci
 ip/debug/i2c_merge_vio/i2c_merge_vio.xci
 ip/debug/intercon_ila/intercon_ila.xci
+ip/debug/leveltwo_ila/leveltwo_ila.xci
 ip/event/nack_ccfifo/nack_ccfifo.xci
 ip/debug/raw_event_ila/raw_event_ila.xci
 ip/debug/register_bridge_ila/register_bridge_ila.xci
