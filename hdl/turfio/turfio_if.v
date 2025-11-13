@@ -115,7 +115,7 @@ module turfio_if #( parameter [31:0] TRAIN_VALUE=32'hA55A6996,
         8'h00,
         8'h00,
         8'h00,
-        8'h08 };
+        8'h30 };
 
     // create a lookup function for parameters
     function [6:0] lookup_inv_cin;
@@ -294,7 +294,9 @@ module turfio_if #( parameter [31:0] TRAIN_VALUE=32'hA55A6996,
 
             for (j=0;j<8;j=j+1) begin : BL
                 always @(posedge sysclk_i) begin : RR
-                    trigger_rereg[16*j +: 16] <= tio_response[32*j +: 16];
+                    // The UPPER WORD is the active word!!! We shift UP
+                    // We get (addr, data) -> (data, xxx).
+                    trigger_rereg[16*j +: 16] <= tio_response[(32*j + 16) +: 16];
                     trigger_valid_rereg[j] <= tio_response_valid[j];
                 end
             end
