@@ -189,6 +189,8 @@ module pueo_leveltwo #(parameter VERSION = 1,
                 wire [47:0] dspA_to_C;
                 
                 wire [47:0] dspC_AB = meta_high_stretched_rotated;
+                // Note that the masks here only go from [23:0].
+                // mask[26] is then LF 
                 wire [47:0] dspC_C = { {4{mask_i[12*pol + 11]}},
                                        {4{mask_i[12*pol + 10]}},
                                        {4{mask_i[12*pol + 09]}},
@@ -315,8 +317,11 @@ module pueo_leveltwo #(parameter VERSION = 1,
                 // First deal with the LF trigs. They're automatic.
                 // NOTE NOTE NOTE NOTE!!! THESE NEED TO BE DELAYED
                 // TO MATCH UP WITH THE RF TRIGS ABOVE!!
-                if (ce_i) lf_trig[0] <= (tio0_trig_i[6] || tio1_trig_i[6]) && rf_en_i;
-                if (ce_i) lf_trig[1] <= (tio2_trig_i[6] || tio3_trig_i[6]) && rf_en_i;
+                // LF trigs only use tio0 and tio1 as the two separate guys.
+                // mask 26 is left LF (SURF10)
+                // mask 27 is right LF (SURF17)
+                if (ce_i) lf_trig[0] <= (tio0_trig_i[6] || tio2_trig_i[6]) && rf_en_i && !mask_i[26];
+                if (ce_i) lf_trig[1] <= (tio1_trig_i[6] || tio3_trig_i[6]) && rf_en_i && !mask_i[27];
                 // actual leveltwos. por_done prevents them from going when the DSP's pattern reg starts at 0.
                 if (ce_i) leveltwo_trig[0] <= leveltwo_trigger[0] && por_done && rf_en_i;
                 if (ce_i) leveltwo_trig[1] <= leveltwo_trigger[1] && por_done && rf_en_i;

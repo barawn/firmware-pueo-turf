@@ -13,7 +13,7 @@ module pueo_turf6 #(parameter IDENT="TURF",
                     parameter REVISION="A",
                     parameter [3:0] VER_MAJOR=4'd0,
                     parameter [3:0] VER_MINOR=4'd8,
-                    parameter [7:0] VER_REV=8'd8,
+                    parameter [7:0] VER_REV=8'd10,
                     parameter [15:0] FIRMWARE_DATE = {16{1'b0}})                    
                     (
 
@@ -558,8 +558,10 @@ module pueo_turf6 #(parameter IDENT="TURF",
                   .s_resp_tuser( aurora_resp_tuser ));                                    
 
     // turfio path
-    wire [31:0] turfio_if_command67;
-    wire [31:0] turfio_if_command68;
+    wire [31:0] turfio_if_command0;
+    wire [31:0] turfio_if_command1;
+    wire [31:0] turfio_if_command2;
+    wire [31:0] turfio_if_command3;
     // triggers
     wire [16*8-1:0] turfioa_trigger;
     wire [7:0] turfioa_valid;
@@ -606,8 +608,10 @@ module pueo_turf6 #(parameter IDENT="TURF",
                   .sysclk_i(sys_clk),
                   .sysclk_ibuf_i(sys_clk_ibuf),
                   .sysclk_phase_i(sys_clk_phase),
-                  .cout_command67_i( turfio_if_command67 ),
-                  .cout_command68_i( turfio_if_command68 ),
+                  .cout_command0_i(turfio_if_command0),
+                  .cout_command1_i(turfio_if_command1),
+                  .cout_command2_i(turfio_if_command2),
+                  .cout_command3_i(turfio_if_command3),
                   .cina_trigger_o(turfioa_trigger),
                   .cina_valid_o(turfioa_valid),
                   .cinb_trigger_o(turfiob_trigger),
@@ -842,8 +846,10 @@ module pueo_turf6 #(parameter IDENT="TURF",
                            
                            .photoshutter_o(photoshutter),
                                                 
-                           .command67_o(turfio_if_command67),
-                           .command68_o(turfio_if_command68));                           
+                           .command0_o(turfio_if_command0),
+                           .command1_o(turfio_if_command1),
+                           .command2_o(turfio_if_command2),
+                           .command3_o(turfio_if_command3));                           
 
     generate
         if (UART_DEBUG == "TRUE") begin : SERDBG

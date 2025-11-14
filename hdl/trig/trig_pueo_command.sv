@@ -1,6 +1,7 @@
 `timescale 1ns / 1ps
 `include "interfaces.vh"
-// this doesn't just send trig commands, it also does runcmds and fwu data
+// this doesn't just send trig commands, it also does runcmds and fwu data.
+// It also controls the biquads remotely.
 //
 // I need to rework the FWU here to match the TURFIO.
 // In the TURFIO there's a 32-to-8 FIFO and you just
@@ -23,9 +24,13 @@ module trig_pueo_command(
         // this is really only 15 bits
         `TARGET_NAMED_PORTS_AXI4S_MIN_IF( s_trig_ , 16),
         
-        output [31:0] command67_o,
-        output [31:0] command68_o
+        output [31:0] command0_o,
+        output [31:0] command1_o,
+        output [31:0] command2_o,
+        output [31:0] command3_o
     );
+    
+    // Our split commanding now becomes a little harder, but still not super-hard.
     
     parameter WBCLKTYPE = "NONE";
     parameter SYSCLKTYPE = "NONE";
@@ -51,7 +56,7 @@ module trig_pueo_command(
     reg [1:0] en_crate_pps_sysclk = {2{1'b0}};
     reg crate_pps = 0;
     
-    reg [31:0] command = {32{1'b0}};
+    reg [3:0][31:0] command = {4*32{1'b0}};
     
     wire send_runcmd_wbclk;
     wire send_runcmd;
@@ -77,9 +82,18 @@ module trig_pueo_command(
     (* CUSTOM_CC_SRC = WBCLKTYPE *)
     reg mark_hold_wbclk = 0;
 
+    reg [31:0] notch_data = {32{1'b0}};
+    reg        notch_pending = 0;
+
     // this resolves to a NOOP if no mark is pending
     wire [7:0] mode1data = (fwu_pending && !fwu_mark) ? fwu_data : { {6{1'b0}}, fwu_mark, fwu_data[0] && fwu_mark};
     wire [1:0] mode1type = (fwu_pending && !fwu_mark) ? 2'd3 : 2'd0;    
+    wire [7:0] mode1data_full[3:0] =
+        { (notch_pending) ? notch_data[24 +: 8] : mode1data,
+          (notch_pending) ? notch_data[16 +: 8] : mode1data,
+          (notch_pending) ? notch_data[08 +: 8] : mode1data,
+          (notch_pending) ? notch_data[00 +: 8] : mode1data };
+
     // Our sleazeball here is that we only send runcmds during sync
     // intervals. AAUUUGH this logic actually meant you sent TWO
     // of them!!
@@ -136,6 +150,7 @@ module trig_pueo_command(
     // The wait doesn't freaking matter. We could even do this with FWU data
     // the way we're doing it right now. But we'll be adding FIFO support
     // to FWU data later so it'll matter then. Blah blah blah.
+    integer i;
     always @(posedge sysclk_i) begin
         en_crate_pps_sysclk <= {en_crate_pps_sysclk[0], en_crate_pps};
         crate_pps <= (en_crate_pps_sysclk[1] && pps_i);
@@ -157,19 +172,21 @@ module trig_pueo_command(
         
         // HANDLE MESSAGE SIDE OF COMMAND
         if (sysclk_phase_i) begin
-            command[31] <= ~(runcmd_really_pending || fwu_pending || crate_pps);
-            // pps
-            command[30] <= crate_pps;
-            // reserved
-            command[29:28] <= 2'b00;
-            // runcmd
-            command[27:26] <= runcmd;
-            // mode1
-            command[25:24] <= mode1type;
-            command[23:16] <= mode1data;
-            command[15] <= s_trig_tvalid;
-            command[14:0] <= s_trig_tdata[14:0];
-        end        
+            for (i=0;i<4;i=i+1) begin : LP
+                command[i][31] <= ~(runcmd_really_pending || fwu_pending || crate_pps);
+                // pps
+                command[i][30] <= crate_pps;
+                // reserved
+                command[i][29:28] <= 2'b00;
+                // runcmd
+                command[i][27:26] <= runcmd;
+                // mode1
+                command[i][25:24] <= mode1type;
+                command[i][23:16] <= mode1data_full[i];
+                command[i][15] <= s_trig_tvalid;
+                command[i][14:0] <= s_trig_tdata[14:0];
+            end
+        end
     end
 
     // this makes it so that 0x0 sends a runcmd, 0x4 sends fwu (mark OR data)
@@ -245,7 +262,9 @@ module trig_pueo_command(
     assign runrst_o = runrst_delayed;
     assign runstop_o = runstop_delayed;
 
-    assign command67_o = command;
-    assign command68_o = command;
+    assign command0_o = command[0];
+    assign command1_o = command[1];
+    assign command2_o = command[2];
+    assign command3_o = command[3];
         
 endmodule

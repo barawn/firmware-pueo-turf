@@ -73,8 +73,10 @@ module trig_pueo_wrap_v4 #(parameter WBCLKTYPE = "NONE",
         `HOST_NAMED_PORTS_AXI4S_MIN_IF( turfhdr_ , 64 ),
         output turfhdr_tlast,
         
-        output [31:0] command67_o,
-        output [31:0] command68_o
+        output [31:0] command0_o,
+        output [31:0] command1_o,
+        output [31:0] command2_o,
+        output [31:0] command3_o
     );
 
     localparam [15:0] DEFAULT_HOLDOFF = 16'd82;
@@ -411,8 +413,10 @@ module trig_pueo_wrap_v4 #(parameter WBCLKTYPE = "NONE",
                                  
                                  `CONNECT_AXI4S_MIN_IF(s_trig_ , trig_ ),
                                  
-                                 .command67_o(command67_o),
-                                 .command68_o(command68_o));
+                                 .command0_o(command0_o),
+                                 .command1_o(command1_o),
+                                 .command2_o(command2_o),
+                                 .command3_o(command3_o));
     assign runrst_o = runrst;
     assign track_events_o = running;
 endmodule

@@ -57,10 +57,11 @@ module turfio_if #( parameter [31:0] TRAIN_VALUE=32'hA55A6996,
         
         // This is the real sysclk input. We resync to sysclk.
         input sysclk_i,
-        // command output broadcast in bank 67
-        input [31:0] cout_command67_i,
-        // command output broadcast in bank 68
-        input [31:0] cout_command68_i,
+        // We now shift to individualized commanding for each TURFIO.
+        input [31:0] cout_command0_i,
+        input [31:0] cout_command1_i,
+        input [31:0] cout_command2_i,
+        input [31:0] cout_command3_i,
         
         // Trigger outputs for CINA
         output [16*8-1:0] cina_trigger_o,
@@ -273,6 +274,12 @@ module turfio_if #( parameter [31:0] TRAIN_VALUE=32'hA55A6996,
                   .ifclk68_x2_phase_o(ifclk68x2_phase),
                   .locked_o(mmcm_locked));
 
+    wire [31:0] command[3:0];
+    assign command[0] = cout_command0_i;
+    assign command[1] = cout_command1_i;
+    assign command[2] = cout_command2_i;
+    assign command[3] = cout_command3_i;
+
     generate
         genvar i,j;
         for (i=0;i<4;i=i+1) begin : IFL
@@ -283,9 +290,10 @@ module turfio_if #( parameter [31:0] TRAIN_VALUE=32'hA55A6996,
             assign wbtio_sel_o[i] = wb_sel_i;
             assign wbtio_we_o[i] = wb_we_i;
             assign wbtio_dat_o[i] = wb_dat_i;
-
-            wire [31:0] bank_command = (COUT_CLKTYPE[i]) ? cout_command67_i : cout_command68_i;
-
+            // 0 and 3 are bank 68
+            // 1 and 2 are bank 67
+            wire [31:0] bank_command = command[i];
+            
             // HOLY MOLY BIG
             wire [32*8-1:0] tio_response;
             wire [7:0] tio_response_valid;

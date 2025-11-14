@@ -50,9 +50,9 @@ module pueo_trig_ctrl_v3 #(
         // for the event counter wbclk shadow
         input  event_i,
 
-        // masks
+        // masks. [27:26] are the LF masks
         output [27:0] trig_mask_o,
-        output update_trig_mask_o,
+        output update_trig_mask_o,        
 
         // constants captured at run start
         output [15:0] trig_latency_o,
