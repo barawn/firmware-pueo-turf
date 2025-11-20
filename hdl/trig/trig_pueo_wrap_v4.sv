@@ -407,6 +407,7 @@ module trig_pueo_wrap_v4 #(parameter WBCLKTYPE = "NONE",
                                  .sysclk_phase_i(sysclk_phase_i),
                                  .sysclk_sync_i(sysclk_sync_i),
                                  .pps_i(pps_i),
+                                 .cur_time_i(cur_time_i),
                                  
                                  .runrst_o(runrst),
                                  .runstop_o(runstop),

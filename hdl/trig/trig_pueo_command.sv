@@ -15,12 +15,16 @@ module trig_pueo_command(
         input sysclk_i,
         input sysclk_phase_i,
         input sysclk_sync_i,
-        
+                
         // pps needs to be in sysclk domain anyway and it's
         // stretched to be at least 8 clocks long.
         input pps_i,
         output runrst_o,
         output runstop_o,        
+
+        // for notch time capture
+        input [31:0] cur_time_i,
+        
         // this is really only 15 bits
         `TARGET_NAMED_PORTS_AXI4S_MIN_IF( s_trig_ , 16),
         
@@ -82,18 +86,65 @@ module trig_pueo_command(
     (* CUSTOM_CC_SRC = WBCLKTYPE *)
     reg mark_hold_wbclk = 0;
 
-    reg [31:0] notch_data = {32{1'b0}};
-    reg        notch_pending = 0;
+    // these live in wbclk
+    (* CUSTOM_CC_SRC = WBCLKTYPE *)
+    reg [23:0] notch0_state = {24{1'b0}};
+    (* CUSTOM_CC_SRC = WBCLKTYPE *)
+    reg [23:0] notch1_state = {24{1'b0}};
+    // this is a flag to transmit all notch states
+    reg        notch_do_update = 0;
+    wire       notch_do_update_sysclk;
+    flag_sync u_notchupdate_sync(.in_clkA(notch_do_update),
+                                 .out_clkB(notch_do_update_sysclk),
+                                 .clkA(wb_clk_i),
+                                 .clkB(sysclk_i));
+    wire       notch_complete;
+    wire       notch_complete_wbclk;
+    flag_sync u_notchdone_sync(.in_clkA(notch_complete),
+                               .out_clkB(notch_complete_wbclk),
+                               .clkA(sysclk_i),
+                               .clkB(wb_clk_i));
+    
+    wire notch_pending;
+    reg notch_really_pending = 0;
+    wire [31:0] notch_data;
+    wire notch_ack;
 
+    wire [31:0] notch_time;
+
+//        input clk_i,
+//        input [23:0] notch0_state_i,
+//        input [23:0] notch1_state_i,
+//        input do_notch_i,
+//        output notch_busy_o,
+        
+//        output notch_pending_o,
+//        output [31:0] notch_dat_o,
+//        input notch_ack_i        
+    notch_remote_control #(.CLKTYPE(SYSCLKTYPE))
+        u_rc(.clk_i(sysclk_i),
+             .notch0_state_i(notch0_state),
+             .notch1_state_i(notch1_state),
+             .do_notch_i(notch_do_update_sysclk),
+             .notch_complete_o(notch_complete),
+             
+             .cur_time_i(cur_time_i),
+             .notch_time_o(notch_time),
+             
+             .notch_pending_o(notch_pending),
+             .notch_dat_o(notch_data),
+             .notch_ack_i(notch_ack));
+
+    
     // this resolves to a NOOP if no mark is pending
     wire [7:0] mode1data = (fwu_pending && !fwu_mark) ? fwu_data : { {6{1'b0}}, fwu_mark, fwu_data[0] && fwu_mark};
-    wire [1:0] mode1type = (fwu_pending && !fwu_mark) ? 2'd3 : 2'd0;    
+    wire [1:0] mode1type = notch_really_pending ? 2'd0 : ((fwu_pending && !fwu_mark) ? 2'd3 : 2'd0);    
     wire [7:0] mode1data_full[3:0] =
-        { (notch_pending) ? notch_data[24 +: 8] : mode1data,
-          (notch_pending) ? notch_data[16 +: 8] : mode1data,
-          (notch_pending) ? notch_data[08 +: 8] : mode1data,
-          (notch_pending) ? notch_data[00 +: 8] : mode1data };
-
+        { (notch_really_pending) ? notch_data[24 +: 8] : mode1data,
+          (notch_really_pending) ? notch_data[16 +: 8] : mode1data,
+          (notch_really_pending) ? notch_data[08 +: 8] : mode1data,
+          (notch_really_pending) ? notch_data[00 +: 8] : mode1data };
+          
     // Our sleazeball here is that we only send runcmds during sync
     // intervals. AAUUUGH this logic actually meant you sent TWO
     // of them!!
@@ -115,24 +166,59 @@ module trig_pueo_command(
     // 00 -> runcmd
     // 01 -> fwu
     // 10 -> control
-    // 11 -> reserved
-    wire RUNCMD_ADDR = (wb_adr_i[3:2] == 2'b00);
-    wire FWU_ADDR = (wb_adr_i[3:2] == 2'b01);
-    wire CONTROL_ADDR = (wb_adr_i[3:2] == 2'b10);
-    wire RESERVED_ADDR = (wb_adr_i[3:2] == 2'b11);
-        
+    // 11 -> notch
+    wire RUNCMD_ADDR =  (wb_adr_i[4:2] == 3'b000);  // 0
+    wire FWU_ADDR =     (wb_adr_i[4:2] == 3'b001);  // 4
+    wire CONTROL_ADDR = (wb_adr_i[4:2] == 3'b010);  // 8
+    wire RSV0_ADDR =    (wb_adr_i[4:2] == 3'b011);  // C
+    wire NOTCH0_ADDR =  (wb_adr_i[4:2] == 3'b100);  // 10
+    wire NOTCH1_ADDR =  (wb_adr_i[4:2] == 3'b101);  // 14
+    wire NOTCH_TIME  =  (wb_adr_i[4:2] == 3'b110);  // 18   -- will get this working in a moment
+    wire NOTCH_UPDATE = (wb_adr_i[4:2] == 3'b111);  // 1C
+    
+    (* CUSTOM_CC_DST = WBCLKTYPE *)
+    reg [31:0] notch_time_wbclk = {32{1'b0}};
+    
+    wire [31:0] notch_read_data[3:0];
+    wire [31:0] notch_read_data_mux = notch_read_data[wb_adr_i[3:2]];
+    assign notch_read_data[0] = { {4{1'b0}}, notch0_state[12 +: 12], {4{1'b0}}, notch0_state[0 +: 12]};
+    assign notch_read_data[1] = { {4{1'b0}}, notch1_state[12 +: 12], {4{1'b0}}, notch1_state[0 +: 12]};
+    assign notch_read_data[2] = notch_time_wbclk;
+    assign notch_read_data[3] = notch_read_data[1];
+    wire [31:0] control_read_data = { {16{1'b0}}, {4{1'b0}}, rundly, {7{1'b0}}, en_crate_pps };
+
     always @(posedge wb_clk_i) begin
+        notch_time_wbclk <= notch_time;
+    
         if (wb_rst_i) state <= IDLE;
         else case (state)
             IDLE: if (wb_cyc_i && wb_stb_i) begin
-                if (RESERVED_ADDR || CONTROL_ADDR) state <= ACK;
+                if (RSV0_ADDR || CONTROL_ADDR || NOTCH_TIME || NOTCH0_ADDR || NOTCH1_ADDR) state <= ACK;
                 else if (wb_we_i && wb_sel_i[0]) state <= ISSUE_CMD;
                 else state <= ACK;
             end                
             ISSUE_CMD: state <= WAIT_COMPLETE;
-            WAIT_COMPLETE: if (runcmd_complete_wbclk || fwu_complete_wbclk) state <= ACK;
+            WAIT_COMPLETE: if (notch_complete_wbclk || runcmd_complete_wbclk || fwu_complete_wbclk) state <= ACK;
             ACK: state <= IDLE;
         endcase
+        
+        // always a flag
+        notch_do_update <= (state == ISSUE_CMD && NOTCH_UPDATE);
+        
+        // notch states are word-wise 12 bits
+        if (state == ACK && NOTCH0_ADDR && wb_we_i) begin
+            if (wb_sel_i[0]) notch0_state[7:0] <= wb_dat_i[7:0];
+            if (wb_sel_i[1]) notch0_state[8 +: 4] <= wb_dat_i[8 +: 4];
+            if (wb_sel_i[2]) notch0_state[12 +: 8] <= wb_dat_i[16 +: 8];
+            if (wb_sel_i[3]) notch0_state[20 +: 4] <= wb_dat_i[24 +: 4];
+        end
+
+        if (state == ACK && NOTCH1_ADDR && wb_we_i) begin
+            if (wb_sel_i[0]) notch1_state[7:0] <= wb_dat_i[7:0];
+            if (wb_sel_i[1]) notch1_state[8 +: 4] <= wb_dat_i[8 +: 4];
+            if (wb_sel_i[2]) notch1_state[12 +: 8] <= wb_dat_i[16 +: 8];
+            if (wb_sel_i[3]) notch1_state[20 +: 4] <= wb_dat_i[24 +: 4];
+        end
         
         if (state == ACK && CONTROL_ADDR && wb_we_i) begin
             if (wb_sel_i[0]) en_crate_pps <= wb_dat_i[0];
@@ -163,7 +249,10 @@ module trig_pueo_command(
         if (send_runcmd) runcmd_data <= dat_hold_wbclk[1:0];
 
         if (send_fwu) fwu_pending <= 1;
-        else if (sysclk_phase_i) fwu_pending <= 0;
+        else if (sysclk_phase_i && !notch_really_pending) fwu_pending <= 0;
+        
+        if (sysclk_phase_i) notch_really_pending <= 0;
+        else if (notch_pending) notch_really_pending <= 1;
         
         if (send_fwu) begin
             fwu_mark <= mark_hold_wbclk;
@@ -173,7 +262,7 @@ module trig_pueo_command(
         // HANDLE MESSAGE SIDE OF COMMAND
         if (sysclk_phase_i) begin
             for (i=0;i<4;i=i+1) begin : LP
-                command[i][31] <= ~(runcmd_really_pending || fwu_pending || crate_pps);
+                command[i][31] <= ~(runcmd_really_pending || (fwu_pending || notch_really_pending) || crate_pps);
                 // pps
                 command[i][30] <= crate_pps;
                 // reserved
@@ -192,8 +281,9 @@ module trig_pueo_command(
     // this makes it so that 0x0 sends a runcmd, 0x4 sends fwu (mark OR data)
     assign send_runcmd_wbclk = (state == ISSUE_CMD && RUNCMD_ADDR);
     assign send_fwu_wbclk = (state == ISSUE_CMD && FWU_ADDR);
-    assign fwu_complete = (fwu_pending && sysclk_phase_i);
+    assign fwu_complete = ((fwu_pending && !notch_really_pending) && sysclk_phase_i);
     assign runcmd_complete = (runcmd_really_pending && sysclk_phase_i);
+    assign notch_ack = (notch_really_pending && sysclk_phase_i);
     
     // flag syncs
     flag_sync u_send_runcmd_sync(.in_clkA(send_runcmd_wbclk),.out_clkB(send_runcmd),
@@ -255,8 +345,8 @@ module trig_pueo_command(
     assign wb_ack_o = (state == ACK);
     assign wb_err_o = 1'b0;
     assign wb_rty_o = 1'b0;
-    assign wb_dat_o = { {16{1'b0}}, {4{1'b0}}, rundly, {7{1'b0}}, en_crate_pps };
-    
+    assign wb_dat_o = (wb_adr_i[4]) ? notch_read_data_mux : control_read_data;
+        
     assign s_trig_tready = s_trig_tvalid && sysclk_phase_i;
 
     assign runrst_o = runrst_delayed;
