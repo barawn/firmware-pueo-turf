@@ -239,7 +239,14 @@ module pueo_master_trigger_process_tb;
         #100;
         wb_write( 32'h100, 32'h0000_0010);
         #100;
+        // run start
         wb_write( 32'h000, 32'd2 );        
+        
+        // notchy notch testing. bypass everyone.
+        wb_write( 32'h010, 32'hFFFFFF);
+        wb_write( 32'h014, 32'hFFFFFF);
+        wb_write( 32'h01C, 32'h1);
+        
         #1000;
         // soft trig
         wb_write( 32'h110, 32'd1 );
