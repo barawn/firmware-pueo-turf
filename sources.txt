@@ -41,6 +41,7 @@ hdl/event/hdr_accumulator.sv
 hdl/i2c_merger.sv
 hdl/time/internal_pps.sv
 hdl/trig/master_trig_uram_v2.sv
+hdl/trig/notch_remote_control.sv
 hdl/trig/pueo_leveltwo.sv
 hdl/trig/pueo_master_trig_process_v4.sv
 hdl/trig/pueo_scaler_core.sv
