@@ -191,12 +191,12 @@ module pueo_trig_ctrl_v3 #(
                 if (wb_sel_i[3]) ext_offset_register[15:8] <= wb_dat_i[24 +: 8];
             end
             if (wb_adr_i == EXT_PRESCALE_ADDR) begin
-                if (wb_sel_i[0]) ext_prescale <= wb_dat_i[0 +: 8];
-                if (wb_sel_i[1]) ext_prescale <= wb_dat_i[8 +: 8];
+                if (wb_sel_i[0]) ext_prescale[0 +: 8] <= wb_dat_i[0 +: 8];
+                if (wb_sel_i[1]) ext_prescale[8 +: 8] <= wb_dat_i[8 +: 8];
             end
             if (wb_adr_i == PHOTO_PRESCALE_ADDR) begin
-                if (wb_sel_i[0]) photo_prescale <= wb_dat_i[0 +: 8];
-                if (wb_sel_i[1]) photo_prescale <= wb_dat_i[8 +: 8];
+                if (wb_sel_i[0]) photo_prescale[0 +: 8] <= wb_dat_i[0 +: 8];
+                if (wb_sel_i[1]) photo_prescale[8 +: 8] <= wb_dat_i[8 +: 8];
                 if (wb_sel_i[2]) photo_en <= wb_dat_i[16];
             end
         end
