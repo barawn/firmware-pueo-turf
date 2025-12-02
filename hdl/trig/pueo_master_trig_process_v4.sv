@@ -107,6 +107,10 @@ module pueo_master_trig_process_v4 #(parameter NSURF=28,
         
         output [31:0] scal_trig_o,
         output [23:0] scal_leveltwo_o,
+        output [1:0] scal_mie_o,
+        output [1:0] scal_lf_o,
+        output scal_aux_o,
+        output scal_levelthree_o,
         
         `HOST_NAMED_PORTS_AXI4S_MIN_IF( trigout_ , 16 ),
         input memclk_i,     
@@ -531,6 +535,10 @@ module pueo_master_trig_process_v4 #(parameter NSURF=28,
                    .trig_o(leveltwo_trigger),
                    
                    .leveltwo_o(leveltwo_scal),
+                   .mie_o(scal_mie_o),
+                   .lf_o(scal_lf_o),
+                   .aux_o(scal_aux_o),
+                   .levelthree_o(scal_levelthree_o),
                    
                    .tio0_meta_i( metadata_out[0] ),
                    .tio1_meta_i( metadata_out[1] ),

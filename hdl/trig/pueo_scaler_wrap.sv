@@ -20,7 +20,11 @@ module pueo_scaler_wrap #(parameter SYSCLKTYPE="NONE",
         output [15:0] eth_dat_o,
         
         input [31:0] trig_i,
-        input [23:0] leveltwo_i
+        input [23:0] leveltwo_i,
+        input [1:0] mie_i,
+        input [1:0] lf_i,
+        input aux_i,
+        input levelthree_i
     );
     
     wire gate;
@@ -77,6 +81,11 @@ module pueo_scaler_wrap #(parameter SYSCLKTYPE="NONE",
                     .sysclk_i(sys_clk_i),
                     .pps_i(pps_i),
                     .gp_gate_i(gp_gate_i),
+                    
+                    .mie_i(mie_i),
+                    .lf_i(lf_i),
+                    .aux_i(aux_i),
+                    .levelthree_i(levelthree_i),
                     
                     .gate_o(gate),
                     .gate_en_o(gate_enable));                                

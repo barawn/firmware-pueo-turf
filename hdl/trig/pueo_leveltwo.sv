@@ -33,6 +33,11 @@ module pueo_leveltwo #(parameter VERSION = 1,
         
         // individual leveltwo scalers
         output [23:0] leveltwo_o,
+        output [1:0] mie_o,
+        output [1:0] lf_o,
+        output aux_o,
+        output levelthree_o,
+        // actual trigger
         output trig_o
     );
     // normally trigger would just be or of everyone, so next sysclk_x2_ce
@@ -330,6 +335,12 @@ module pueo_leveltwo #(parameter VERSION = 1,
                         ( aux_trig_delayed_ff || (|leveltwo_trig) || (|lf_trig_delayed_ff) );
             end
             assign trig_o = master_trig;
+            // scalers. qualified by holdoff/dead because pretty much the only way to do it
+            assign levelthree_o = master_trig;
+            assign mie_o = (ce_i && !holdoff_i && !dead_i) ? leveltwo_trig : 2'b00;
+            assign lf_o = (ce_i && !holdoff_i && !dead_i) ? lf_trig_delayed_ff : 2'b00;
+            assign aux_o = (ce_i && !holdoff_i && !dead_i) ? aux_trig_delayed_ff : 1'b0;
+            
         end else begin : V1
             wire [5:0] tio0_remask = { mask_i[0], mask_i[1], mask_i[2], mask_i[3], mask_i[4], mask_i[5] };
             wire [5:0] tio1_remask = { mask_i[11], mask_i[10], mask_i[9], mask_i[8], mask_i[7], mask_i[6] };

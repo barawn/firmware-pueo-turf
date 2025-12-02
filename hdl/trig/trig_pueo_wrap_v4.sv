@@ -178,6 +178,10 @@ module trig_pueo_wrap_v4 #(parameter WBCLKTYPE = "NONE",
     wire rf_trig_en;
     
     wire [23:0] scal_leveltwo;
+    wire [1:0] scal_mie;
+    wire [1:0] scal_lf;
+    wire scal_aux;
+    wire scal_levelthree;
     pueo_master_trig_process_v4 #(.SYSCLKTYPE(SYSCLKTYPE),
                                .MEMCLKTYPE(MEMCLKTYPE),
                                .WBCLKTYPE(WBCLKTYPE),
@@ -232,6 +236,10 @@ module trig_pueo_wrap_v4 #(parameter WBCLKTYPE = "NONE",
                       
                       .scal_trig_o(scal_trig),
                       .scal_leveltwo_o(scal_leveltwo),
+                      .scal_mie_o(scal_mie),
+                      .scal_lf_o(scal_lf),
+                      .scal_aux_o(scal_aux),
+                      .scal_levelthree_o(scal_levelthree),
                       
                       .cur_sec_i(cur_sec_i),
                       .cur_time_i(cur_time_i),
@@ -344,7 +352,14 @@ module trig_pueo_wrap_v4 #(parameter WBCLKTYPE = "NONE",
                                .eth_dat_o(),
                                
                                .trig_i(scal_trig),
-                               .leveltwo_i(scal_leveltwo));
+                               .leveltwo_i(scal_leveltwo),
+                               
+                               .mie_i(scal_mie),
+                               .lf_i(scal_lf),
+                               .aux_i(scal_aux),
+                               .levelthree_i(scal_levelthree)
+                               
+                               );
 
     assign wb_ack_o = wb_ack_vec[wb_block];
     assign wb_dat_o = wb_dat_vec[wb_block];
