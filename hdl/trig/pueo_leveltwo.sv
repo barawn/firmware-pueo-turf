@@ -336,10 +336,12 @@ module pueo_leveltwo #(parameter VERSION = 1,
             end
             assign trig_o = master_trig;
             // scalers. qualified by holdoff/dead because pretty much the only way to do it
+            // now only qualified by holdoff, so you can let the system just go dead and it'll
+            // still count.
             assign levelthree_o = master_trig;
-            assign mie_o = (ce_i && !holdoff_i && !dead_i) ? leveltwo_trig : 2'b00;
-            assign lf_o = (ce_i && !holdoff_i && !dead_i) ? lf_trig_delayed_ff : 2'b00;
-            assign aux_o = (ce_i && !holdoff_i && !dead_i) ? aux_trig_delayed_ff : 1'b0;
+            assign mie_o = (ce_i && !holdoff_i) ? leveltwo_trig : 2'b00;
+            assign lf_o = (ce_i && !holdoff_i) ? lf_trig_delayed_ff : 2'b00;
+            assign aux_o = (ce_i && !holdoff_i) ? aux_trig_delayed_ff : 1'b0;
             
         end else begin : V1
             wire [5:0] tio0_remask = { mask_i[0], mask_i[1], mask_i[2], mask_i[3], mask_i[4], mask_i[5] };
